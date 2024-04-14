@@ -1,0 +1,9 @@
+datasets/
+output/
+cache/
+.idea/
+*.bin
+*.safetensor
+*.pt
+
+release.sh
