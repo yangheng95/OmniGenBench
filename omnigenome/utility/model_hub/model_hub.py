@@ -55,12 +55,10 @@ class ModelHub:
             tokenizer = dill.load(f)
 
         model = model_cls(config, base_model, tokenizer, **kwargs)
-
         with open(f"{path}/pytorch_model.bin", "rb") as f:
             model.load_state_dict(
-                torch.load(f, map_location=kwargs.get("device", "cpu")), strict=False
+                torch.load(f, map_location=kwargs.get("device", "cpu")), strict=True
             )
-            model.metadata.update(metadata)
         return model
 
     @staticmethod

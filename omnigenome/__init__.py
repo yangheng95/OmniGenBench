@@ -55,7 +55,6 @@ from .src.model import (
     OmniGenomeDecoderModelForTokenClassification,
     OmniGenomeDecoderModelForSequenceClassificationWith2DStructure,
     OmniGenomeDecoderModelForTokenClassificationWith2DStructure,
-
     OmniGenomeEncoderModelForSequenceRegression,
     OmniGenomeEncoderModelForTokenRegression,
     OmniGenomeEncoderModelForSequenceRegressionWith2DStructure,
@@ -74,6 +73,7 @@ from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForSequenceClassifi
 from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForSequenceRegression
 
 from .src.metric import ClassificationMetric, RegressionMetric, RankingMetric
+
 __all__ = [
     "OmniGenomeDataset",
     "OmniGenomeModel",
@@ -112,17 +112,13 @@ __all__ = [
     "OmniGenomeDecoderModelForTokenRegressionWith2DStructure",
     "OmniGenomeEncoderModelForMLM",
     "OmniGenomeEncoderModelForSeq2Seq",
-
     "OmniGenomeDatasetForTokenClassification",
     "OmniGenomeDatasetForTokenRegression",
     "OmniGenomeDatasetForSequenceClassification",
     "OmniGenomeDatasetForSequenceRegression",
-
     "ClassificationMetric",
     "RegressionMetric",
     "RankingMetric",
-
     "Trainer",
     "HFTrainer",
 ]
-

@@ -149,3 +149,14 @@ class Trainer:
 
     def save_model(self, path, overwrite=False, **kwargs):
         self.model.save(path, overwrite, **kwargs)
+
+    def _reload_state_dict(self, path):
+        self.optimizer.load_state_dict(torch.load(path))
+        self.model.load_state_dict(torch.load(path), map_location=self.device)
+
+    def _save_state_dict(self, path=None):
+        if path is None:
+            path = "init_state_dict.pt"
+        self.model.to("cpu")
+        torch.save(self.model.state_dict(), path)
+        self.model.to(self.device)

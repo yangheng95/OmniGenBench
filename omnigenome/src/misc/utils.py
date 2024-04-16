@@ -33,18 +33,15 @@ class RNA2StructureCache(dict):
         super().__init__(*args, **kwargs)
 
         if not cache_file:
-            cache_file = "__OMNIGENOME_DATA__/rna2stucture.cache.pkl"
+            self.cache_file = "__OMNIGENOME_DATA__/rna2stucture.cache.pkl"
+        else:
+            self.cache_file = cache_file
 
-        self.cache_file = cache_file
-
-        if not os.path.exists(os.path.dirname(cache_file)):
-            os.makedirs(os.path.dirname(cache_file))
-
-        if not os.path.exists(cache_file):
+        if self.cache_file is None or not os.path.exists(self.cache_file):
             self.cache = {}
         else:
-            print(f"Loading cache from {cache_file}...")
-            with open(cache_file, "rb") as f:
+            print(f"Loading cache from {self.cache_file}...")
+            with open(self.cache_file, "rb") as f:
                 self.cache = pickle.load(f)
 
         self.queue_num = 0
@@ -77,9 +74,15 @@ class RNA2StructureCache(dict):
         if cache_file is None:
             cache_file = self.cache_file
 
+        if not os.path.exists(os.path.dirname(cache_file)):
+            os.makedirs(os.path.dirname(cache_file))
+
         print(f"Updating cache file {cache_file}...")
-        with open(self.cache_file, "wb") as f:
+        with open(cache_file, "wb") as f:
             pickle.dump(self.cache, f)
+
+        self.queue_num = 0
+
 
 
 def env_meta_info():

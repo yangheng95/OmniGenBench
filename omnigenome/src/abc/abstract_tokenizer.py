@@ -24,6 +24,11 @@ class OmniGenomeTokenizer:
         for key, value in kwargs.items():
             self.metadata[key] = value
 
+        self.u2t = kwargs.get("u2t", False)
+        self.t2u = kwargs.get("t2u", False)
+        self.add_whitespace = kwargs.get("add_whitespace", False)
+
+
     @staticmethod
     def from_pretrained(model_name_or_path, **kwargs):
         self = OmniGenomeTokenizer(
@@ -35,7 +40,18 @@ class OmniGenomeTokenizer:
         self.base_tokenizer.save_pretrained(save_directory)
 
     def __call__(self, *args, **kwargs):
-        return self.base_tokenizer(*args, **kwargs)
+        padding = kwargs.pop("padding", True)
+        truncation = kwargs.pop("truncation", True)
+        max_length = kwargs.pop("max_length", self.max_length if self.max_length else 512)
+        return_tensor = kwargs.pop("return_tensors", "pt")
+        return self.base_tokenizer(
+            padding=padding,
+            truncation=truncation,
+            max_length=max_length,
+            return_tensors=return_tensor,
+            *args,
+            **kwargs
+        )
 
     def tokenize(self, sequence, **kwargs):
         raise NotImplementedError(

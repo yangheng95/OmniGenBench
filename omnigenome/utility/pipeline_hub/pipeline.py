@@ -143,9 +143,11 @@ class Pipeline:
         model = ModelHub.load(path, local_only=local_only, **kwargs)
         model.metadata.update(metadata)
         pipeline = Pipeline(
-            name=pipeline_name_or_path
-            if kwargs.get("name") is None
-            else kwargs.get("name"),
+            name=(
+                pipeline_name_or_path
+                if kwargs.get("name") is None
+                else kwargs.get("name")
+            ),
             model_name_or_path=model,
             tokenizer=tokenizer,
             datasets=datasets,

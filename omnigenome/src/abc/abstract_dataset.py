@@ -76,6 +76,7 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
         else:
             raise ValueError("max_length must be provided in the dataset or tokenizer.")
 
+        self.tokenizer.max_length = self.max_length
         self.examples = []
         self.data = []
 
@@ -132,7 +133,9 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                                 (padding_length, value.size(1))
                             )
                         else:
-                            _pad_value = pad_value
+                            _pad_value = pad_value * torch.ones(
+                                (padding_length, value.size(1))
+                            )
                         data_item[key] = torch.cat([value, _pad_value], dim=0)
                     elif padding_length < 0:
                         data_item[key] = value[:max_length]
@@ -156,7 +159,7 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                         elif "label" in key or "labels" in key:
                             _pad_value = -100 * torch.ones((padding_length,))
                         else:
-                            _pad_value = pad_value
+                            _pad_value = pad_value * torch.ones((padding_length,))
                         data_item[key] = torch.cat([value, _pad_value], dim=0)
                     elif padding_length < 0:
                         data_item[key] = value[:max_length]

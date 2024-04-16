@@ -11,7 +11,7 @@ import os
 import warnings
 
 import torch
-from ViennaRNA import RNA
+
 from transformers import AutoModel, AutoConfig, AutoTokenizer
 
 from ..misc.utils import fprint, env_meta_info
@@ -69,8 +69,8 @@ def extract_last_hidden_state(model, inputs, ss=None, tokenizer=None):
     last_hidden_state = outputs["last_hidden_state"]
 
     if ss == "viennarna":
-        sequences = tokenizer.batch_decode(input_ids, skip_special_tokens=True)
-        structures = [rna2structure.fold(seq)[0] for seq in sequences]
+        sequences = tokenizer.base_tokenizer.batch_decode(input_ids, skip_special_tokens=True)
+        structures = [rna2structure.fold(seq.replace(' ', ''))[0] for seq in sequences]
         tokenized_struct = tokenizer(
             structures,
             padding="max_length",
@@ -140,7 +140,7 @@ class OmniGenomeModel(torch.nn.Module):
             self.metadata[key] = value
 
         fprint(
-            f"The trainable parameters of the model are: {count_parameters(self.model) / 1e6:.2f} Millions"
+            f"The trainable parameters of the {self.model.__class__.__name__} model are: {count_parameters(self.model) / 1e6:.2f} Millions"
         )
 
     def loss_function(self, logits, labels):
@@ -204,6 +204,7 @@ class OmniGenomeModel(torch.nn.Module):
             )
 
     def save(self, path, overwrite=False, **kwargs):
+        self.eval()
         import dill
 
         if os.path.exists(path) and not overwrite:
@@ -221,9 +222,11 @@ class OmniGenomeModel(torch.nn.Module):
             dill.dump(self.tokenizer, f)
         with open(f"{path}/metadata.json", "w", encoding="utf8") as f:
             json.dump(self.metadata, f)
-        self.model.save_pretrained(path, safe_serialization=False)
-        self.config.save_pretrained(path)
+        self.model.save_pretrained(f"{path}", safe_serialization=False)  # do not remove this line, used to save customed model scripts
+        with open(f"{path}/pytorch_model.bin", "wb") as f:
+            torch.save(self.state_dict(), f)
         self.model.to(device)
+        fprint(f"The model is saved to {path}.")
 
     def load(self, path, **kwargs):
         with open(f"{path}/metadata.json", "r", encoding="utf8") as f:
@@ -235,9 +238,6 @@ class OmniGenomeModel(torch.nn.Module):
                 f"but the current model class is {self.__class__.__name__}."
             )
         config = AutoConfig.from_pretrained(path, trust_remote_code=True, **kwargs)
-        self.config.from_pretrained(path, trust_remote_code=True, **kwargs)
-        with open(f"{path}/config.json", "r", encoding="utf8") as f:
-            config.__dict__ = json.load(f)
 
         for key, value in config.__dict__.items():
             if key not in self.config.__dict__ or self.config.__dict__[key] != value:
@@ -247,10 +247,9 @@ class OmniGenomeModel(torch.nn.Module):
                 )
 
         with open(f"{path}/pytorch_model.bin", "rb") as f:
-            self.model.load_state_dict(
-                torch.load(f, map_location=self.model.device), strict=False
+            self.load_state_dict(
+                torch.load(f, map_location=kwargs.get("device", "cpu")), strict=True
             )
-
         return self
 
     def load_tokenizer(self, path):

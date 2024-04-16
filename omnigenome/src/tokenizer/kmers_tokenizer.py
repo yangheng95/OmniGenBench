@@ -9,7 +9,7 @@
 import warnings
 
 from ..abc.abstract_tokenizer import OmniGenomeTokenizer
-
+from transformers import AutoTokenizer
 
 class OmniKmersTokenizer(OmniGenomeTokenizer):
     def __init__(self, base_tokenizer=None, k=3, overlap=0, max_length=512, **kwargs):
@@ -17,9 +17,13 @@ class OmniKmersTokenizer(OmniGenomeTokenizer):
         self.k = k
         self.overlap = overlap
         self.max_length = max_length
-        self.metadata["tokenizer_name"] = "KmersTokenizer"
+        self.metadata["tokenizer_name"] = self.__class__.__name__
 
     def __call__(self, sequence, **kwargs):
+        if self.u2t:
+            sequence = sequence.replace("U", "T")
+        if self.add_whitespace:
+            sequence = " ".join(list(sequence))
         sequence_tokens = self.tokenize(sequence)
         tokenized_inputs = {
             "input_ids": [],
@@ -54,6 +58,13 @@ class OmniKmersTokenizer(OmniGenomeTokenizer):
         )
         return tokenized_inputs
 
+    @staticmethod
+    def from_pretrained(model_name_or_path, **kwargs):
+        self = OmniKmersTokenizer(
+            AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
+        )
+        return self
+
     def tokenize(self, sequence, **kwargs):
         if isinstance(sequence, str):
             sequences = [sequence]
@@ -63,7 +74,7 @@ class OmniKmersTokenizer(OmniGenomeTokenizer):
         sequence_tokens = []
         for i in range(len(sequences)):
             tokens = []
-            for j in range(0, len(sequences[i]), self.overlap):
+            for j in range(0, len(sequences[i]), self.k-self.overlap):
                 tokens.append(sequences[i][j : j + self.k])
 
             sequence_tokens.append(tokens)

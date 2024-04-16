@@ -8,6 +8,7 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 from ..abc.abstract_tokenizer import OmniGenomeTokenizer
+from transformers import AutoTokenizer
 
 
 def is_bpe_tokenization(tokens, threshold=0.1):
@@ -28,7 +29,7 @@ def is_bpe_tokenization(tokens, threshold=0.1):
 class OmniBPETokenizer(OmniGenomeTokenizer):
     def __init__(self, base_tokenizer=None, **kwargs):
         super(OmniBPETokenizer, self).__init__(base_tokenizer, **kwargs)
-        self.metadata["tokenizer_name"] = "BPETokenizer"
+        self.metadata["tokenizer_name"] = self.__class__.__name__
 
     def __call__(self, sequence, **kwargs):
         sequences = self.tokenize(sequence)
@@ -46,6 +47,13 @@ class OmniBPETokenizer(OmniGenomeTokenizer):
         )
 
         return tokenized_inputs
+
+    @staticmethod
+    def from_pretrained(model_name_or_path, **kwargs):
+        self = OmniBPETokenizer(
+            AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
+        )
+        return self
 
     def tokenize(self, sequence, **kwargs):
         return self.base_tokenizer.tokenize(sequence)

@@ -57,7 +57,7 @@ class OmniGenomeDatasetForTokenClassification(OmniGenomeDataset):
             raise Exception("Unknown instance format.")
 
         tokenized_inputs = self.tokenizer(
-            " ".join(list(sequence)),
+            sequence,
             padding="do_not_pad",
             truncation=True,
             max_length=self.max_length,
@@ -107,7 +107,7 @@ class OmniGenomeDatasetForSequenceClassification(OmniGenomeDataset):
             raise Exception("Unknown instance format.")
 
         tokenized_inputs = self.tokenizer(
-            " ".join(list(sequence)),
+            sequence,
             padding="do_not_pad",
             truncation=True,
             max_length=self.max_length,
@@ -153,7 +153,7 @@ class OmniGenomeDatasetForTokenRegression(OmniGenomeDataset):
             raise Exception("Unknown instance format.")
 
         tokenized_inputs = self.tokenizer(
-            " ".join(list(sequence)),
+            sequence,
             padding="do_not_pad",
             truncation=True,
             max_length=self.max_length,
@@ -222,7 +222,7 @@ class OmniGenomeDatasetForSequenceRegression(OmniGenomeDataset):
             raise Exception("Unknown instance format.")
 
         tokenized_inputs = self.tokenizer(
-            " ".join(list(sequence)),
+            sequence,
             padding="do_not_pad",
             truncation=True,
             max_length=self.max_length,

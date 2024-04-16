@@ -6,16 +6,17 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
-import pickle
+
 import warnings
 
 from ..abc.abstract_tokenizer import OmniGenomeTokenizer
+from transformers import AutoTokenizer
 
 
 class OmniSingleNucleotideTokenizer(OmniGenomeTokenizer):
     def __init__(self, base_tokenizer=None, **kwargs):
         super(OmniSingleNucleotideTokenizer, self).__init__(base_tokenizer, **kwargs)
-        self.metadata["tokenizer_name"] = "SingleNucleotideTokenizer"
+        self.metadata["tokenizer_name"] = self.__class__.__name__
 
     def __call__(self, sequence, **kwargs):
         sequence_tokens = self.tokenize(sequence)
@@ -29,7 +30,7 @@ class OmniSingleNucleotideTokenizer(OmniGenomeTokenizer):
             tokenized_inputs["input_ids"].append(
                 [bos_id]
                 + self.base_tokenizer.convert_tokens_to_ids(
-                    tokens[: self.max_length - 2]
+                    tokens[:kwargs.get("max_length", 512)]
                 )
                 + [eos_id]
             )
@@ -42,16 +43,22 @@ class OmniSingleNucleotideTokenizer(OmniGenomeTokenizer):
                 warnings.warn(
                     f"Unknown tokens are more than 10% in the {i}th sequence, please check the tokenization process."
                 )
-
+        max_length = max(len(ids) for ids in tokenized_inputs["input_ids"])
         tokenized_inputs = self.base_tokenizer.pad(
             tokenized_inputs,
-            padding="max_length",
-            max_length=self.max_length,
-            pad_to_multiple_of=self.max_length,
-            return_attention_mask=True,
+            padding=kwargs.get("padding", "max_length"),
+            max_length=min(max_length, kwargs.get("max_length", 512)),
+            return_attention_mask=kwargs.get("return_attention_mask", True),
             return_tensors="pt",
         )
         return tokenized_inputs
+
+    @staticmethod
+    def from_pretrained(model_name_or_path, **kwargs):
+        self = OmniSingleNucleotideTokenizer(
+            AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
+        )
+        return self
 
     def tokenize(self, sequence, **kwargs):
         if isinstance(sequence, str):
@@ -74,29 +81,3 @@ class OmniSingleNucleotideTokenizer(OmniGenomeTokenizer):
     def encode_plus(self, sequence, **kwargs):
         return self.base_tokenizer.encode_plus(sequence, **kwargs)
 
-
-if __name__ == "__main__":
-    from transformers import AutoTokenizer
-
-    # RNA = "ACGUAGGUAUCGUAGA"
-    # # base_tokenizer_name = 'bert-base-cased'
-    # base_tokenizer_name = "facebook/esm2_t12_35M_UR50D"
-    # base_tokenizer = AutoTokenizer.from_pretrained(base_tokenizer_name)
-    # tokenizer = KmersTokenizer(base_tokenizer)
-    # tokens = tokenizer.tokenize(RNA)
-    # print(tokens)
-    # tokenized_inputs = tokenizer(RNA)
-    # print(tokenized_inputs)
-
-    RNA = "ACGUAGGUAUCGUAGA"
-    base_tokenizer_name = "bert-base-cased"
-    # base_tokenizer_name = "facebook/esm2_t12_35M_UR50D"
-    base_tokenizer = AutoTokenizer.from_pretrained(base_tokenizer_name)
-    tokenizer = OmniSingleNucleotideTokenizer(base_tokenizer, max_length=512)
-    tokens = tokenizer.tokenize(RNA)
-    print(tokens)
-    tokenized_inputs = tokenizer(RNA)
-    print(tokenized_inputs)
-    pickle.dump(tokenizer, open("tokenizer.og.pkl", "wb"))
-    tokenizer = pickle.load(open("tokenizer.og.pkl", "rb"))
-    tokenized_inputs = tokenizer(RNA)

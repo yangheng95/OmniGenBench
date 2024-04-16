@@ -8,6 +8,7 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 import torch
+from transformers import BatchEncoding
 from transformers.models.bert.modeling_bert import BertPooler
 
 from ...abc.abstract_model import OmniGenomeModel
@@ -30,19 +31,16 @@ class OmniGenomeEncoderModelForTokenRegression(OmniGenomeModel):
         return outputs
 
     def predict(self, sequence_or_inputs, **kwargs):
-        if isinstance(sequence_or_inputs, str):
+        if not isinstance(sequence_or_inputs, BatchEncoding) and not isinstance(
+            sequence_or_inputs, dict
+        ):
             inputs = self.tokenizer(sequence_or_inputs, return_tensors="pt", **kwargs)
         else:
             inputs = sequence_or_inputs
+        inputs = inputs.to(self.model.device)
 
-        if len(inputs["input_ids"].shape) == 1:
-            for col in inputs:
-                inputs[col] = inputs[col].to(self.model.device).unsqueeze(0)
-        else:
-            for col in inputs:
-                inputs[col] = inputs[col].to(self.model.device)
-
-        outputs = self(inputs)
+        with torch.no_grad():
+            outputs = self(inputs)
         logits = outputs["logits"]
         last_hidden_state = outputs["last_hidden_state"]
 
@@ -50,18 +48,11 @@ class OmniGenomeEncoderModelForTokenRegression(OmniGenomeModel):
         for i in range(logits.shape[0]):
             predictions.append(logits[i].detach().cpu().numpy())
 
-        if len(predictions) == 1:
-            outputs = {
-                "predictions": predictions[0],
-                "logits": logits[0],
-                "last_hidden_state": last_hidden_state[0],
-            }
-        else:
-            outputs = {
-                "predictions": predictions,
-                "logits": logits,
-                "last_hidden_state": last_hidden_state,
-            }
+        outputs = {
+            "predictions": predictions,
+            "logits": logits,
+            "last_hidden_state": last_hidden_state,
+        }
 
         return outputs
 
@@ -69,7 +60,8 @@ class OmniGenomeEncoderModelForTokenRegression(OmniGenomeModel):
         inputs = self.tokenizer(sequence_or_inputs, return_tensors="pt", **kwargs)
         inputs = inputs.to(self.model.device)
 
-        outputs = self(inputs)
+        with torch.no_grad():
+            outputs = self(inputs)
         logits = outputs["logits"]
         last_hidden_state = outputs["last_hidden_state"]
 
@@ -80,7 +72,7 @@ class OmniGenomeEncoderModelForTokenRegression(OmniGenomeModel):
             ][1:-1]
             predictions.append(i_logits.detach().cpu().numpy())
 
-        if len(predictions) == 1:
+        if not isinstance(sequence_or_inputs, list):
             outputs = {
                 "predictions": predictions[0],
                 "logits": logits[0],
@@ -129,19 +121,16 @@ class OmniGenomeEncoderModelForSequenceRegression(OmniGenomeModel):
         return outputs
 
     def predict(self, sequence_or_inputs, **kwargs):
-        if isinstance(sequence_or_inputs, str):
+        if not isinstance(sequence_or_inputs, BatchEncoding) and not isinstance(
+            sequence_or_inputs, dict
+        ):
             inputs = self.tokenizer(sequence_or_inputs, return_tensors="pt", **kwargs)
         else:
             inputs = sequence_or_inputs
+        inputs = inputs.to(self.model.device)
 
-        if len(inputs["input_ids"].shape) == 1:
-            for col in inputs:
-                inputs[col] = inputs[col].to(self.model.device).unsqueeze(0)
-        else:
-            for col in inputs:
-                inputs[col] = inputs[col].to(self.model.device)
-
-        outputs = self(inputs)
+        with torch.no_grad():
+            outputs = self(inputs)
         logits = outputs["logits"]
         last_hidden_state = outputs["last_hidden_state"]
 
@@ -149,18 +138,11 @@ class OmniGenomeEncoderModelForSequenceRegression(OmniGenomeModel):
         for i in range(logits.shape[0]):
             predictions.append(logits[i][0].item())
 
-        if len(predictions) == 1:
-            outputs = {
-                "predictions": predictions[0],
-                "logits": logits[0],
-                "last_hidden_state": last_hidden_state[0],
-            }
-        else:
-            outputs = {
-                "predictions": predictions,
-                "logits": logits,
-                "last_hidden_state": last_hidden_state,
-            }
+        outputs = {
+            "predictions": predictions,
+            "logits": logits,
+            "last_hidden_state": last_hidden_state,
+        }
 
         return outputs
 
@@ -168,7 +150,8 @@ class OmniGenomeEncoderModelForSequenceRegression(OmniGenomeModel):
         inputs = self.tokenizer(sequence_or_inputs, return_tensors="pt", **kwargs)
         inputs = inputs.to(self.model.device)
 
-        outputs = self(inputs)
+        with torch.no_grad():
+            outputs = self(inputs)
         logits = outputs["logits"]
         last_hidden_state = outputs["last_hidden_state"]
 
@@ -176,7 +159,7 @@ class OmniGenomeEncoderModelForSequenceRegression(OmniGenomeModel):
         for i in range(logits.shape[0]):
             predictions.append(logits[i][0].item())
 
-        if len(predictions) == 1:
+        if not isinstance(sequence_or_inputs, list):
             outputs = {
                 "predictions": predictions[0],
                 "logits": logits[0],
