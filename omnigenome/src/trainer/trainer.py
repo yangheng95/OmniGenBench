@@ -105,7 +105,8 @@ class Trainer:
             self.model.eval()
             val_truth = []
             val_preds = []
-            for batch in self.eval_loader:
+            it = tqdm(self.eval_loader, desc="Evaluating")
+            for batch in it:
                 batch.to(self.device)
                 predictions = self.model.predict(batch)["predictions"]
                 val_truth.append(batch["labels"].detach().cpu().numpy())

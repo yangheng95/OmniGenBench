@@ -30,7 +30,7 @@ class OmniSingleNucleotideTokenizer(OmniGenomeTokenizer):
             tokenized_inputs["input_ids"].append(
                 [bos_id]
                 + self.base_tokenizer.convert_tokens_to_ids(
-                    tokens[:kwargs.get("max_length", 512)]
+                    tokens[: kwargs.get("max_length", self.max_length) - 2]
                 )
                 + [eos_id]
             )
@@ -80,4 +80,3 @@ class OmniSingleNucleotideTokenizer(OmniGenomeTokenizer):
 
     def encode_plus(self, sequence, **kwargs):
         return self.base_tokenizer.encode_plus(sequence, **kwargs)
-

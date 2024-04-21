@@ -70,24 +70,12 @@ class Pipeline:
     def init_pipeline(self, *, model_name_or_path, tokenizer=None, **kwargs):
         trust_remote_code = kwargs.get("trust_remote_code", True)
         try:  # for the models saved by OmniGenome and served by the model hub
-            self.model, self.tokenizer = ModelHub.load(model_name_or_path, **kwargs)
-            return self
+            self.model = ModelHub.load(model_name_or_path, **kwargs)
+            self.tokenizer = self.model.tokenizer
+            self.metadata.update(self.model.metadata)
         except Exception as e:
             print(f"Fail to load the model from the model hub, the error is: {e}")
 
-        try:  # for the models saved by the OmniGenome and located in the local file system
-            self.model, self.tokenizer = ModelHub.load_model_and_tokenizer(
-                model_name_or_path, **kwargs
-            )
-            return self
-        except Exception as e:
-            print(
-                f"Fail to load the model from the local file system, the error is: {e}"
-            )
-
-        if isinstance(
-            model_name_or_path, str
-        ):  # for the models from the Hugging Face model hub
             config = AutoConfig.from_pretrained(
                 model_name_or_path, trust_remote_code=trust_remote_code
             )
@@ -103,8 +91,7 @@ class Pipeline:
                 **kwargs,
             )
             self.tokenizer = self.model.tokenizer
-
-        self.metadata = self.model.metadata
+            self.metadata.update(self.model.metadata)
         fprint(f"The pipeline has been initialized from {model_name_or_path}.")
         return self
 

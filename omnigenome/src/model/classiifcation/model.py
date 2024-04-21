@@ -63,14 +63,14 @@ class OmniGenomeEncoderModelForTokenClassification(OmniGenomeModel):
 
         with torch.no_grad():
             outputs = self(inputs)
-        logits = outputs["logits"]
-        last_hidden_state = outputs["last_hidden_state"]
+        logits = outputs["logits"][:, 1:-1:, :]
+        last_hidden_state = outputs["last_hidden_state"][:, 1:-1:, :]
 
         predictions = []
         for i in range(logits.shape[0]):
             i_logit = logits[i][
-                : inputs["input_ids"][0].ne(self.config.pad_token_id).sum(dim=-1)
-            ][1:-1]
+                : inputs["input_ids"][i].ne(self.config.pad_token_id).sum(dim=-1)
+            ]
             prediction = [
                 self.config.id2label.get(x.item(), "") for x in i_logit.argmax(dim=-1)
             ]

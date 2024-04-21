@@ -69,8 +69,10 @@ def extract_last_hidden_state(model, inputs, ss=None, tokenizer=None):
     last_hidden_state = outputs["last_hidden_state"]
 
     if ss == "viennarna":
-        sequences = tokenizer.base_tokenizer.batch_decode(input_ids, skip_special_tokens=True)
-        structures = [rna2structure.fold(seq.replace(' ', ''))[0] for seq in sequences]
+        sequences = tokenizer.base_tokenizer.batch_decode(
+            input_ids, skip_special_tokens=True
+        )
+        structures = [rna2structure.fold(seq.replace(" ", ""))[0] for seq in sequences]
         tokenized_struct = tokenizer(
             structures,
             padding="max_length",
@@ -222,7 +224,9 @@ class OmniGenomeModel(torch.nn.Module):
             dill.dump(self.tokenizer, f)
         with open(f"{path}/metadata.json", "w", encoding="utf8") as f:
             json.dump(self.metadata, f)
-        self.model.save_pretrained(f"{path}", safe_serialization=False)  # do not remove this line, used to save customed model scripts
+        self.model.save_pretrained(
+            f"{path}", safe_serialization=False
+        )  # do not remove this line, used to save customed model scripts
         with open(f"{path}/pytorch_model.bin", "wb") as f:
             torch.save(self.state_dict(), f)
         self.model.to(device)

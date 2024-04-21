@@ -79,16 +79,23 @@ class OmniGenomeEncoderModelForMLM(OmniGenomeModel):
 
         with torch.no_grad():
             outputs = self(inputs)
-        logits = outputs["logits"]
-        last_hidden_state = outputs["last_hidden_state"]
+        logits = outputs["logits"][:, 1:-1:, :]
+        last_hidden_state = outputs["last_hidden_state"][:, 1:-1:, :]
 
         predictions = []
         for i in range(logits.shape[0]):
             i_logits = logits[i][
                 : inputs["input_ids"][i].ne(self.tokenizer.pad_token_id).sum().item()
-            ][1:-1]
-            prediction = self.tokenizer.decode(i_logits.argmax(dim=-1))
-            predictions.append(prediction)
+            ]
+            prediction = self.tokenizer.decode(i_logits.argmax(dim=-1)).replace(" ", "")
+            if (
+                torch.sum(
+                    inputs["input_ids"][i] == self.tokenizer.convert_tokens_to_ids("U")
+                )
+                > 0
+            ):
+                prediction = prediction.replace("U", "T")
+            predictions.append(list(prediction))
 
         if not isinstance(sequence_or_inputs, list):
             outputs = {

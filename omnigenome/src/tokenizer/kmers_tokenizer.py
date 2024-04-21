@@ -11,6 +11,7 @@ import warnings
 from ..abc.abstract_tokenizer import OmniGenomeTokenizer
 from transformers import AutoTokenizer
 
+
 class OmniKmersTokenizer(OmniGenomeTokenizer):
     def __init__(self, base_tokenizer=None, k=3, overlap=0, max_length=512, **kwargs):
         super(OmniKmersTokenizer, self).__init__(base_tokenizer, **kwargs)
@@ -35,7 +36,7 @@ class OmniKmersTokenizer(OmniGenomeTokenizer):
             tokenized_inputs["input_ids"].append(
                 [bos_id]
                 + self.base_tokenizer.convert_tokens_to_ids(
-                    tokens[: self.max_length - 2]
+                    tokens[: kwargs.get("max_length", self.max_length) - 2]
                 )
                 + [eos_id]
             )
@@ -74,7 +75,7 @@ class OmniKmersTokenizer(OmniGenomeTokenizer):
         sequence_tokens = []
         for i in range(len(sequences)):
             tokens = []
-            for j in range(0, len(sequences[i]), self.k-self.overlap):
+            for j in range(0, len(sequences[i]), self.k - self.overlap):
                 tokens.append(sequences[i][j : j + self.k])
 
             sequence_tokens.append(tokens)

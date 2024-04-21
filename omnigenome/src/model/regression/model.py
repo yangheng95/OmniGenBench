@@ -62,14 +62,14 @@ class OmniGenomeEncoderModelForTokenRegression(OmniGenomeModel):
 
         with torch.no_grad():
             outputs = self(inputs)
-        logits = outputs["logits"]
-        last_hidden_state = outputs["last_hidden_state"]
+        logits = outputs["logits"][:, 1:-1:, :]
+        last_hidden_state = outputs["last_hidden_state"][:, 1:-1:, :]
 
         predictions = []
         for i in range(logits.shape[0]):
             i_logits = logits[i][
                 : inputs["input_ids"][i].ne(self.config.pad_token_id).sum().item()
-            ][1:-1]
+            ]
             predictions.append(i_logits.detach().cpu().numpy())
 
         if not isinstance(sequence_or_inputs, list):

@@ -84,7 +84,6 @@ class RNA2StructureCache(dict):
         self.queue_num = 0
 
 
-
 def env_meta_info():
     from torch.version import __version__ as torch_version
     from torch.version import cuda as torch_cuda_version

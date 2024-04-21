@@ -28,7 +28,6 @@ class OmniGenomeTokenizer:
         self.t2u = kwargs.get("t2u", False)
         self.add_whitespace = kwargs.get("add_whitespace", False)
 
-
     @staticmethod
     def from_pretrained(model_name_or_path, **kwargs):
         self = OmniGenomeTokenizer(
@@ -42,7 +41,9 @@ class OmniGenomeTokenizer:
     def __call__(self, *args, **kwargs):
         padding = kwargs.pop("padding", True)
         truncation = kwargs.pop("truncation", True)
-        max_length = kwargs.pop("max_length", self.max_length if self.max_length else 512)
+        max_length = kwargs.pop(
+            "max_length", self.max_length if self.max_length else 512
+        )
         return_tensor = kwargs.pop("return_tensors", "pt")
         return self.base_tokenizer(
             padding=padding,
