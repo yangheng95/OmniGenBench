@@ -15,7 +15,7 @@ from ..misc.utils import fprint
 from transformers import PretrainedConfig
 
 
-class Config(PretrainedConfig):
+class BenchConfig(PretrainedConfig):
     def __init__(self, args=None, **kwargs):
         """
         The Config is a subclass of argparse.Namespace and based on a parameter dict.
@@ -207,7 +207,7 @@ class Config(PretrainedConfig):
 
 
 if __name__ == "__main__":  # test
-    config = Config({"a": 1, "b": 2})
+    config = BenchConfig({"a": 1, "b": 2})
     config.a = 2
     config.b = 3
     config.c = 4

@@ -12,18 +12,22 @@ from transformers import BatchEncoding
 from transformers.models.bert.modeling_bert import BertPooler
 
 from ...abc.abstract_model import OmniGenomeModel
-from ...abc.abstract_model import extract_last_hidden_state
+from ...abc.abstract_model import last_hidden_state_forward
 
 
-class OmniGenomeEncoderModelForTokenRegression(OmniGenomeModel):
-    def __init__(self, config, base_model, tokenizer, *args, **kwargs):
-        super().__init__(config, base_model, tokenizer, *args, **kwargs)
-        self.metadata["model_name"] = "OmniGenomeEncoderModelForTokenRegression"
+class OmniGenomeModelForTokenRegression(OmniGenomeModel):
+    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+        self.metadata["model_name"] = self.__class__.__name__
 
-        self.classifier = torch.nn.Linear(config.hidden_size, config.num_labels)
+        self.classifier = torch.nn.Linear(
+            self.config.hidden_size, self.config.num_labels
+        )
+
+        self.loss_fn = torch.nn.MSELoss()
 
     def forward(self, inputs):
-        last_hidden_state = extract_last_hidden_state(self.model, inputs)
+        last_hidden_state = last_hidden_state_forward(self.model, inputs)
         last_hidden_state = self.dropout(last_hidden_state)
         last_hidden_state = self.activation(last_hidden_state)
         logits = self.classifier(last_hidden_state)
@@ -98,25 +102,38 @@ class OmniGenomeEncoderModelForTokenRegression(OmniGenomeModel):
         filtered_logits = logits[mask]
         filtered_targets = labels[mask]
 
-        loss = torch.nn.functional.mse_loss(
-            filtered_logits, filtered_targets, reduction="mean"
+        loss = self.loss_fn(filtered_logits, filtered_targets)
+        return loss
+
+
+class OmniGenomeModelForSequenceRegression(OmniGenomeModel):
+    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+        self.metadata["model_name"] = self.__class__.__name__
+        self.pooler = BertPooler(self.config)
+        self.classifier = torch.nn.Linear(
+            self.config.hidden_size, self.config.num_labels
         )
-        return loss**0.5
 
-
-class OmniGenomeEncoderModelForSequenceRegression(OmniGenomeModel):
-    def __init__(self, config, base_model, tokenizer, *args, **kwargs):
-        super().__init__(config, base_model, tokenizer, *args, **kwargs)
-        self.metadata["model_name"] = "OmniGenomeEncoderModelForSequenceRegression"
-        self.pooler = BertPooler(config)
-        self.classifier = torch.nn.Linear(config.hidden_size, config.num_labels)
+        self.loss_fn = torch.nn.MSELoss()
 
     def forward(self, inputs):
-        last_hidden_state = extract_last_hidden_state(self.model, inputs)
+        last_hidden_state = last_hidden_state_forward(self.model, inputs)
         last_hidden_state = self.dropout(last_hidden_state)
         last_hidden_state = self.activation(last_hidden_state)
-        pooled_output = self.pooler(last_hidden_state)
-        logits = self.classifier(pooled_output)
+
+        if self._is_causal_lm():
+            logits = self.classifier(last_hidden_state)
+            pad_token_id = getattr(self.config, "pad_token_id", -100)
+            sequence_lengths = inputs["input_ids"].ne(pad_token_id).sum(dim=1) - 1
+            logits = logits[
+                torch.arange(inputs["input_ids"].size(0), device=logits.device),
+                sequence_lengths,
+            ]
+        else:
+            last_hidden_state = self.pooler(last_hidden_state)
+            logits = self.classifier(last_hidden_state)
+
         outputs = {"logits": logits, "last_hidden_state": last_hidden_state}
         return outputs
 
@@ -185,33 +202,34 @@ class OmniGenomeEncoderModelForSequenceRegression(OmniGenomeModel):
         filtered_logits = logits[mask]
         filtered_targets = labels[mask]
 
-        loss = torch.nn.functional.mse_loss(
-            filtered_logits, filtered_targets, reduction="mean"
-        )
-        return loss**0.5
+        loss = self.loss_fn(filtered_logits, filtered_targets)
+        return loss
 
 
-class OmniGenomeEncoderModelForTokenRegressionWith2DStructure(
-    OmniGenomeEncoderModelForSequenceRegression
+class OmniGenomeModelForTokenRegressionWith2DStructure(
+    OmniGenomeModelForSequenceRegression
 ):
-    def __init__(self, config, base_model, tokenizer, *args, **kwargs):
-        super().__init__(config, base_model, tokenizer, *args, **kwargs)
-        self.metadata[
-            "model_name"
-        ] = "OmniGenomeEncoderModelForTokenRegressionWith2DStructure"
-        self.cat_layer = torch.nn.Linear(config.hidden_size * 2, config.hidden_size)
+    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+        self.metadata["model_name"] = self.__class__.__name__
+
+        self.cat_layer = torch.nn.Linear(
+            self.config.hidden_size * 2, self.config.hidden_size
+        )
         self.conv1d = torch.nn.Conv1d(
-            in_channels=config.hidden_size * 2,
-            out_channels=config.hidden_size,
+            in_channels=self.config.hidden_size * 2,
+            out_channels=self.config.hidden_size,
             kernel_size=1,
             stride=1,
             padding=0,
         )
 
-        self.classifier = torch.nn.Linear(config.hidden_size, config.num_labels)
+        self.classifier = torch.nn.Linear(
+            self.config.hidden_size, self.config.num_labels
+        )
 
     def forward(self, inputs):
-        last_hidden_state, ss_last_hidden_state = extract_last_hidden_state(
+        last_hidden_state, ss_last_hidden_state = last_hidden_state_forward(
             self.model, inputs, ss="viennarna", tokenizer=self.tokenizer
         )
 
@@ -233,27 +251,30 @@ class OmniGenomeEncoderModelForTokenRegressionWith2DStructure(
         return outputs
 
 
-class OmniGenomeEncoderModelForSequenceRegressionWith2DStructure(
-    OmniGenomeEncoderModelForSequenceRegression
+class OmniGenomeModelForSequenceRegressionWith2DStructure(
+    OmniGenomeModelForSequenceRegression
 ):
-    def __init__(self, config, base_model, tokenizer, *args, **kwargs):
-        super().__init__(config, base_model, tokenizer, *args, **kwargs)
-        self.metadata[
-            "model_name"
-        ] = "OmniGenomeEncoderModelForSequenceRegressionWith2DStructure"
-        self.cat_layer = torch.nn.Linear(config.hidden_size * 2, config.hidden_size)
+    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+        self.metadata["model_name"] = self.__class__.__name__
+
+        self.cat_layer = torch.nn.Linear(
+            self.config.hidden_size * 2, self.config.hidden_size
+        )
         self.conv1d = torch.nn.Conv1d(
-            in_channels=config.hidden_size * 2,
-            out_channels=config.hidden_size,
+            in_channels=self.config.hidden_size * 2,
+            out_channels=self.config.hidden_size,
             kernel_size=1,
             stride=1,
             padding=0,
         )
 
-        self.classifier = torch.nn.Linear(config.hidden_size, config.num_labels)
+        self.classifier = torch.nn.Linear(
+            self.config.hidden_size, self.config.num_labels
+        )
 
     def forward(self, inputs):
-        last_hidden_state, ss_last_hidden_state = extract_last_hidden_state(
+        last_hidden_state, ss_last_hidden_state = last_hidden_state_forward(
             self.model, inputs, ss="viennarna", tokenizer=self.tokenizer
         )
 
@@ -268,197 +289,6 @@ class OmniGenomeEncoderModelForSequenceRegressionWith2DStructure(
         last_hidden_state = self.dropout(last_hidden_state)
         last_hidden_state = self.activation(last_hidden_state)
         logits = self.classifier(last_hidden_state)
-        outputs = {
-            "logits": logits,
-            "last_hidden_state": last_hidden_state,
-            "ss_last_hidden_state": ss_last_hidden_state,
-        }
-        return outputs
-
-
-class OmniGenomeDecoderModelForTokenRegression(
-    OmniGenomeEncoderModelForTokenRegression
-):
-    def __init__(self, config, base_model, tokenizer, *args, **kwargs):
-        if hasattr(config, "n_embd"):
-            config.hidden_size = config.n_embd
-        elif hasattr(config, "d_model"):
-            config.hidden_size = config.d_model
-        elif hasattr(config, "hidden_size"):
-            config.hidden_size = config.hidden_size
-        else:
-            raise RuntimeError(
-                "The hidden size of the model is not found in the config."
-            )
-
-        super().__init__(config, base_model, tokenizer, *args, **kwargs)
-        self.metadata["model_name"] = "OmniGenomeDecoderModelForTokenRegression"
-        self.classifier = torch.nn.Linear(config.hidden_size, config.num_labels)
-
-    def forward(self, inputs):
-        input_ids = inputs["input_ids"]
-        last_hidden_state = extract_last_hidden_state(self.model, (input_ids, None))
-        last_hidden_state = self.dropout(last_hidden_state)
-        last_hidden_state = self.activation(last_hidden_state)
-        logits = self.classifier(last_hidden_state)
-        sequence_lengths = input_ids.ne(self.config.pad_token_id).sum(dim=-1) - 1
-        pooled_logits = logits[
-            torch.arange(input_ids.size(0), device=logits.device), sequence_lengths
-        ]
-        outputs = {"logits": pooled_logits, "last_hidden_state": last_hidden_state}
-        return outputs
-
-
-class OmniGenomeDecoderModelForSequenceRegression(
-    OmniGenomeEncoderModelForSequenceRegression
-):
-    def __init__(self, config, base_model, tokenizer, *args, **kwargs):
-        if hasattr(config, "n_embd"):
-            config.hidden_size = config.n_embd
-        elif hasattr(config, "d_model"):
-            config.hidden_size = config.d_model
-        elif hasattr(config, "hidden_size"):
-            config.hidden_size = config.hidden_size
-        else:
-            raise RuntimeError(
-                "The hidden size of the model is not found in the config."
-            )
-
-        super().__init__(config, base_model, tokenizer, *args, **kwargs)
-        self.metadata["model_name"] = "OmniGenomeDecoderModelForSequenceRegression"
-        self.pooler = BertPooler(config)
-        self.classifier = torch.nn.Linear(config.hidden_size, config.num_labels)
-
-    def forward(self, inputs):
-        input_ids = inputs["input_ids"]
-        last_hidden_state = extract_last_hidden_state(self.model, (input_ids, None))
-        last_hidden_state = self.dropout(last_hidden_state)
-        last_hidden_state = self.activation(last_hidden_state)
-        last_hidden_state = self.pooler(last_hidden_state)
-        logits = self.classifier(last_hidden_state)
-        outputs = {"logits": logits, "last_hidden_state": last_hidden_state}
-        return outputs
-
-
-class OmniGenomeDecoderModelForTokenRegressionWith2DStructure(
-    OmniGenomeEncoderModelForTokenRegression
-):
-    def __init__(self, config, base_model, tokenizer, *args, **kwargs):
-        if hasattr(config, "n_embd"):
-            config.hidden_size = config.n_embd
-        elif hasattr(config, "d_model"):
-            config.hidden_size = config.d_model
-        elif hasattr(config, "hidden_size"):
-            config.hidden_size = config.hidden_size
-        else:
-            raise RuntimeError(
-                "The hidden size of the model is not found in the config."
-            )
-
-        super().__init__(config, base_model, tokenizer, *args, **kwargs)
-        self.metadata[
-            "model_name"
-        ] = "OmniGenomeDecoderModelForTokenRegressionWith2DStructure"
-        self.cat_layer = torch.nn.Linear(config.hidden_size * 2, config.hidden_size)
-        self.conv1d = torch.nn.Conv1d(
-            in_channels=config.hidden_size * 2,
-            out_channels=config.hidden_size,
-            kernel_size=1,
-            stride=1,
-            padding=0,
-        )
-
-        self.pooler = BertPooler(config)
-        self.classifier = torch.nn.Linear(config.hidden_size, config.num_labels)
-
-    def forward(self, inputs):
-        input_ids = inputs["input_ids"]
-        last_hidden_state, ss_last_hidden_state = extract_last_hidden_state(
-            self.model, (input_ids, None), ss="viennarna", tokenizer=self.tokenizer
-        )
-
-        cat_last_hidden_state = torch.cat(
-            [last_hidden_state, ss_last_hidden_state], dim=-1
-        )
-        conv_output = self.conv1d(cat_last_hidden_state.transpose(1, 2)).transpose(1, 2)
-        last_hidden_state = self.cat_layer(
-            torch.cat([last_hidden_state, conv_output], dim=-1)
-        )
-
-        sequence_lengths = input_ids.ne(self.config.pad_token_id).sum(dim=-1) - 1
-        last_hidden_state = last_hidden_state[
-            torch.arange(input_ids.size(0), device=last_hidden_state.device),
-            sequence_lengths,
-        ]
-        last_hidden_state = self.dropout(last_hidden_state)
-        last_hidden_state = self.activation(last_hidden_state)
-        logits = self.classifier(last_hidden_state)
-        logits = self.activation(logits)
-
-        outputs = {
-            "logits": logits,
-            "last_hidden_state": last_hidden_state,
-            "ss_last_hidden_state": ss_last_hidden_state,
-        }
-        return outputs
-
-
-class OmniGenomeDecoderModelForSequenceRegressionWith2DStructure(
-    OmniGenomeEncoderModelForSequenceRegression
-):
-    def __init__(self, config, base_model, tokenizer, *args, **kwargs):
-        if hasattr(config, "n_embd"):
-            config.hidden_size = config.n_embd
-        elif hasattr(config, "d_model"):
-            config.hidden_size = config.d_model
-        elif hasattr(config, "hidden_size"):
-            config.hidden_size = config.hidden_size
-        else:
-            raise RuntimeError(
-                "The hidden size of the model is not found in the config."
-            )
-
-        super().__init__(config, base_model, tokenizer, *args, **kwargs)
-        self.metadata[
-            "model_name"
-        ] = "OmniGenomeDecoderModelForSequenceRegressionWith2DStructure"
-        self.cat_layer = torch.nn.Linear(config.hidden_size * 2, config.hidden_size)
-        self.conv1d = torch.nn.Conv1d(
-            in_channels=config.hidden_size * 2,
-            out_channels=config.hidden_size,
-            kernel_size=1,
-            stride=1,
-            padding=0,
-        )
-
-        self.pooler = BertPooler(config)
-        self.classifier = torch.nn.Linear(config.hidden_size, config.num_labels)
-
-    def forward(self, inputs):
-        input_ids = inputs["input_ids"]
-        last_hidden_state, ss_last_hidden_state = extract_last_hidden_state(
-            self.model, (input_ids, None), ss="viennarna", tokenizer=self.tokenizer
-        )
-
-        cat_last_hidden_state = torch.cat(
-            [last_hidden_state, ss_last_hidden_state], dim=-1
-        )
-        conv_output = self.conv1d(cat_last_hidden_state.transpose(1, 2)).transpose(1, 2)
-
-        last_hidden_state = self.cat_layer(
-            torch.cat([last_hidden_state, conv_output], dim=-1)
-        )
-
-        sequence_lengths = input_ids.ne(self.config.pad_token_id).sum(dim=-1) - 1
-        last_hidden_state = last_hidden_state[
-            torch.arange(input_ids.size(0), device=last_hidden_state.device),
-            sequence_lengths,
-        ]
-        last_hidden_state = self.dropout(last_hidden_state)
-        last_hidden_state = self.activation(last_hidden_state)
-        last_hidden_state = self.pooler(last_hidden_state)
-        logits = self.classifier(last_hidden_state)
-        logits = self.activation(logits)
         outputs = {
             "logits": logits,
             "last_hidden_state": last_hidden_state,

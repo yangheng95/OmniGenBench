@@ -99,7 +99,11 @@ class OmniGenomeDatasetForSequenceClassification(OmniGenomeDataset):
         if isinstance(instance, str):
             sequence = instance
         elif isinstance(instance, dict):
-            sequence = instance.get("seq", None)
+            sequence = (
+                instance.get("seq", None)
+                if "seq" in instance
+                else instance.get("sequence", None)
+            )
             label = instance.get("label", None)
             labels = instance.get("labels", None)
             labels = labels if labels is not None else label
@@ -145,7 +149,11 @@ class OmniGenomeDatasetForTokenRegression(OmniGenomeDataset):
         if isinstance(instance, str):
             sequence = instance
         elif isinstance(instance, dict):
-            sequence = instance.get("seq", None)
+            sequence = (
+                instance.get("seq", None)
+                if "seq" in instance
+                else instance.get("sequence", None)
+            )
             label = instance.get("label", None)
             labels = instance.get("labels", None)
             labels = labels if labels is not None else label
@@ -214,7 +222,11 @@ class OmniGenomeDatasetForSequenceRegression(OmniGenomeDataset):
         if isinstance(instance, str):
             sequence = instance
         elif isinstance(instance, dict):
-            sequence = instance.get("seq", None)
+            sequence = (
+                instance.get("seq", None)
+                if "seq" in instance
+                else instance.get("sequence", None)
+            )
             label = instance.get("label", None)
             labels = instance.get("labels", None)
             labels = labels if labels is not None else label

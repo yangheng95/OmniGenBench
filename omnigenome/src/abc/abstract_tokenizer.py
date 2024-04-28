@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# file: tokenizer_wrapper.py
+# file: omnigenome_wrapper.py
 # time: 18:37 06/04/2024
 # author: YANG, HENG <hy345@exeter.ac.uk> (杨恒)
 # github: https://github.com/yangheng95
@@ -13,9 +13,7 @@ from ..misc.utils import env_meta_info
 
 
 class OmniGenomeTokenizer:
-    def __init__(self, base_tokenizer=None, max_length=None, **kwargs):
-        super().__init__(**kwargs)
-
+    def __init__(self, base_tokenizer=None, max_length=512, **kwargs):
         self.metadata = env_meta_info()
 
         self.base_tokenizer = base_tokenizer
@@ -28,12 +26,25 @@ class OmniGenomeTokenizer:
         self.t2u = kwargs.get("t2u", False)
         self.add_whitespace = kwargs.get("add_whitespace", False)
 
+        for key, value in base_tokenizer.__dict__.items():
+            self.key = value
+
     @staticmethod
     def from_pretrained(model_name_or_path, **kwargs):
-        self = OmniGenomeTokenizer(
-            AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
-        )
-        return self
+        import importlib
+
+        try:
+            wrapper = importlib.import_module(
+                f"{model_name_or_path}.omnigenome_wrapper".replace("/", ".")
+            )
+            tokenizer = wrapper.Tokenizer(
+                AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
+            )
+        except ImportError:
+            tokenizer = OmniGenomeTokenizer(
+                AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
+            )
+        return tokenizer
 
     def save_pretrained(self, save_directory):
         self.base_tokenizer.save_pretrained(save_directory)
@@ -51,7 +62,7 @@ class OmniGenomeTokenizer:
             max_length=max_length,
             return_tensors=return_tensor,
             *args,
-            **kwargs
+            **kwargs,
         )
 
     def tokenize(self, sequence, **kwargs):

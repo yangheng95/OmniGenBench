@@ -9,6 +9,7 @@
 import json
 import os
 
+import autocuda
 import torch
 from transformers import AutoConfig, AutoModel
 
@@ -29,7 +30,7 @@ class ModelHub:
         return model, model.tokenizer
 
     @staticmethod
-    def load(model_name_or_path, local_only=False, **kwargs):
+    def load(model_name_or_path, local_only=False, device=None, **kwargs):
         if isinstance(model_name_or_path, str) and os.path.exists(model_name_or_path):
             path = model_name_or_path
         elif isinstance(model_name_or_path, str) and not os.path.exists(
@@ -54,38 +55,16 @@ class ModelHub:
         with open(f"{path}/tokenizer.pkl", "rb") as f:
             tokenizer = dill.load(f)
 
-        model = model_cls(config, base_model, tokenizer, **kwargs)
+        model = model_cls(base_model, tokenizer, label2id=config.label2id, **kwargs)
         with open(f"{path}/pytorch_model.bin", "rb") as f:
             model.load_state_dict(
                 torch.load(f, map_location=kwargs.get("device", "cpu")), strict=True
             )
+        if device is None:
+            model.to(autocuda.auto_cuda())
+        else:
+            model.to(device)
         return model
-
-    @staticmethod
-    def save(self, path, overwrite=False, **kwargs):
-        import dill
-
-        if os.path.exists(path) and not overwrite:
-            raise FileExistsError(
-                f"The path {path} already exists, please set overwrite=True to overwrite it."
-            )
-
-        if not os.path.exists(path):
-            os.makedirs(path)
-
-        device = self.model.device
-
-        self.model.to("cpu")
-        with open(f"{path}/model.pkl", "wb") as f:
-            dill.dump(self, f)
-        with open(f"{path}/tokenizer.pkl", "wb") as f:
-            dill.dump(self.tokenizer, f)
-        self.config.metadata = self.metadata
-        self.config.save_pretrained(path)
-
-        self.model.to(device)
-
-        fprint(f"The model and tokenizer has been saved to {path}.")
 
     def available_models(
         self, model_name_or_path=None, local_only=False, repo="", **kwargs

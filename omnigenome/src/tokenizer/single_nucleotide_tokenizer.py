@@ -19,20 +19,32 @@ class OmniSingleNucleotideTokenizer(OmniGenomeTokenizer):
         self.metadata["tokenizer_name"] = self.__class__.__name__
 
     def __call__(self, sequence, **kwargs):
-        sequence_tokens = self.tokenize(sequence)
+        if self.u2t:
+            sequence = "".join([seq.replace("U", "T").upper() for seq in sequence])
+        if self.t2u:
+            sequence = "".join([seq.replace("T", "U").upper() for seq in sequence])
+        if self.add_whitespace:
+            sequence = " ".join(list(sequence))
+        sequence_tokens = self.tokenize(sequence)[
+            : kwargs.get("max_length", self.max_length) - 2
+        ]
         tokenized_inputs = {
             "input_ids": [],
             "attention_mask": [],
         }
-        bos_id, eos_id = self.base_tokenizer("")["input_ids"]
-
+        bos_id = (
+            self.base_tokenizer.bos_token_id
+            if self.base_tokenizer.bos_token_id is not None
+            else self.base_tokenizer.cls_token_id
+        )
+        eos_id = (
+            self.base_tokenizer.eos_token_id
+            if self.base_tokenizer.eos_token_id is not None
+            else self.base_tokenizer.sep_token_id
+        )
         for tokens in sequence_tokens:
             tokenized_inputs["input_ids"].append(
-                [bos_id]
-                + self.base_tokenizer.convert_tokens_to_ids(
-                    tokens[: kwargs.get("max_length", self.max_length) - 2]
-                )
-                + [eos_id]
+                [bos_id] + self.base_tokenizer.convert_tokens_to_ids(tokens) + [eos_id]
             )
             tokenized_inputs["attention_mask"].append(
                 [1] * len(tokenized_inputs["input_ids"][-1])
@@ -41,7 +53,9 @@ class OmniSingleNucleotideTokenizer(OmniGenomeTokenizer):
         for i, ids in enumerate(tokenized_inputs["input_ids"]):
             if ids.count(self.base_tokenizer.unk_token_id) / len(ids) > 0.1:
                 warnings.warn(
-                    f"Unknown tokens are more than 10% in the {i}th sequence, please check the tokenization process."
+                    f"Unknown tokens are more than "
+                    f"{ids.count(self.base_tokenizer.unk_token_id) / len(ids)}% in the {i}-th sequence, "
+                    f"please check the tokenization process."
                 )
         max_length = max(len(ids) for ids in tokenized_inputs["input_ids"])
         tokenized_inputs = self.base_tokenizer.pad(

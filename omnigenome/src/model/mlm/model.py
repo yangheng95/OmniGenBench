@@ -14,15 +14,19 @@ from ...abc.abstract_model import OmniGenomeModel
 
 
 class OmniGenomeEncoderModelForMLM(OmniGenomeModel):
-    def __init__(self, config, base_model, tokenizer, *args, **kwargs):
-        super().__init__(config, base_model, tokenizer, *args, **kwargs)
-        self.metadata["model_name"] = "OmniGenomeEncoderModelForMLM"
-        if not hasattr(base_model, "lm_head"):
+    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+        self.metadata["model_name"] = self.__class__.__name__
+        if not hasattr(self.model, "lm_head"):
             raise ValueError(
                 "The model does not have a language model head, which is required for MLM."
                 "Please use a model that supports masked language modeling."
             )
-        self.classifier = torch.nn.Linear(config.hidden_size, config.num_labels)
+        self.classifier = torch.nn.Linear(
+            self.config.hidden_size, self.config.num_labels
+        )
+
+        self.loss_fn = torch.nn.CrossEntropyLoss()
 
     def forward(self, inputs):
         outputs = self.model(**inputs, output_hidden_states=True)

@@ -56,8 +56,6 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
         super(OmniGenomeDataset, self).__init__()
         self.metadata = env_meta_info()
 
-        for key, value in kwargs.items():
-            self.metadata[key] = value
         self.tokenizer = tokenizer
 
         if max_length is not None:
@@ -66,8 +64,8 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
             )
             self.max_length = max_length
         elif (
-            hasattr(self.tokenizer, "max_length")
-            and self.tokenizer.max_length is not None
+                hasattr(self.tokenizer, "max_length")
+                and self.tokenizer.max_length is not None
         ):
             fprint(
                 f"Detected max_length={self.tokenizer.max_length} from the tokenizer."
@@ -80,18 +78,17 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
         self.examples = []
         self.data = []
 
-        if os.path.exists(data_source):
+        if data_source is not None and os.path.exists(data_source):
             fprint(f"Loading data from {data_source}...")
             self.load_data_source(data_source, **kwargs)
-        else:
-            raise FileNotFoundError(f"The file {data_source} does not exist.")
 
-        for example in tqdm.tqdm(self.examples):
-            self.data.append(self.prepare_input(example))
+            for example in tqdm.tqdm(self.examples):
+                self.data.append(self.prepare_input(example))
 
-        self._pad_and_truncate()
-        self.data = covert_input_to_tensor(self.data)
-        self._post_processing()
+            if self.examples:
+                self._post_processing()
+                self._pad_and_truncate()
+                self.data = covert_input_to_tensor(self.data)
 
     def to(self, device):
         for data_item in self.data:
@@ -105,8 +102,18 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
             pad_token_id = self.tokenizer.pad_token_id
         else:
             pad_token_id = self.tokenizer.base_tokenizer.pad_token_id
-        max_length = max(
-            torch.sum(data_item["input_ids"] != pad_token_id) for data_item in self.data
+        max_length = min(
+            max(
+                max(
+                    torch.sum(data_item["input_ids"] != pad_token_id)
+                    for data_item in self.data
+                ),
+                max(
+                    torch.sum(data_item["labels"] != -100)
+                    for data_item in self.data
+                )
+            ),
+            self.max_length,
         )
 
         for data_item in self.data:
@@ -123,8 +130,8 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                                 )
                             else:
                                 _pad_value = (
-                                    self.tokenizer.base_tokenizer.pad_token_id
-                                    * torch.ones((padding_length, value.size(1)))
+                                        self.tokenizer.base_tokenizer.pad_token_id
+                                        * torch.ones((padding_length, value.size(1)))
                                 )
                         elif key == "attention_mask":
                             _pad_value = torch.zeros((padding_length, value.size(1)))
@@ -151,8 +158,8 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                                 )
                             else:
                                 _pad_value = (
-                                    self.tokenizer.base_tokenizer.pad_token_id
-                                    * torch.ones((padding_length,))
+                                        self.tokenizer.base_tokenizer.pad_token_id
+                                        * torch.ones((padding_length,))
                                 )
                         elif key == "attention_mask":
                             _pad_value = torch.zeros((padding_length,))

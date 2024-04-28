@@ -22,23 +22,31 @@ class OmniKmersTokenizer(OmniGenomeTokenizer):
 
     def __call__(self, sequence, **kwargs):
         if self.u2t:
-            sequence = sequence.replace("U", "T")
-        if self.add_whitespace:
-            sequence = " ".join(list(sequence))
-        sequence_tokens = self.tokenize(sequence)
+            sequence = "".join([seq.replace("U", "T").upper() for seq in sequence])
+        if self.t2u:
+            sequence = "".join([seq.replace("T", "U").upper() for seq in sequence])
+
+        sequence_tokens = self.tokenize(sequence)[
+            : kwargs.get("max_length", self.max_length) - 2
+        ]
         tokenized_inputs = {
             "input_ids": [],
             "attention_mask": [],
         }
-        bos_id, eos_id = self.base_tokenizer("")["input_ids"]
+        bos_id = (
+            self.base_tokenizer.bos_token_id
+            if self.base_tokenizer.bos_token_id is not None
+            else self.base_tokenizer.cls_token_id
+        )
+        eos_id = (
+            self.base_tokenizer.eos_token_id
+            if self.base_tokenizer.eos_token_id is not None
+            else self.base_tokenizer.sep_token_id
+        )
 
         for tokens in sequence_tokens:
             tokenized_inputs["input_ids"].append(
-                [bos_id]
-                + self.base_tokenizer.convert_tokens_to_ids(
-                    tokens[: kwargs.get("max_length", self.max_length) - 2]
-                )
-                + [eos_id]
+                [bos_id] + self.base_tokenizer.convert_tokens_to_ids(tokens) + [eos_id]
             )
             tokenized_inputs["attention_mask"].append(
                 [1] * len(tokenized_inputs["input_ids"][-1])

@@ -7,12 +7,15 @@
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
 import json
+import multiprocessing
 import os
+import shutil
 import warnings
 
+import findfile
 import torch
 
-from transformers import AutoModel, AutoConfig, AutoTokenizer
+from transformers import AutoModel, AutoConfig, AutoTokenizer, BatchEncoding
 
 from ..misc.utils import fprint, env_meta_info
 
@@ -26,7 +29,7 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-def extract_last_hidden_state(model, inputs, ss=None, tokenizer=None):
+def last_hidden_state_forward(model, inputs, ss=None, tokenizer=None):
     """
 
     :param model: The model to extract the last hidden state from
@@ -45,10 +48,16 @@ def extract_last_hidden_state(model, inputs, ss=None, tokenizer=None):
     ], f'ss should be one of [None, "viennarna", "model"], got {ss}'
     if isinstance(inputs, tuple):
         input_ids = inputs[0]
-        attention_mask = inputs[1]
-    else:
+        attention_mask = inputs[1] if len(inputs) > 1 else None
+    elif isinstance(inputs, BatchEncoding) or isinstance(inputs, dict):
         input_ids = inputs["input_ids"]
-        attention_mask = inputs["attention_mask"]
+        attention_mask = (
+            inputs["attention_mask"] if "attention_mask" in inputs else None
+        )
+    else:
+        raise ValueError(
+            f"The inputs should be a tuple, BatchEncoding or a dictionary-like object, got {type(inputs)}."
+        )
 
     try:
         outputs = model(
@@ -56,6 +65,7 @@ def extract_last_hidden_state(model, inputs, ss=None, tokenizer=None):
             attention_mask=attention_mask,
             output_hidden_states=True,
         )
+
     except Exception as e:
         # For autoregressive models, the attention_mask is not required
         outputs = model(
@@ -63,30 +73,46 @@ def extract_last_hidden_state(model, inputs, ss=None, tokenizer=None):
             output_hidden_states=True,
         )
 
-    assert (
-        "last_hidden_state" in outputs
-    ), f"last_hidden_state not found in the outputs from the {model.__class__.__name__}"
-    last_hidden_state = outputs["last_hidden_state"]
+    if not hasattr(outputs, "last_hidden_state"):
+        warnings.warn(
+            f"last_hidden_state not found in the outputs from the {model.__class__.__name__} model."
+        )
+
+    if hasattr(outputs, "last_hidden_state"):
+        last_hidden_state = outputs.last_hidden_state
+    elif hasattr(outputs, "hidden_states"):
+        last_hidden_state = outputs.hidden_states[-1]
+    elif (
+        isinstance(outputs, list)
+        or isinstance(outputs, tuple)
+        or isinstance(outputs, torch.Tensor)
+    ):
+        # For some models like DNABERT-2, the outputs is a list, tuple of tensors
+        last_hidden_state = outputs[-1] if len(outputs[-1].shape) == 3 else outputs[0]
+    else:
+        raise ValueError(
+            f"Cannot find the last hidden state in the outputs from the {model.__class__.__name__} \
+            model, please check the model architecture."
+        )
 
     if ss == "viennarna":
-        sequences = tokenizer.base_tokenizer.batch_decode(
-            input_ids, skip_special_tokens=True
-        )
-        structures = [rna2structure.fold(seq.replace(" ", ""))[0] for seq in sequences]
+        if hasattr(tokenizer, "base_tokenizer"):
+            tokenizer = tokenizer.base_tokenizer
+        sequences = tokenizer.batch_decode(input_ids, skip_special_tokens=True)
+        structures = rna2structure.fold([seq.replace(" ", "") for seq in sequences])
         tokenized_struct = tokenizer(
             structures,
             padding="max_length",
             max_length=input_ids.shape[1],
             truncation=True,
             return_tensors="pt",
-            add_special_tokens=False,
+            add_special_tokens=True,
         )
         tokenized_struct.to(input_ids.device)
         ss_last_hidden_state = model(
             **tokenized_struct,
             output_hidden_states=True,
         )["last_hidden_state"]
-        rna2structure.update_cache_file()
     elif ss == "model":
         raise NotImplementedError(
             "The model-based secondary structure information is not implemented yet."
@@ -104,20 +130,68 @@ def extract_last_hidden_state(model, inputs, ss=None, tokenizer=None):
 
 
 class OmniGenomeModel(torch.nn.Module):
-    def __init__(self, config, base_model, tokenizer, *args, **kwargs):
+    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
+        self.loss_fn = None
+        if isinstance(config_or_model_model, str):
+            base_model = AutoModel.from_pretrained(
+                config_or_model_model, trust_remote_code=True
+            )
+            config = AutoConfig.from_pretrained(
+                config_or_model_model, trust_remote_code=True
+            )
+        elif isinstance(config_or_model_model, torch.nn.Module):
+            base_model = config_or_model_model
+            config = base_model.config
+        elif isinstance(config_or_model_model, AutoConfig):
+            config = config_or_model_model
+            base_model = AutoModel.from_config(config)
+        else:
+            raise ValueError(
+                "The config_or_model_model should be either a string, a torch.nn.Module or a AutoConfig object."
+            )
         label2id = kwargs.pop("label2id", None)
+        trust_remote_code = kwargs.pop("trust_remote_code", True)
+        num_labels = kwargs.pop("num_labels", None)
+
+        # The metadata of the model
+        self.metadata = env_meta_info()
+        self.metadata["model_cls"] = self.__class__.__name__
+
+        # do not change the order of the following lines
+        super().__init__(*args, **kwargs)
+
+        # The config of the model
         if label2id is not None:
             config.label2id = label2id
             config.id2label = {v: k for k, v in config.label2id.items()}
-            self.num_labels = len(config.label2id)
+            config.num_labels = (
+                len(config.label2id) if num_labels is None else num_labels
+            )
+        else:
+            config.num_labels = num_labels
+            warnings.warn(
+                "The number of labels is not provided, the model will use the default value 1."
+            )
+        if hasattr(config, "n_embd"):
+            config.hidden_size = config.n_embd
+        elif hasattr(config, "d_model"):
+            config.hidden_size = config.d_model
+        elif hasattr(config, "hidden_size"):
+            config.hidden_size = config.hidden_size
+        else:
+            raise RuntimeError(
+                "The hidden size of the model is not found in the config."
+            )
 
-        trust_remote_code = kwargs.pop("trust_remote_code", True)
+        # The tokenizer of the model
+        self.tokenizer = tokenizer
+        if hasattr(self.tokenizer, "base_tokenizer"):
+            self.pad_token_id = self.tokenizer.base_tokenizer.pad_token_id
+        else:
+            self.pad_token_id = self.tokenizer.pad_token_id
 
-        super().__init__(*args, **kwargs)
-
-        self.metadata = env_meta_info()
-        self.metadata["model_cls"] = self.__class__.__name__
-        self.config = config
+        self.dropout = torch.nn.Dropout(kwargs.get("dropout", 0.0))
+        self.activation = torch.nn.Tanh()
 
         if isinstance(base_model, torch.nn.Module):
             self.model = base_model
@@ -126,20 +200,9 @@ class OmniGenomeModel(torch.nn.Module):
                 base_model, trust_remote_code=trust_remote_code
             )
 
+        # Update the config
+        self.config = config
         self.model.config = config
-
-        self.tokenizer = tokenizer
-        if hasattr(self.tokenizer, "base_tokenizer"):
-            self.pad_token_id = self.tokenizer.base_tokenizer.pad_token_id
-        else:
-            self.pad_token_id = self.tokenizer.pad_token_id
-
-        self.num_labels = config.num_labels
-        self.dropout = torch.nn.Dropout(kwargs.get("dropout", 0.0))
-        self.activation = torch.nn.Tanh()
-
-        for key, value in kwargs.items():
-            self.metadata[key] = value
 
         fprint(
             f"The trainable parameters of the {self.model.__class__.__name__} model are: {count_parameters(self.model) / 1e6:.2f} Millions"
@@ -149,6 +212,9 @@ class OmniGenomeModel(torch.nn.Module):
         raise NotImplementedError(
             "The loss_function() function should be implemented for your model."
         )
+
+    def set_loss_fn(self, loss_function):
+        self.loss_fn = loss_function
 
     def predict(self, inputs, **kwargs):
         raise NotImplementedError(
@@ -161,7 +227,7 @@ class OmniGenomeModel(torch.nn.Module):
         )
 
     def forward(self, inputs):
-        last_hidden_state = extract_last_hidden_state(self.model, inputs)
+        last_hidden_state = last_hidden_state_forward(self.model, inputs)
         last_hidden_state = self.dropout(last_hidden_state)
         last_hidden_state = self.activation(last_hidden_state)
         outputs = {"last_hidden_state": last_hidden_state}
@@ -205,7 +271,7 @@ class OmniGenomeModel(torch.nn.Module):
                 " and have either 'loss', or 'logits' and 'labels' attribute."
             )
 
-    def save(self, path, overwrite=False, **kwargs):
+    def save(self, path, overwrite=False, dtype=torch.float16, **kwargs):
         self.eval()
         import dill
 
@@ -217,9 +283,16 @@ class OmniGenomeModel(torch.nn.Module):
         if not os.path.exists(path):
             os.makedirs(path)
 
-        device = self.model.device
+        for file in findfile.find_files(
+            self.config.name_or_path,
+            and_key=[],
+            exclude_key=["pytorch_model", "model", "safetensors"],
+        ):
+            shutil.copyfile(file, f"{path}/{os.path.basename(file)}")
 
-        self.model.to("cpu")
+        _device = self.model.device
+        _dtype = self.model.dtype
+        self.model.to(dtype).to("cpu")
         with open(f"{path}/tokenizer.pkl", "wb") as f:
             dill.dump(self.tokenizer, f)
         with open(f"{path}/metadata.json", "w", encoding="utf8") as f:
@@ -229,7 +302,8 @@ class OmniGenomeModel(torch.nn.Module):
         )  # do not remove this line, used to save customed model scripts
         with open(f"{path}/pytorch_model.bin", "wb") as f:
             torch.save(self.state_dict(), f)
-        self.model.to(device)
+
+        self.model.to(_dtype).to(_device)
         fprint(f"The model is saved to {path}.")
 
     def load(self, path, **kwargs):
@@ -256,12 +330,16 @@ class OmniGenomeModel(torch.nn.Module):
             )
         return self
 
-    def load_tokenizer(self, path):
-        import dill
-
-        with open(f"{path}/tokenizer.pkl", "rb") as f:
-            tokenizer = dill.load(f)
-        return tokenizer
+    def _is_causal_lm(self):
+        if (
+            hasattr(self.config, "architectures")
+            and "CausalLM" in str(self.config.architectures)
+        ) or (
+            hasattr(self.config, "auto_map") and "CausalLM" in str(self.config.auto_map)
+        ):
+            return True
+        else:
+            return False
 
     @staticmethod
     def from_pretrained(model_name_or_path, tokenizer, *args, **kwargs):

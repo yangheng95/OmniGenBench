@@ -8,7 +8,7 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 __name__ = "OmniGenome"
-__version__ = "0.0.1beta1"
+__version__ = "0.0.2alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "MIT"
@@ -35,6 +35,8 @@ from .bench.bench_hub.bench_hub import BenchHub
 from .bench.auto_bench.auto_bench import AutoBench
 from .bench.auto_bench.auto_bench import AutoBenchConfig
 
+from .src.config import BenchConfig
+
 from .src.misc import utils as utils
 
 from .src.trainer.trainer import Trainer
@@ -47,22 +49,14 @@ from .src import tokenizer as tokenizer
 from .src import dataset as dataset
 
 from .src.model import (
-    OmniGenomeEncoderModelForSequenceClassification,
-    OmniGenomeEncoderModelForTokenClassification,
-    OmniGenomeEncoderModelForSequenceClassificationWith2DStructure,
-    OmniGenomeEncoderModelForTokenClassificationWith2DStructure,
-    OmniGenomeDecoderModelForSequenceClassification,
-    OmniGenomeDecoderModelForTokenClassification,
-    OmniGenomeDecoderModelForSequenceClassificationWith2DStructure,
-    OmniGenomeDecoderModelForTokenClassificationWith2DStructure,
-    OmniGenomeEncoderModelForSequenceRegression,
-    OmniGenomeEncoderModelForTokenRegression,
-    OmniGenomeEncoderModelForSequenceRegressionWith2DStructure,
-    OmniGenomeEncoderModelForTokenRegressionWith2DStructure,
-    OmniGenomeDecoderModelForSequenceRegression,
-    OmniGenomeDecoderModelForTokenRegression,
-    OmniGenomeDecoderModelForSequenceRegressionWith2DStructure,
-    OmniGenomeDecoderModelForTokenRegressionWith2DStructure,
+    OmniGenomeModelForSequenceClassification,
+    OmniGenomeModelForTokenClassification,
+    OmniGenomeModelForSequenceClassificationWith2DStructure,
+    OmniGenomeModelForTokenClassificationWith2DStructure,
+    OmniGenomeModelForSequenceRegression,
+    OmniGenomeModelForTokenRegression,
+    OmniGenomeModelForSequenceRegressionWith2DStructure,
+    OmniGenomeModelForTokenRegressionWith2DStructure,
     OmniGenomeEncoderModelForMLM,
     OmniGenomeEncoderModelForSeq2Seq,
 )
@@ -94,22 +88,14 @@ __all__ = [
     "model",
     "tokenizer",
     "dataset",
-    "OmniGenomeEncoderModelForSequenceClassification",
-    "OmniGenomeEncoderModelForTokenClassification",
-    "OmniGenomeEncoderModelForSequenceClassificationWith2DStructure",
-    "OmniGenomeEncoderModelForTokenClassificationWith2DStructure",
-    "OmniGenomeDecoderModelForSequenceClassification",
-    "OmniGenomeDecoderModelForTokenClassification",
-    "OmniGenomeDecoderModelForSequenceClassificationWith2DStructure",
-    "OmniGenomeDecoderModelForTokenClassificationWith2DStructure",
-    "OmniGenomeEncoderModelForSequenceRegression",
-    "OmniGenomeEncoderModelForTokenRegression",
-    "OmniGenomeEncoderModelForSequenceRegressionWith2DStructure",
-    "OmniGenomeEncoderModelForTokenRegressionWith2DStructure",
-    "OmniGenomeDecoderModelForSequenceRegression",
-    "OmniGenomeDecoderModelForTokenRegression",
-    "OmniGenomeDecoderModelForSequenceRegressionWith2DStructure",
-    "OmniGenomeDecoderModelForTokenRegressionWith2DStructure",
+    "OmniGenomeModelForSequenceClassification",
+    "OmniGenomeModelForTokenClassification",
+    "OmniGenomeModelForSequenceClassificationWith2DStructure",
+    "OmniGenomeModelForTokenClassificationWith2DStructure",
+    "OmniGenomeModelForSequenceRegression",
+    "OmniGenomeModelForTokenRegression",
+    "OmniGenomeModelForSequenceRegressionWith2DStructure",
+    "OmniGenomeModelForTokenRegressionWith2DStructure",
     "OmniGenomeEncoderModelForMLM",
     "OmniGenomeEncoderModelForSeq2Seq",
     "OmniGenomeDatasetForTokenClassification",
@@ -121,4 +107,5 @@ __all__ = [
     "RankingMetric",
     "Trainer",
     "HFTrainer",
+    "BenchConfig",
 ]

@@ -6,7 +6,7 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
-
+import numpy as np
 from ..abc.abstract_tokenizer import OmniGenomeTokenizer
 from transformers import AutoTokenizer
 
@@ -15,15 +15,16 @@ def is_bpe_tokenization(tokens, threshold=0.1):
     if not tokens:
         return False
 
-    bpe_endings_count = sum(
-        1
-        for token in tokens
-        if token.contains("##") or token.contains("@@") or token.contains("▁")
-    )
+    # bpe_endings_count = sum(
+    #     1
+    #     for token in tokens
+    #     if token.startswith("##") or token.startswith("@@") or token.startswith("▁")
+    # )
+    # bpe_ratio = bpe_endings_count / len(tokens)
 
-    bpe_ratio = bpe_endings_count / len(tokens)
+    rmse = np.mean([len(token) ** 2 for token in tokens]) ** 0.5
 
-    return bpe_ratio >= threshold
+    return rmse >= threshold
 
 
 class OmniBPETokenizer(OmniGenomeTokenizer):
@@ -32,20 +33,30 @@ class OmniBPETokenizer(OmniGenomeTokenizer):
         self.metadata["tokenizer_name"] = self.__class__.__name__
 
     def __call__(self, sequence, **kwargs):
-        sequences = self.tokenize(sequence)
+        if self.u2t:
+            sequence = sequence.replace("U", "T")
+        if self.add_whitespace:
+            sequence = " ".join(list(sequence))
+
+        sequences = self.tokenize(sequence)[
+            : min(self.max_length, kwargs.get("max_length", 512)) - 2
+        ]
 
         if not is_bpe_tokenization(sequences):
             raise ValueError("The tokenizer seems not to be a BPE tokenizer.")
-
-        tokenized_inputs = self.base_tokenizer(
-            sequences,
-            padding="do_not_pad",
-            truncation=True,
-            max_length=self.max_length,
-            return_tensors="pt",
-            **kwargs
+        tokenized_inputs = dict()
+        tokenized_inputs["input_ids"] = self.base_tokenizer.convert_tokens_to_ids(
+            sequences
         )
+        tokenized_inputs["attention_mask"] = [1] * len(tokenized_inputs["input_ids"])
 
+        tokenized_inputs = self.base_tokenizer.pad(
+            tokenized_inputs,
+            padding=kwargs.get("padding", "max_length"),
+            max_length=min(self.max_length, kwargs.get("max_length", 512)),
+            return_attention_mask=kwargs.get("return_attention_mask", True),
+            return_tensors="pt",
+        )
         return tokenized_inputs
 
     @staticmethod
@@ -69,17 +80,3 @@ class OmniBPETokenizer(OmniGenomeTokenizer):
             self.base_tokenizer, "bpe"
         ), "The base tokenizer must be a BPE tokenizer."
         return self.base_tokenizer.decode(sequence, **kwargs)
-
-
-if __name__ == "__main__":
-    from transformers import AutoTokenizer
-
-    RNA = "ACGUAGGUAUCGUAGA"
-    base_tokenizer_name = "bert-base-cased"
-    # base_tokenizer_name = "facebook/esm2_t12_35M_UR50D"
-    base_tokenizer = AutoTokenizer.from_pretrained(base_tokenizer_name)
-    tokenizer = OmniBPETokenizer(base_tokenizer, max_length=512)
-    tokens = tokenizer.tokenize(RNA)
-    print(tokens)
-    tokenized_inputs = tokenizer(RNA)
-    print(tokenized_inputs)
