@@ -6,11 +6,11 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
+import multiprocessing
 import os
 import pickle
 import sys
 import time
-import multiprocessing
 
 import RNA
 
@@ -43,7 +43,7 @@ class RNA2StructureCache(dict):
         if self.cache_file is None or not os.path.exists(self.cache_file):
             self.cache = {}
         else:
-            print(f"Loading cache from {self.cache_file}...")
+            print(f"Initialize sequence to structure cache from {self.cache_file}...")
             with open(self.cache_file, "rb") as f:
                 self.cache = pickle.load(f)
 
@@ -61,7 +61,7 @@ class RNA2StructureCache(dict):
     def __repr__(self):
         return str(self.cache)
 
-    def fold(self, sequence, return_mfe=False, num_workers=None):
+    def fold(self, sequence, return_mfe=False, num_workers=1):
         if not isinstance(sequence, list):
             sequence = [sequence]
 
@@ -220,3 +220,15 @@ def fprint(*objects, sep=" ", end="\n", file=sys.stdout, flush=False):
         file=file,
         flush=flush,
     )
+
+
+def load_module_from_path(module_name, file_path):
+    import importlib
+
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except FileNotFoundError:
+        raise ImportError(f"Cannot find the module {module_name} from {file_path}.")
+    return module

@@ -8,10 +8,8 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 import torch
-from transformers import BatchEncoding
-from transformers.models.bert.modeling_bert import BertPooler
 
-from ...abc.abstract_model import OmniGenomeModel
+from ...abc.abstract_model import OmniGenomeModel, OmniGenomePooling
 from ...abc.abstract_model import last_hidden_state_forward
 
 
@@ -24,6 +22,7 @@ class OmniGenomeModelForTokenClassification(OmniGenomeModel):
             self.config.hidden_size, self.config.num_labels
         )
         self.loss_fn = torch.nn.CrossEntropyLoss()
+        self.model_info()
 
     def forward(self, inputs):
         last_hidden_state = last_hidden_state_forward(self.model, inputs)
@@ -35,18 +34,9 @@ class OmniGenomeModelForTokenClassification(OmniGenomeModel):
         return outputs
 
     def predict(self, sequence_or_inputs, **kwargs):
-        if not isinstance(sequence_or_inputs, BatchEncoding) and not isinstance(
-            sequence_or_inputs, dict
-        ):
-            inputs = self.tokenizer(sequence_or_inputs, return_tensors="pt", **kwargs)
-        else:
-            inputs = sequence_or_inputs
-        inputs = inputs.to(self.model.device)
-
-        with torch.no_grad():
-            outputs = self(inputs)
-        logits = outputs["logits"]
-        last_hidden_state = outputs["last_hidden_state"]
+        raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
+        logits = raw_outputs["logits"]
+        last_hidden_state = raw_outputs["last_hidden_state"]
 
         predictions = []
         for i in range(logits.shape[0]):
@@ -61,19 +51,18 @@ class OmniGenomeModelForTokenClassification(OmniGenomeModel):
         return outputs
 
     def inference(self, sequence_or_inputs, **kwargs):
-        inputs = self.tokenizer(sequence_or_inputs, return_tensors="pt", **kwargs)
-        inputs = inputs.to(self.model.device)
-
-        with torch.no_grad():
-            outputs = self(inputs)
-        logits = outputs["logits"][:, 1:-1:, :]
-        last_hidden_state = outputs["last_hidden_state"][:, 1:-1:, :]
+        raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
+        inputs = raw_outputs["inputs"]
+        logits = raw_outputs["logits"]
+        last_hidden_state = raw_outputs["last_hidden_state"]
 
         predictions = []
         for i in range(logits.shape[0]):
+            # Note that the first and last tokens are removed,
+            # and the length of outputs are calculated based on the tokenized inputs.
             i_logit = logits[i][
-                : inputs["input_ids"][i].ne(self.config.pad_token_id).sum(dim=-1)
-            ]
+                inputs["input_ids"][i].ne(self.config.pad_token_id)
+            ][1:-1]
             prediction = [
                 self.config.id2label.get(x.item(), "") for x in i_logit.argmax(dim=-1)
             ]
@@ -103,48 +92,29 @@ class OmniGenomeModelForSequenceClassification(OmniGenomeModel):
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
-        self.pooler = BertPooler(self.config)
+        self.pooler = OmniGenomePooling(self.config)
         self.softmax = torch.nn.Softmax(dim=-1)
         self.classifier = torch.nn.Linear(
             self.config.hidden_size, self.config.num_labels
         )
         self.loss_fn = torch.nn.CrossEntropyLoss()
+        self.model_info()
 
     def forward(self, inputs):
         last_hidden_state = last_hidden_state_forward(self.model, inputs)
         last_hidden_state = self.dropout(last_hidden_state)
         last_hidden_state = self.activation(last_hidden_state)
-
-        if self._is_causal_lm():
-            logits = self.classifier(last_hidden_state)
-            pad_token_id = getattr(self.config, "pad_token_id", -100)
-            sequence_lengths = inputs["input_ids"].ne(pad_token_id).sum(dim=1) - 1
-            logits = logits[
-                torch.arange(inputs["input_ids"].size(0), device=logits.device),
-                sequence_lengths,
-            ]
-        else:
-            last_hidden_state = self.pooler(last_hidden_state)
-            logits = self.classifier(last_hidden_state)
-            logits = self.activation(logits)
-            logits = self.softmax(logits)
-
+        last_hidden_state = self.pooler(inputs, last_hidden_state)
+        logits = self.classifier(last_hidden_state)
+        logits = self.softmax(logits)
         outputs = {"logits": logits, "last_hidden_state": last_hidden_state}
         return outputs
 
     def predict(self, sequence_or_inputs, **kwargs):
-        if not isinstance(sequence_or_inputs, BatchEncoding) and not isinstance(
-            sequence_or_inputs, dict
-        ):
-            inputs = self.tokenizer(sequence_or_inputs, return_tensors="pt", **kwargs)
-        else:
-            inputs = sequence_or_inputs
-        inputs = inputs.to(self.model.device)
+        raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
 
-        with torch.no_grad():
-            outputs = self(inputs)
-        logits = outputs["logits"]
-        last_hidden_state = outputs["last_hidden_state"]
+        logits = raw_outputs["logits"]
+        last_hidden_state = raw_outputs["last_hidden_state"]
 
         predictions = []
         for i in range(logits.shape[0]):
@@ -159,13 +129,10 @@ class OmniGenomeModelForSequenceClassification(OmniGenomeModel):
         return outputs
 
     def inference(self, sequence_or_inputs, **kwargs):
-        inputs = self.tokenizer(sequence_or_inputs, return_tensors="pt", **kwargs)
-        inputs = inputs.to(self.model.device)
+        raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
 
-        with torch.no_grad():
-            outputs = self(inputs)
-        logits = outputs["logits"]
-        last_hidden_state = outputs["last_hidden_state"]
+        logits = raw_outputs["logits"]
+        last_hidden_state = raw_outputs["last_hidden_state"]
 
         predictions = []
         for i in range(logits.shape[0]):
@@ -193,6 +160,41 @@ class OmniGenomeModelForSequenceClassification(OmniGenomeModel):
         return loss
 
 
+class OmniGenomeModelForMultiLabelSequenceClassification(OmniGenomeModelForSequenceClassification):
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model, tokenizer, *args, **kwargs)
+        self.metadata["model_name"] = self.__class__.__name__
+        self.softmax = torch.nn.Sigmoid()
+        self.loss_fn = torch.nn.BCELoss()
+        self.model_info()
+
+    def loss_function(self, logits, labels):
+        loss = self.loss_fn(logits.view(-1), labels.view(-1).to(torch.float32))
+        return loss
+
+    def predict(self, sequence_or_inputs, **kwargs):
+        raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
+
+        logits = raw_outputs["logits"]
+        last_hidden_state = raw_outputs["last_hidden_state"]
+
+        predictions = []
+        for i in range(logits.shape[0]):
+            prediction = logits[i].ge(0.5).to(torch.int).cpu().numpy()
+            predictions.append(prediction)
+
+        outputs = {
+            "predictions": predictions,
+            "logits": logits,
+            "last_hidden_state": last_hidden_state,
+        }
+
+        return outputs
+
+    def inference(self, sequence_or_inputs, **kwargs):
+        return self.predict(sequence_or_inputs, **kwargs)
+
+
 class OmniGenomeModelForTokenClassificationWith2DStructure(
     OmniGenomeModelForTokenClassification
 ):
@@ -210,12 +212,12 @@ class OmniGenomeModelForTokenClassificationWith2DStructure(
             stride=1,
             padding=0,
         )
+        self.model_info()
 
     def forward(self, inputs):
         last_hidden_state, ss_last_hidden_state = last_hidden_state_forward(
             self.model, inputs, ss="viennarna", tokenizer=self.tokenizer
         )
-
         cat_last_hidden_state = torch.cat(
             [last_hidden_state, ss_last_hidden_state], dim=-1
         )
@@ -252,6 +254,8 @@ class OmniGenomeModelForSequenceClassificationWith2DStructure(
             stride=1,
             padding=0,
         )
+        self.pooler = OmniGenomePooling(self.config)
+        self.model_info()
 
     def forward(self, inputs):
         last_hidden_state, ss_last_hidden_state = last_hidden_state_forward(
@@ -268,20 +272,9 @@ class OmniGenomeModelForSequenceClassificationWith2DStructure(
         )
         last_hidden_state = self.dropout(last_hidden_state)
         last_hidden_state = self.activation(last_hidden_state)
-        last_hidden_state = self.pooler(last_hidden_state)
+        last_hidden_state = self.pooler(inputs, last_hidden_state)
         logits = self.classifier(last_hidden_state)
-
-        if self._is_causal_lm():
-            pad_token_id = getattr(self.config, "pad_token_id", -100)
-            sequence_lengths = inputs["input_ids"].ne(pad_token_id).sum(dim=1) - 1
-            logits = logits[
-                torch.arange(inputs["input_ids"].size(0), device=logits.device),
-                sequence_lengths,
-            ]
-        else:
-            logits = self.activation(logits)
-            logits = self.softmax(logits)
-            logits = self.pooler(logits)
+        logits = self.softmax(logits)
 
         outputs = {
             "logits": logits,
@@ -289,3 +282,40 @@ class OmniGenomeModelForSequenceClassificationWith2DStructure(
             "ss_last_hidden_state": ss_last_hidden_state,
         }
         return outputs
+
+
+class OmniGenomeModelForMultiLabelSequenceClassificationWith2DStructure(
+    OmniGenomeModelForSequenceClassificationWith2DStructure
+):
+    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+        self.metadata["model_name"] = self.__class__.__name__
+        self.softmax = torch.nn.Sigmoid()
+        self.loss_fn = torch.nn.BCELoss()
+        self.model_info()
+
+    def loss_function(self, logits, labels):
+        loss = self.loss_fn(logits.view(-1), labels.view(-1).to(torch.float32))
+        return loss
+
+    def predict(self, sequence_or_inputs, **kwargs):
+        raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
+
+        logits = raw_outputs["logits"]
+        last_hidden_state = raw_outputs["last_hidden_state"]
+
+        predictions = []
+        for i in range(logits.shape[0]):
+            prediction = logits[i].ge(0.5).to(torch.int).cpu().numpy()
+            predictions.append(prediction)
+
+        outputs = {
+            "predictions": predictions,
+            "logits": logits,
+            "last_hidden_state": last_hidden_state,
+        }
+
+        return outputs
+
+    def inference(self, sequence_or_inputs, **kwargs):
+        return self.predict(sequence_or_inputs, **kwargs)

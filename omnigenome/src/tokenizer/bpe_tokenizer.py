@@ -7,8 +7,9 @@
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
 import numpy as np
-from ..abc.abstract_tokenizer import OmniGenomeTokenizer
 from transformers import AutoTokenizer
+
+from ..abc.abstract_tokenizer import OmniGenomeTokenizer
 
 
 def is_bpe_tokenization(tokens, threshold=0.1):

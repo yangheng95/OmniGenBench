@@ -9,8 +9,9 @@
 
 import warnings
 
-from ..abc.abstract_tokenizer import OmniGenomeTokenizer
 from transformers import AutoTokenizer
+
+from ..abc.abstract_tokenizer import OmniGenomeTokenizer
 
 
 class OmniSingleNucleotideTokenizer(OmniGenomeTokenizer):
@@ -50,13 +51,14 @@ class OmniSingleNucleotideTokenizer(OmniGenomeTokenizer):
                 [1] * len(tokenized_inputs["input_ids"][-1])
             )
 
-        for i, ids in enumerate(tokenized_inputs["input_ids"]):
-            if ids.count(self.base_tokenizer.unk_token_id) / len(ids) > 0.1:
-                warnings.warn(
-                    f"Unknown tokens are more than "
-                    f"{ids.count(self.base_tokenizer.unk_token_id) / len(ids)}% in the {i}-th sequence, "
-                    f"please check the tokenization process."
-                )
+        if kwargs.get("warnings", True):
+            for i, ids in enumerate(tokenized_inputs["input_ids"]):
+                if ids.count(self.base_tokenizer.unk_token_id) / len(ids) > 0.1:
+                    warnings.warn(
+                        f"Unknown tokens are more than "
+                        f"{ids.count(self.base_tokenizer.unk_token_id) / len(ids)}% in the {i}-th sequence, "
+                        f"please check the tokenization process."
+                    )
         max_length = max(len(ids) for ids in tokenized_inputs["input_ids"])
         tokenized_inputs = self.base_tokenizer.pad(
             tokenized_inputs,

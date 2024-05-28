@@ -9,5 +9,5 @@
 
 
 from .bpe_tokenizer import OmniBPETokenizer
-from .single_nucleotide_tokenizer import OmniSingleNucleotideTokenizer
 from .kmers_tokenizer import OmniKmersTokenizer
+from .single_nucleotide_tokenizer import OmniSingleNucleotideTokenizer

@@ -8,5 +8,5 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 from .classification_metric import ClassificationMetric
-from .regression_metric import RegressionMetric
 from .ranking_metric import RankingMetric
+from .regression_metric import RegressionMetric

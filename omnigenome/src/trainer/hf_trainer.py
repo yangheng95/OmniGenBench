@@ -7,11 +7,11 @@
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
 
-from ... import __version__ as omnigenome_version
-from ... import __name__ as omnigenome_name
-
 from transformers import Trainer
 from transformers import TrainingArguments
+
+from ... import __name__ as omnigenome_name
+from ... import __version__ as omnigenome_version
 
 
 class HFTrainer(Trainer):

@@ -9,6 +9,8 @@
 
 
 import types
+import warnings
+
 import numpy as np
 import sklearn.metrics as metrics
 
@@ -35,12 +37,14 @@ class RankingMetric(OmniGenomeMetric):
                 :param y_score: the predicted values
                 :param ignore_y: the value to ignore in the predictions and true values in corresponding positions
                 """
-                y_true = np.array(y_true)
-                y_score = np.array(y_score)
-
+                y_true, y_score = RankingMetric.flatten(y_true, y_score)
+                y_true_mask_idx = np.where(y_true != self.ignore_y)
                 if self.ignore_y is not None:
-                    y_true = y_true[y_true != self.ignore_y]
-                    y_score = y_score[y_score != self.ignore_y]
+                    y_true = y_true[y_true_mask_idx]
+                    try:
+                        y_score = y_score[y_true_mask_idx]
+                    except Exception as e:
+                        warnings.warn(str(e))
 
                 return {name: self.compute(y_true, y_score, *args, **kwargs)}
 

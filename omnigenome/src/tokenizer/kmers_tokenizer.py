@@ -9,7 +9,6 @@
 import warnings
 
 from ..abc.abstract_tokenizer import OmniGenomeTokenizer
-from transformers import AutoTokenizer
 
 
 class OmniKmersTokenizer(OmniGenomeTokenizer):

@@ -8,6 +8,6 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 from .classiifcation.model import *
-from .regression.model import *
 from .mlm.model import *
+from .regression.model import *
 from .seq2seq.model import *

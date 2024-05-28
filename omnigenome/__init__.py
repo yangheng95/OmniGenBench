@@ -8,65 +8,54 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 __name__ = "OmniGenome"
-__version__ = "0.0.2alpha"
+__version__ = "0.0.5alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "MIT"
 
 
-from .src.abc.abstract_dataset import OmniGenomeDataset
-from .src.abc.abstract_model import OmniGenomeModel
-from .src.abc.abstract_metric import OmniGenomeMetric
-from .src.abc.abstract_tokenizer import OmniGenomeTokenizer
-
-from .src.tokenizer import OmniKmersTokenizer
-from .src.tokenizer import OmniSingleNucleotideTokenizer
-from .src.tokenizer import OmniBPETokenizer
-
-# from .src import config as config  # no development yet
-
-from .utility import hub_utils as hub_utils
-from .utility.model_hub.model_hub import ModelHub
-
-from .utility.pipeline_hub.pipeline import Pipeline
-from .utility.pipeline_hub.pipeline_hub import PipelineHub
-
-from .bench.bench_hub.bench_hub import BenchHub
 from .bench.auto_bench.auto_bench import AutoBench
-from .bench.auto_bench.auto_bench import AutoBenchConfig
-
-from .src.config import BenchConfig
-
-from .src.misc import utils as utils
-
-from .src.trainer.trainer import Trainer
-from .src.trainer.hf_trainer import HFTrainer
-
-from .src import config as config
+from .bench.auto_bench.auto_bench_config import AutoBenchConfig
+from .bench.bench_hub.bench_hub import BenchHub
+from .src import dataset as dataset
 from .src import metric as metric
 from .src import model as model
 from .src import tokenizer as tokenizer
-from .src import dataset as dataset
-
+from .src.abc.abstract_dataset import OmniGenomeDataset
+from .src.abc.abstract_metric import OmniGenomeMetric
+from .src.abc.abstract_model import OmniGenomeModel
+from .src.abc.abstract_tokenizer import OmniGenomeTokenizer
+from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForSequenceClassification
+from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForSequenceRegression
+from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForTokenClassification
+from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForTokenRegression
+from .src.metric import ClassificationMetric, RegressionMetric, RankingMetric
+from .src.misc import utils as utils
 from .src.model import (
     OmniGenomeModelForSequenceClassification,
+    OmniGenomeModelForMultiLabelSequenceClassification,
     OmniGenomeModelForTokenClassification,
     OmniGenomeModelForSequenceClassificationWith2DStructure,
+    OmniGenomeModelForMultiLabelSequenceClassificationWith2DStructure,
     OmniGenomeModelForTokenClassificationWith2DStructure,
     OmniGenomeModelForSequenceRegression,
     OmniGenomeModelForTokenRegression,
     OmniGenomeModelForSequenceRegressionWith2DStructure,
     OmniGenomeModelForTokenRegressionWith2DStructure,
-    OmniGenomeEncoderModelForMLM,
+    OmniGenomeModelForMLM,
     OmniGenomeEncoderModelForSeq2Seq,
 )
+from .src.tokenizer import OmniBPETokenizer
+from .src.tokenizer import OmniKmersTokenizer
+from .src.tokenizer import OmniSingleNucleotideTokenizer
+from .src.trainer.hf_trainer import HFTrainer
+from .src.trainer.trainer import Trainer
+from .utility import hub_utils as hub_utils
+from .utility.model_hub.model_hub import ModelHub
+from .utility.pipeline_hub.pipeline import Pipeline
+from .utility.pipeline_hub.pipeline_hub import PipelineHub
 
-from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForTokenClassification
-from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForTokenRegression
-from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForSequenceClassification
-from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForSequenceRegression
-
-from .src.metric import ClassificationMetric, RegressionMetric, RankingMetric
+# from .src import config as config  # no development yet
 
 __all__ = [
     "OmniGenomeDataset",
@@ -83,20 +72,20 @@ __all__ = [
     "AutoBench",
     "AutoBenchConfig",
     "utils",
-    "config",
-    "metric",
     "model",
     "tokenizer",
     "dataset",
     "OmniGenomeModelForSequenceClassification",
+    "OmniGenomeModelForMultiLabelSequenceClassification",
     "OmniGenomeModelForTokenClassification",
     "OmniGenomeModelForSequenceClassificationWith2DStructure",
+    "OmniGenomeModelForMultiLabelSequenceClassificationWith2DStructure",
     "OmniGenomeModelForTokenClassificationWith2DStructure",
     "OmniGenomeModelForSequenceRegression",
     "OmniGenomeModelForTokenRegression",
     "OmniGenomeModelForSequenceRegressionWith2DStructure",
     "OmniGenomeModelForTokenRegressionWith2DStructure",
-    "OmniGenomeEncoderModelForMLM",
+    "OmniGenomeModelForMLM",
     "OmniGenomeEncoderModelForSeq2Seq",
     "OmniGenomeDatasetForTokenClassification",
     "OmniGenomeDatasetForTokenRegression",
@@ -107,5 +96,5 @@ __all__ = [
     "RankingMetric",
     "Trainer",
     "HFTrainer",
-    "BenchConfig",
+    "AutoBenchConfig",
 ]

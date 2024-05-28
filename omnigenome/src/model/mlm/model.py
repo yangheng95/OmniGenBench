@@ -13,18 +13,15 @@ from transformers import BatchEncoding
 from ...abc.abstract_model import OmniGenomeModel
 
 
-class OmniGenomeEncoderModelForMLM(OmniGenomeModel):
+class OmniGenomeModelForMLM(OmniGenomeModel):
     def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
         super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
-        if not hasattr(self.model, "lm_head"):
+        if "MaskedLM" not in self.model.__class__.__name__:
             raise ValueError(
                 "The model does not have a language model head, which is required for MLM."
                 "Please use a model that supports masked language modeling."
             )
-        self.classifier = torch.nn.Linear(
-            self.config.hidden_size, self.config.num_labels
-        )
 
         self.loss_fn = torch.nn.CrossEntropyLoss()
 
@@ -45,18 +42,10 @@ class OmniGenomeEncoderModelForMLM(OmniGenomeModel):
         return outputs
 
     def predict(self, sequence_or_inputs, **kwargs):
-        if not isinstance(sequence_or_inputs, BatchEncoding) and not isinstance(
-            sequence_or_inputs, dict
-        ):
-            inputs = self.tokenizer(sequence_or_inputs, return_tensors="pt", **kwargs)
-        else:
-            inputs = sequence_or_inputs
-        inputs = inputs.to(self.model.device)
+        raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
 
-        with torch.no_grad():
-            outputs = self(inputs)
-        logits = outputs["logits"]
-        last_hidden_state = outputs["last_hidden_state"]
+        logits = raw_outputs["logits"]
+        last_hidden_state = raw_outputs["last_hidden_state"]
 
         predictions = []
         for i in range(logits.shape[0]):
@@ -78,27 +67,18 @@ class OmniGenomeEncoderModelForMLM(OmniGenomeModel):
         return outputs
 
     def inference(self, sequence_or_inputs, **kwargs):
-        inputs = self.tokenizer(sequence_or_inputs, return_tensors="pt", **kwargs)
-        inputs = inputs.to(self.model.device)
+        raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
 
-        with torch.no_grad():
-            outputs = self(inputs)
-        logits = outputs["logits"][:, 1:-1:, :]
-        last_hidden_state = outputs["last_hidden_state"][:, 1:-1:, :]
+        inputs = raw_outputs["inputs"]
+        logits = raw_outputs["logits"]
+        last_hidden_state = raw_outputs["last_hidden_state"]
 
         predictions = []
         for i in range(logits.shape[0]):
-            i_logits = logits[i][
-                : inputs["input_ids"][i].ne(self.tokenizer.pad_token_id).sum().item()
-            ]
+            i_logit = logits[i][
+                inputs["input_ids"][i].ne(self.config.pad_token_id)
+            ][1:-1]
             prediction = self.tokenizer.decode(i_logits.argmax(dim=-1)).replace(" ", "")
-            if (
-                torch.sum(
-                    inputs["input_ids"][i] == self.tokenizer.convert_tokens_to_ids("U")
-                )
-                > 0
-            ):
-                prediction = prediction.replace("U", "T")
             predictions.append(list(prediction))
 
         if not isinstance(sequence_or_inputs, list):
@@ -118,5 +98,5 @@ class OmniGenomeEncoderModelForMLM(OmniGenomeModel):
 
     def loss_function(self, logits, labels):
         loss_fn = torch.nn.CrossEntropyLoss()
-        loss = loss_fn(logits.view(-1, self.config.num_labels), labels.view(-1))
+        loss = loss_fn(logits.view(-1, self.tokenizer.vocab_size), labels.view(-1))
         return loss

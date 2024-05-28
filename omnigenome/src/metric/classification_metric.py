@@ -8,6 +8,8 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 import types
+import warnings
+
 import numpy as np
 import sklearn.metrics as metrics
 
@@ -39,10 +41,13 @@ class ClassificationMetric(OmniGenomeMetric):
                 :param ignore_y: the value to ignore in the predictions and true values in corresponding positions
                 """
                 y_true, y_pred = ClassificationMetric.flatten(y_true, y_pred)
-                mask_idx = np.where(y_true != self.ignore_y)
+                y_true_mask_idx = np.where(y_true != self.ignore_y)
                 if self.ignore_y is not None:
-                    y_true = y_true[mask_idx]
-                    y_pred = y_pred[mask_idx]
+                    y_true = y_true[y_true_mask_idx]
+                    try:
+                        y_pred = y_pred[y_true_mask_idx]
+                    except Exception as e:
+                        warnings.warn(str(e))
 
                 kwargs.update(self.kwargs)
                 return {name: self.compute(y_true, y_pred, *args, **kwargs)}

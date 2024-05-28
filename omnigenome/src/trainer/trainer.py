@@ -8,30 +8,83 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 import os
 
+import autocuda
 import numpy as np
 import torch
 from tqdm import tqdm
-import autocuda
 
-from ..misc.utils import env_meta_info, fprint
+from ..misc.utils import env_meta_info, fprint, seed_everything
+
+import sklearn.metrics
+
+
+def _infer_optimization_direction(metrics, prev_metrics):
+    larger_is_better_metrics = [
+        "accuracy",
+        "f1",
+        "recall",
+        "precision",
+        "roc_auc",
+        "pr_auc",
+        "score",
+        # ...
+    ]
+    smaller_is_better_metrics = [
+        "loss",
+        "error",
+        "mse",
+        "mae",
+        "r2",
+        "distance",
+        # ...
+    ]
+    for metric in larger_is_better_metrics:
+        if metric in list(prev_metrics[0].keys())[0]:
+            return "larger_is_better"
+    for metric in smaller_is_better_metrics:
+        if metric in list(prev_metrics[0].keys())[0]:
+            return "smaller_is_better"
+
+    fprint(
+        "Cannot determine the optimization direction. Trying to infer from the metrics."
+    )
+    is_prev_increasing = np.mean(list(prev_metrics[0].values())[0]) < np.mean(
+        list(prev_metrics[-1].values())[0]
+    )
+    is_still_increasing = np.mean(list(prev_metrics[1].values())[0]) < np.mean(
+        list(metrics.values())[0]
+    )
+
+    if is_prev_increasing and is_still_increasing:
+        return "larger_is_better"
+
+    is_prev_decreasing = np.mean(list(prev_metrics[0].values())[0]) > np.mean(
+        list(prev_metrics[-1].values())[0]
+    )
+    is_still_decreasing = np.mean(list(prev_metrics[1].values())[0]) > np.mean(
+        list(metrics.values())
+    )
+
+    if is_prev_decreasing and is_still_decreasing:
+        return "smaller_is_better"
 
 
 class Trainer:
     def __init__(
-            self,
-            model,
-            train_loader: torch.utils.data.DataLoader = None,
-            eval_loader: torch.utils.data.DataLoader = None,
-            test_loader: torch.utils.data.DataLoader = None,
-            epochs: int = 3,
-            patience: int = 3,
-            optimizer: torch.optim.Optimizer = None,
-            loss_fn: torch.nn.Module = None,
-            compute_metrics: [list, str] = None,
-            seed: int = 42,
-            device: [torch.device, str] = None,
-            *args,
-            **kwargs,
+        self,
+        model,
+        train_loader: torch.utils.data.DataLoader = None,
+        eval_loader: torch.utils.data.DataLoader = None,
+        test_loader: torch.utils.data.DataLoader = None,
+        epochs: int = 3,
+        patience: int = 3,
+        optimizer: torch.optim.Optimizer = None,
+        loss_fn: torch.nn.Module = None,
+        compute_metrics: [list, str] = None,
+        seed: int = 42,
+        device: [torch.device, str] = None,
+        *args,
+        **kwargs,
     ):
         self.model = model
         self.train_loader = train_loader
@@ -55,43 +108,64 @@ class Trainer:
 
         self.trial_name = kwargs.get("trial_name", self.model.__class__.__name__)
 
-        self._save_state_dict()
-
     def _is_metric_better(self, metrics, stage="valid"):
-
-        assert stage in ["valid", "test"], "The metrics stage should be either 'valid' or 'test'."
+        assert stage in [
+            "valid",
+            "test",
+        ], "The metrics stage should be either 'valid' or 'test'."
 
         fprint(metrics)
 
         prev_metrics = self.metrics.get(stage, None)
 
-        if not prev_metrics:
+        if not prev_metrics or len(prev_metrics) <= 1:
             if stage not in self.metrics:
                 self.metrics.update({f"{stage}": [metrics]})
             else:
                 self.metrics[f"{stage}"].append(metrics)
             return True
 
-        is_prev_increasing = np.mean(list(prev_metrics[0].values())) <= np.mean(list(prev_metrics[-1].values()))
-        is_still_increasing = np.mean(list(prev_metrics[-1].values())) <= np.mean(list(metrics.values()))
-
-        is_prev_decreasing = np.mean(list(prev_metrics[0].values())) >= np.mean(list(prev_metrics[-1].values()))
-        is_still_decreasing = np.mean(list(prev_metrics[-1].values())) >= np.mean(list(metrics.values()))
-
         if stage not in self.metrics:
             self.metrics.update({f"{stage}": [metrics]})
         else:
             self.metrics[f"{stage}"].append(metrics)
 
-        if is_prev_increasing and is_still_increasing:
-            return True
-        elif is_prev_decreasing and is_still_decreasing:
-            return True
-        else:
-            return False
+        if "best_valid" not in self.metrics:
+            self.metrics.update({"best_valid": metrics})
 
-    def train(self, path_to_save=None, autocast=True, **kwargs):
+        if _infer_optimization_direction(metrics, prev_metrics) == "larger_is_better":
+            if np.mean(list(metrics.values())[0]) > np.mean(
+                list(self.metrics["best_valid"].values())[0]
+            ):
+                self.metrics.update({"best_valid": metrics})
+                return True
+            else:
+                return False
+        elif (
+            _infer_optimization_direction(metrics, prev_metrics) == "smaller_is_better"
+        ):
+            if np.mean(list(metrics.values())[0]) < np.mean(
+                list(self.metrics["best_valid"].values())[0]
+            ):
+                self.metrics.update({"best_valid": metrics})
+                return True
+            else:
+                return False
+
+        return False
+
+    def train(self, path_to_save=None, autocast=False, **kwargs):
+        seed_everything(self.seed)
         patience = 0
+
+        if self.eval_loader is not None and len(self.eval_loader) > 0:
+            valid_metrics = self.evaluate()
+        else:
+            valid_metrics = self.test()
+        if self._is_metric_better(valid_metrics, stage="valid"):
+            self._save_state_dict()
+            patience = 0
+
         for epoch in range(self.epochs):
             self.model.train()
             train_loss = []
@@ -117,23 +191,24 @@ class Trainer:
                 valid_metrics = self.evaluate()
             else:
                 valid_metrics = self.test()
+
             if self._is_metric_better(valid_metrics, stage="valid"):
                 self._save_state_dict()
                 patience = 0
             else:
                 patience += 1
                 if patience >= self.patience:
-                    fprint(f"Early stopping at epoch {epoch}.")
+                    fprint(f"Early stopping at epoch {epoch + 1}.")
                     break
 
             if path_to_save:
-                _path_to_save = path_to_save + "_epoch_" + str(epoch)
+                _path_to_save = path_to_save + "_epoch_" + str(epoch + 1)
 
                 if valid_metrics:
                     for key, value in valid_metrics.items():
                         _path_to_save += f"_seed_{self.seed}_{key}_{value:.4f}"
 
-                self.save_model(path_to_save, **kwargs)
+                self.save_model(_path_to_save, **kwargs)
 
         if self.test_loader is not None and len(self.test_loader) > 0:
             self._load_state_dict()
@@ -142,11 +217,13 @@ class Trainer:
 
         if path_to_save:
             _path_to_save = path_to_save + "_final"
-            if self.metrics['test_metrics']:
-                for key, value in self.metrics['test_metrics'][-1].items():
+            if self.metrics["test"]:
+                for key, value in self.metrics["test"][-1].items():
                     _path_to_save += f"_seed_{self.seed}_{key}_{value:.4f}"
 
-            self.save_model(path_to_save, **kwargs)
+            self.save_model(_path_to_save, **kwargs)
+
+        self._remove_state_dict()
 
         return self.metrics
 
@@ -203,22 +280,26 @@ class Trainer:
         self.model.save(path, overwrite, **kwargs)
 
     def _load_state_dict(self):
-        model_state_dict_path = self.model.model.__class__.__name__+"_init_model_state_dict.pt"
-        optimizer_state_dict_path = self.model.model.__class__.__name__+"_init_optimizer_state_dict.pt"
+        model_state_dict_path = (
+            self.model.model.__class__.__name__ + "_model_state_dict.pt"
+        )
         if os.path.exists(model_state_dict_path):
             self.model.load_state_dict(torch.load(model_state_dict_path))
-        if os.path.exists(optimizer_state_dict_path):
-            self.optimizer.load_state_dict(torch.load(optimizer_state_dict_path))
         self.model.to(self.device)
 
     def _save_state_dict(self):
-        model_state_dict_path = self.model.model.__class__.__name__+"_init_model_state_dict.pt"
-        optimizer_state_dict_path = self.model.model.__class__.__name__+"_init_optimizer_state_dict.pt"
+        model_state_dict_path = (
+            self.model.model.__class__.__name__ + "_model_state_dict.pt"
+        )
         if os.path.exists(model_state_dict_path):
             os.remove(model_state_dict_path)
-        if os.path.exists(optimizer_state_dict_path):
-            os.remove(optimizer_state_dict_path)
         self.model.to("cpu")
-        torch.save(self.optimizer.state_dict(), optimizer_state_dict_path)
         torch.save(self.model.state_dict(), model_state_dict_path)
         self.model.to(self.device)
+
+    def _remove_state_dict(self):
+        model_state_dict_path = (
+            self.model.model.__class__.__name__ + "_model_state_dict.pt"
+        )
+        if os.path.exists(model_state_dict_path):
+            os.remove(model_state_dict_path)

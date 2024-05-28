@@ -7,19 +7,19 @@
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
 
-from omnigenome import __name__, __version__
+from pathlib import Path
 
 from setuptools import setup, find_packages
 
-from pathlib import Path
+from omnigenome import __name__, __version__
 
 cwd = Path(__file__).parent
-long_description = (cwd / "README.md").read_text(encoding="utf8")
+long_description = (cwd / "README.MD").read_text(encoding="utf8")
 
 extras = {}
 extras["dev"] = [
-    'dill',
-    'pytest',
+    "dill",
+    "pytest",
 ]
 
 
@@ -45,11 +45,14 @@ setup(
         "tqdm",
         "termcolor",
         "gitpython",  # need git installed in your OS
-        "transformers>=4.37.0",
+        "git+https://github.com/yangheng95/transformers@add_omnigenome",
         "torch>=1.0.0",
         "sentencepiece",
         "protobuf<4.0.0",
         "pandas",
+        "viennarna",
+        "scikit-learn",
+
     ],
     extras_require=extras,
 )

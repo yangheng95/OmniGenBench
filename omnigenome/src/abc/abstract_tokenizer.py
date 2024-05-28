@@ -6,10 +6,11 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
+import warnings
 
 from transformers import AutoTokenizer
 
-from ..misc.utils import env_meta_info
+from ..misc.utils import env_meta_info, load_module_from_path
 
 
 class OmniGenomeTokenizer:
@@ -26,21 +27,19 @@ class OmniGenomeTokenizer:
         self.t2u = kwargs.get("t2u", False)
         self.add_whitespace = kwargs.get("add_whitespace", False)
 
-        for key, value in base_tokenizer.__dict__.items():
-            self.key = value
-
     @staticmethod
     def from_pretrained(model_name_or_path, **kwargs):
-        import importlib
-
+        wrapper_path = f"{model_name_or_path.rstrip('/')}/omnigenome_wrapper.py"
         try:
-            wrapper = importlib.import_module(
-                f"{model_name_or_path}.omnigenome_wrapper".replace("/", ".")
-            )
+            wrapper = load_module_from_path("omnigenome_wrapper", wrapper_path)
             tokenizer = wrapper.Tokenizer(
                 AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
             )
-        except ImportError:
+        except ImportError or FileNotFoundError as e:
+            warnings.warn(
+                f"Cannot find the tokenizer wrapper from {wrapper_path},"
+                " using the default OmniGenomeTokenizer."
+            )
             tokenizer = OmniGenomeTokenizer(
                 AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
             )
@@ -82,3 +81,12 @@ class OmniGenomeTokenizer:
             "The decode() function should be adapted for different models,"
             " please implement it for your model."
         )
+
+    def __getattribute__(self, item):
+        try:
+            return super().__getattribute__(item)
+        except AttributeError:
+            try:
+                return self.base_tokenizer.__getattribute__(item)
+            except AttributeError or RecursionError:
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{item}'")

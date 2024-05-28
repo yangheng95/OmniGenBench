@@ -3,6 +3,7 @@ output/
 cache/
 .idea/
 __pycache__/
+*.ffi
 *.pyc
 *.bin
 *.safetensor

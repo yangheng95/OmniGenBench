@@ -15,12 +15,10 @@ from typing import Union, Dict, Any
 import findfile
 import requests
 import tqdm
-from findfile import find_cwd_files, find_cwd_dir
 from termcolor import colored
 
-from omnigenome.src.misc.utils import fprint
 from omnigenome import __version__ as current_version
-
+from omnigenome.src.misc.utils import fprint
 
 default_repo = "https://huggingface.co/spaces/anonymous8/gfm_hub/"
 

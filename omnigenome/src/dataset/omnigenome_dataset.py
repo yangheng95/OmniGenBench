@@ -11,16 +11,12 @@ import json
 import numpy as np
 import torch
 
-from ... import __name__, __version__
-
 from ..abc.abstract_dataset import OmniGenomeDataset
+from ... import __name__, __version__
 
 
 class OmniGenomeDatasetForTokenClassification(OmniGenomeDataset):
-    def __init__(self, data_source, tokenizer, label2id, max_length=None, **kwargs):
-        self.label2id = label2id
-        self.id2label = {v: k for k, v in label2id.items()}
-
+    def __init__(self, data_source, tokenizer, max_length=None, **kwargs):
         super(OmniGenomeDatasetForTokenClassification, self).__init__(
             data_source, tokenizer, max_length, **kwargs
         )
@@ -69,17 +65,14 @@ class OmniGenomeDatasetForTokenClassification(OmniGenomeDataset):
 
         if labels is not None:
             tokenized_inputs["labels"] = (
-                [-100] + [self.label2id.get(str(l), -100) for l in labels] + [-100]
+                [-100] + [self.label2id.get(str(l), -100) for l in labels][:self.max_length-2] + [-100]
             )
             tokenized_inputs["labels"] = torch.tensor(tokenized_inputs["labels"])
         return tokenized_inputs
 
 
 class OmniGenomeDatasetForSequenceClassification(OmniGenomeDataset):
-    def __init__(self, data_source, tokenizer, label2id, max_length=None, **kwargs):
-        self.label2id = label2id
-        self.id2label = {v: k for k, v in label2id.items()}
-
+    def __init__(self, data_source, tokenizer, max_length=None, **kwargs):
         super(OmniGenomeDatasetForSequenceClassification, self).__init__(
             data_source, tokenizer, max_length, **kwargs
         )
@@ -122,7 +115,7 @@ class OmniGenomeDatasetForSequenceClassification(OmniGenomeDataset):
             tokenized_inputs[col] = tokenized_inputs[col].squeeze()
 
         if labels is not None:
-            tokenized_inputs["labels"] = self.label2id.get(str(labels), -100)
+            tokenized_inputs["labels"] = self.label2id.get(str(labels), -100) if self.label2id else labels
             tokenized_inputs["labels"] = torch.tensor(tokenized_inputs["labels"])
         return tokenized_inputs
 
@@ -181,7 +174,7 @@ class OmniGenomeDatasetForTokenRegression(OmniGenomeDataset):
                     if len(_labels) > 1:
                         break
                 labels = [l for l in _labels]
-            labels = np.array(labels, dtype=np.float32)
+            labels = np.array(labels, dtype=np.float32)[:self.max_length-2]
             if labels.ndim == 1:
                 labels = labels.reshape(-1)
                 padded_labels = np.concatenate([[-100], labels, [-100]])

@@ -10,15 +10,11 @@ import json
 import os
 
 import autocuda
-import torch
 from transformers import AutoConfig, AutoTokenizer
 
 from ..hub_utils import download_pipeline
 from ..model_hub.model_hub import ModelHub
-
-from ...src.abc.abstract_dataset import OmniGenomeDataset
 from ...src.abc.abstract_model import OmniGenomeModel
-from ...src.metric.classification_metric import ClassificationMetric
 from ...src.misc.utils import env_meta_info, fprint
 from ...src.trainer.trainer import Trainer
 
