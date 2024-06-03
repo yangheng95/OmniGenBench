@@ -12,22 +12,27 @@ import torch
 from transformers import OmniGenomeForTokenClassification, AutoTokenizer
 
 if __name__ == "__main__":
-
     sequence = "GAAAAAAAAGGGGAGAAAUCCCGCCCGAAAGGGCGCCCAAAGGGC"
 
     # yangheng/OmniGenome-186M is a model trained on the RNA secondary structure prediction task
     # Use it in zero-shot RNA secondary structure prediction
-    ssp_model = OmniGenomeForTokenClassification.from_pretrained("yangheng/OmniGenome-186M")
+    ssp_model = OmniGenomeForTokenClassification.from_pretrained(
+        "anonymous8/OmniGenome-186M"
+    )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     ssp_model.to(device)
 
-    tokenizer = AutoTokenizer.from_pretrained("yangheng/OmniGenome-186M")
-    inputs = tokenizer(sequence, return_tensors="pt", padding="max_length", truncation=True).to(device)
+    tokenizer = AutoTokenizer.from_pretrained("anonymous8/OmniGenome-186M")
+    inputs = tokenizer(
+        sequence, return_tensors="pt", padding="max_length", truncation=True
+    ).to(device)
     with torch.no_grad():
         outputs = ssp_model(**inputs)
     predictions = outputs.logits.argmax(dim=-1)[:, 1:-1]
-    structure = [ssp_model.config.id2label[prediction.item()] for prediction in predictions[0]]
+    structure = [
+        ssp_model.config.id2label[prediction.item()] for prediction in predictions[0]
+    ]
     print("".join(structure))
     # The output should be: "..........((((....))))((((....))))((((...))))"
 
@@ -42,4 +47,3 @@ if __name__ == "__main__":
     # import ViennaRNA
     # print(ViennaRNA.fold(sequence)[0])
     # The output should be: "..........((((....))))((((....))))((((...))))"
-

@@ -17,7 +17,6 @@ from omnigenome import (
 )
 
 
-
 # Hyperparameters
 config_dict = {
     "task_name": "chromatin_access.setaria_italica",

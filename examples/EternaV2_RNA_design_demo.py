@@ -22,8 +22,11 @@ import requests
 
 def predict_structure(sequence):
     import ViennaRNA
+
     if isinstance(sequence, list):
-        structures = [ViennaRNA.fold(sequence.replace('T', 'U'))[0] for sequence in sequence]
+        structures = [
+            ViennaRNA.fold(sequence.replace("T", "U"))[0] for sequence in sequence
+        ]
         return structures
     else:
         return ViennaRNA.fold(sequence)[0]
@@ -34,34 +37,56 @@ def genetic_algorithm_for_rna_design(structure, **kwargs):
     num_population = kwargs.get("num_population", 100)
     num_generation = kwargs.get("num_generation", 50)
     puzzle_id = kwargs.get("puzzle_id", 0)
-    # model = "yangheng/OmniGenome-186M"
-    # model = "yangheng/OmniGenome-52M"
-    model = "../pretrained_models/OmniGenome-52M/OmniGenome-52M"
+    model = "anonymous8/OmniGenome-186M"
+    # model = "anonymous8/OmniGenome-52M"
     device = autocuda.auto_cuda()
     tokenizer = AutoTokenizer.from_pretrained(model)
     model = AutoModelForMaskedLM.from_pretrained(model)
     model.to(device)
 
     import tqdm
-    population = init_population(structure, num_population, model=model, tokenizer=tokenizer, )
-    population = mlm_mutate(population, structure, model=model, tokenizer=tokenizer, mutation_ratio=mutation_ratio)
-    for generation_id in tqdm.tqdm(range(num_generation), desc="Designing RNA Sequence"):
+
+    population = init_population(
+        structure,
+        num_population,
+        model=model,
+        tokenizer=tokenizer,
+    )
+    population = mlm_mutate(
+        population,
+        structure,
+        model=model,
+        tokenizer=tokenizer,
+        mutation_ratio=mutation_ratio,
+    )
+    for generation_id in tqdm.tqdm(
+        range(num_generation), desc="Designing RNA Sequence"
+    ):
         population_fitness = evaluate_structure_fitness(
             population,
             structure,
         )[:num_population]
-        population = sorted(zip(population, population_fitness), key=lambda x: x[1])[:num_population]
+        population = sorted(zip(population, population_fitness), key=lambda x: x[1])[
+            :num_population
+        ]
         population = [x[0] for x in population]
         next_generation = population  # Elitism
-        next_generation += mlm_mutate(next_generation, structure, model=model, tokenizer=tokenizer,
-                                      mutation_ratio=mutation_ratio)
+        next_generation += mlm_mutate(
+            next_generation,
+            structure,
+            model=model,
+            tokenizer=tokenizer,
+            mutation_ratio=mutation_ratio,
+        )
         # next_generation += crossover(next_generation, structure, model=model, tokenizer=tokenizer)
 
         fitness_values = evaluate_structure_fitness(
             next_generation,
             structure,
         )
-        next_generation = sorted(zip(next_generation, fitness_values), key=lambda x: x[1])
+        next_generation = sorted(
+            zip(next_generation, fitness_values), key=lambda x: x[1]
+        )
 
         candidate_sequences = []
         for sequence, fitness in next_generation:
@@ -74,7 +99,9 @@ def genetic_algorithm_for_rna_design(structure, **kwargs):
             torch.cuda.empty_cache()
             # print(candidate_sequences)
             return candidate_sequences, puzzle_id
-        print(f"Generation {generation_id}: {next_generation[0][0]} with fitness {next_generation[0][1]}")
+        print(
+            f"Generation {generation_id}: {next_generation[0][0]} with fitness {next_generation[0][1]}"
+        )
         population = [x[0] for x in next_generation[:num_population]]
     del model, tokenizer
     torch.cuda.empty_cache()
@@ -87,8 +114,7 @@ def init_population(structure, num_population, model, tokenizer):
 
     for _ in range(num_population):
         masked_sequence = [
-            random.choice(["A", "G", "C", "T", "<mask>"])
-            for _ in range(len(structure))
+            random.choice(["A", "G", "C", "T", "<mask>"]) for _ in range(len(structure))
         ]
         masked_sequence_str = "".join(masked_sequence)
         mlm_inputs.append(f"{masked_sequence_str}<eos>{''.join(structure)}")
@@ -99,8 +125,10 @@ def init_population(structure, num_population, model, tokenizer):
         sequence = tokenizer.convert_ids_to_tokens(outputs[i].tolist())
         fixed_sequence = [
             # x if x in "AGCTNU" else random.choice(["A", "T", "G", "C"])
-            x if x in "AGCTNU" and y == '$' else (y if y and y != '$' else random.choice(["A", "T", "G", "C"]))
-            for x, y in zip(sequence, list(mlm_inputs[i].replace('<mask>', '$')))
+            x
+            if x in "AGCTNU" and y == "$"
+            else (y if y and y != "$" else random.choice(["A", "T", "G", "C"]))
+            for x, y in zip(sequence, list(mlm_inputs[i].replace("<mask>", "$")))
         ]
         population.append("".join(fixed_sequence))
 
@@ -123,7 +151,10 @@ def mlm_mutate(population, structure, model, tokenizer, mutation_ratio):
         span_length = random.randint(1, max(int(len(sequence) * mutation_rate), 3))
         num_spans = random.randint(1, max(int(len(sequence) * mutation_rate), 3))
         start_indices = np.random.choice(n - span_length + 1, num_spans, replace=False)
-        masks = [np.arange(span_length // span_length) + start_indices for start_indices in start_indices]
+        masks = [
+            np.arange(span_length // span_length) + start_indices
+            for start_indices in start_indices
+        ]
         for mask in masks:
             sequence[mask] = "$"
         return "".join(sequence).replace("$", "<mask>")
@@ -150,8 +181,10 @@ def mlm_mutate(population, structure, model, tokenizer, mutation_ratio):
         sequence = tokenizer.convert_ids_to_tokens(outputs[i].tolist())
         fixed_sequence = [
             # x if x in "AGCTNU" else random.choice(["A", "T", "G", "C"])
-            x if x in "AGCTNU" and y == '$' else (y if y and y != '$' else random.choice(["A", "T", "G", "C"]))
-            for x, y in zip(sequence, list(masked_sequences[i].replace('<mask>', '$')))
+            x
+            if x in "AGCTNU" and y == "$"
+            else (y if y and y != "$" else random.choice(["A", "T", "G", "C"]))
+            for x, y in zip(sequence, list(masked_sequences[i].replace("<mask>", "$")))
         ]
         mut_population.append("".join(fixed_sequence))
 
@@ -177,13 +210,23 @@ def crossover(population, structure, model, tokenizer):
         sequence = tokenizer.convert_ids_to_tokens(outputs[i].tolist())
         fixed_sequence = [
             # x if x in "AGCTNU" else random.choice(["A", "T", "G", "C"])
-            x if x in "AGCTNU" and y == '$' else (y if y and y != '$' else random.choice(["A", "T", "G", "C"]))
-            for x, y in zip(sequence, list(batch_crossover_inputs[i].replace('<mask>', '$')))
+            x
+            if x in "AGCTNU" and y == "$"
+            else (y if y and y != "$" else random.choice(["A", "T", "G", "C"]))
+            for x, y in zip(
+                sequence, list(batch_crossover_inputs[i].replace("<mask>", "$"))
+            )
         ]
         if i % 2 == 0:
-            sequence = population[i // 2][:postions[i // 2]] + "".join(fixed_sequence)[postions[i // 2]:]
+            sequence = (
+                population[i // 2][: postions[i // 2]]
+                + "".join(fixed_sequence)[postions[i // 2] :]
+            )
         else:
-            sequence = "".join(fixed_sequence)[:postions[i // 2]] + population[i // 2][postions[i // 2]:]
+            sequence = (
+                "".join(fixed_sequence)[: postions[i // 2]]
+                + population[i // 2][postions[i // 2] :]
+            )
         crossover_population.append(sequence)
         # crossover_population.append("".join(fixed_sequence))
 
@@ -193,7 +236,7 @@ def crossover(population, structure, model, tokenizer):
 def evaluate_structure_fitness(sequences, structure):
     structures = []
     for i in range(0, len(sequences), 10):
-        structures += predict_structure(sequences[i:i + 10])
+        structures += predict_structure(sequences[i : i + 10])
     # structures, mfe_values = zip(*structures)
     fitness_values = []
     for predicted_structure in structures:
@@ -213,12 +256,13 @@ def mlm_predict(mlm_inputs, structure, model, tokenizer):
     batch_size = 4
     all_outputs = []
     from transformers import set_seed
+
     set_seed(random.randint(0, 99999999), deterministic=False)
 
     with torch.no_grad():
         for i in range(0, len(mlm_inputs), batch_size):
             batch_mlm_inputs = tokenizer(
-                mlm_inputs[i:i + batch_size],
+                mlm_inputs[i : i + batch_size],
                 padding=False,
                 max_length=1024,
                 truncation=True,
@@ -232,7 +276,7 @@ def mlm_predict(mlm_inputs, structure, model, tokenizer):
             del outputs
     outputs = torch.cat(all_outputs, dim=0)
     # outputs[outputs == 7] = 9  # convert all T to U for RNA sequence
-    return outputs[:, 1:1 + len(structure)]
+    return outputs[:, 1 : 1 + len(structure)]
 
 
 if __name__ == "__main__":
@@ -287,8 +331,8 @@ if __name__ == "__main__":
                         mutation_ratio=0.5,
                         num_population=100,
                         num_generation=50,
-                        puzzle_id=i
-                    )
+                        puzzle_id=i,
+                    ),
                 )
             )
 
@@ -302,9 +346,16 @@ if __name__ == "__main__":
                 best_sequence = best_sequence
                 print("Not Found")
             print(f"Sum: {pred_count} Accuracy:", acc_count / pred_count * 100)
-            solved_sequences[puzzle_id] = (sequences[puzzle_id], target_structure, best_sequence)
+            solved_sequences[puzzle_id] = (
+                sequences[puzzle_id],
+                target_structure,
+                best_sequence,
+            )
 
         with open("eterna100_vienna2.txt.result", encoding="utf8", mode="w") as fw:
-            for i, (sequence, target_structure, best_sequence) in solved_sequences.items():
+            for i, (
+                sequence,
+                target_structure,
+                best_sequence,
+            ) in solved_sequences.items():
                 fw.write(f"{i}\t{sequence}\t{target_structure}\t{best_sequence}\n")
-

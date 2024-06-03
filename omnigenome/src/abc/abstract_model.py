@@ -238,6 +238,7 @@ class OmniGenomeModel(torch.nn.Module):
 
         # The tokenizer of the model
         self.tokenizer = tokenizer
+        self.metadata["tokenizer_cls"] = self.tokenizer.__class__.__name__
         if hasattr(self.tokenizer, "base_tokenizer"):
             self.pad_token_id = self.tokenizer.base_tokenizer.pad_token_id
         else:
@@ -331,8 +332,8 @@ class OmniGenomeModel(torch.nn.Module):
         _device = self.model.device
         _dtype = self.model.dtype
         self.model.to(dtype).to("cpu")
-        with open(f"{path}/tokenizer.pkl", "wb") as f:
-            dill.dump(self.tokenizer, f)
+        self.tokenizer.save_pretrained(path)
+
         with open(f"{path}/metadata.json", "w", encoding="utf8") as f:
             json.dump(self.metadata, f)
         self.model.save_pretrained(

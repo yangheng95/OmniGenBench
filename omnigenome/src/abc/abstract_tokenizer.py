@@ -88,7 +88,7 @@ class OmniGenomeTokenizer:
         except AttributeError:
             try:
                 return self.base_tokenizer.__getattribute__(item)
-            except AttributeError or RecursionError:
+            except (AttributeError, RecursionError) as e:
                 raise AttributeError(
                     f"'{self.__class__.__name__}' object has no attribute '{item}'"
-                )
+                ) from e

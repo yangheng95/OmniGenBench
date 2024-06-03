@@ -12,7 +12,9 @@ import os
 
 from omnigenome import (
     ClassificationMetric,
-    AutoBenchConfig, OmniGenomeDatasetForSequenceClassification, OmniGenomeModelForMultiLabelSequenceClassification,
+    AutoBenchConfig,
+    OmniGenomeDatasetForSequenceClassification,
+    OmniGenomeModelForMultiLabelSequenceClassification,
 )
 
 

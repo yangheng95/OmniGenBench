@@ -114,17 +114,12 @@ class Pipeline:
             path = download_pipeline(
                 pipeline_name_or_path, local_only=local_only, **kwargs
             )
-
         with open(f"{path}/datasets.pkl", "rb") as f:
             datasets = dill.load(f)
-        with open(f"{path}/metadata.json", "r") as f:
-            metadata = json.load(f)
-        with open(f"{path}/tokenizer.pkl", "rb") as f:
-            tokenizer = dill.load(f)
         with open(f"{path}/trainer.pkl", "rb") as f:
             trainer = dill.load(f)
         model = ModelHub.load(path, local_only=local_only, **kwargs)
-        model.metadata.update(metadata)
+        tokenizer = model.tokenizer
         pipeline = Pipeline(
             name=(
                 pipeline_name_or_path

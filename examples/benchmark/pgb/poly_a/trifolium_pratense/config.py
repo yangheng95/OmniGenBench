@@ -26,7 +26,6 @@ config_dict = {
     "epochs": 50,
     "patience": 10,
     "learning_rate": 2e-5,
-    "epochs": 5,
     "batch_size": 32,
     "max_length": 512,  # "max_length": 1024 for some models
     "seeds": [45, 46, 47],

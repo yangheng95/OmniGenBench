@@ -45,14 +45,15 @@ setup(
         "tqdm",
         "termcolor",
         "gitpython",  # need git installed in your OS
-        "git+https://github.com/yangheng95/transformers@add_omnigenome",
         "torch>=1.0.0",
         "sentencepiece",
         "protobuf<4.0.0",
         "pandas",
         "viennarna",
         "scikit-learn",
-
+    ],
+    dependency_links=[
+        "git+https://github.com/yangheng95/transformers@add_omnigenome#egg=transformers"
     ],
     extras_require=extras,
 )

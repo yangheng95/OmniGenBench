@@ -11,7 +11,7 @@ import os
 
 import autocuda
 import torch
-from transformers import AutoConfig, AutoModel
+from transformers import AutoConfig, AutoModel, AutoTokenizer
 
 from omnigenome.utility.hub_utils import query_models_info, download_model
 from ...src.misc.utils import env_meta_info, fprint
@@ -52,8 +52,12 @@ class ModelHub:
         model_lib = importlib.import_module(metadata["library_name"].lower()).model
         model_cls = getattr(model_lib, metadata["model_cls"])
 
-        with open(f"{path}/tokenizer.pkl", "rb") as f:
-            tokenizer = dill.load(f)
+        if 'Omni' in metadata["tokenizer_cls"]:
+            lib = importlib.import_module(metadata["library_name"].lower())
+            tokenizer_cls = getattr(lib, metadata["tokenizer_cls"])
+            tokenizer = tokenizer_cls.from_pretrained(path, **kwargs)
+        else:
+            tokenizer = AutoTokenizer.from_pretrained(path, **kwargs)
 
         model = model_cls(base_model, tokenizer, label2id=config.label2id, **kwargs)
         with open(f"{path}/pytorch_model.bin", "rb") as f:
