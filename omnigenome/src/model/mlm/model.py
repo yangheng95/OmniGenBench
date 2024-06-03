@@ -75,9 +75,9 @@ class OmniGenomeModelForMLM(OmniGenomeModel):
 
         predictions = []
         for i in range(logits.shape[0]):
-            i_logit = logits[i][
-                inputs["input_ids"][i].ne(self.config.pad_token_id)
-            ][1:-1]
+            i_logit = logits[i][inputs["input_ids"][i].ne(self.config.pad_token_id)][
+                1:-1
+            ]
             prediction = self.tokenizer.decode(i_logits.argmax(dim=-1)).replace(" ", "")
             predictions.append(list(prediction))
 

@@ -60,9 +60,9 @@ class OmniGenomeModelForTokenClassification(OmniGenomeModel):
         for i in range(logits.shape[0]):
             # Note that the first and last tokens are removed,
             # and the length of outputs are calculated based on the tokenized inputs.
-            i_logit = logits[i][
-                inputs["input_ids"][i].ne(self.config.pad_token_id)
-            ][1:-1]
+            i_logit = logits[i][inputs["input_ids"][i].ne(self.config.pad_token_id)][
+                1:-1
+            ]
             prediction = [
                 self.config.id2label.get(x.item(), "") for x in i_logit.argmax(dim=-1)
             ]
@@ -160,7 +160,9 @@ class OmniGenomeModelForSequenceClassification(OmniGenomeModel):
         return loss
 
 
-class OmniGenomeModelForMultiLabelSequenceClassification(OmniGenomeModelForSequenceClassification):
+class OmniGenomeModelForMultiLabelSequenceClassification(
+    OmniGenomeModelForSequenceClassification
+):
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__

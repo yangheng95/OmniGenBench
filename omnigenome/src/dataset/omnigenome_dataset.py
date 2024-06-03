@@ -65,7 +65,11 @@ class OmniGenomeDatasetForTokenClassification(OmniGenomeDataset):
 
         if labels is not None:
             tokenized_inputs["labels"] = (
-                [-100] + [self.label2id.get(str(l), -100) for l in labels][:self.max_length-2] + [-100]
+                [-100]
+                + [self.label2id.get(str(l), -100) for l in labels][
+                    : self.max_length - 2
+                ]
+                + [-100]
             )
             tokenized_inputs["labels"] = torch.tensor(tokenized_inputs["labels"])
         return tokenized_inputs
@@ -115,7 +119,9 @@ class OmniGenomeDatasetForSequenceClassification(OmniGenomeDataset):
             tokenized_inputs[col] = tokenized_inputs[col].squeeze()
 
         if labels is not None:
-            tokenized_inputs["labels"] = self.label2id.get(str(labels), -100) if self.label2id else labels
+            tokenized_inputs["labels"] = (
+                self.label2id.get(str(labels), -100) if self.label2id else labels
+            )
             tokenized_inputs["labels"] = torch.tensor(tokenized_inputs["labels"])
         return tokenized_inputs
 
@@ -174,7 +180,7 @@ class OmniGenomeDatasetForTokenRegression(OmniGenomeDataset):
                     if len(_labels) > 1:
                         break
                 labels = [l for l in _labels]
-            labels = np.array(labels, dtype=np.float32)[:self.max_length-2]
+            labels = np.array(labels, dtype=np.float32)[: self.max_length - 2]
             if labels.ndim == 1:
                 labels = labels.reshape(-1)
                 padded_labels = np.concatenate([[-100], labels, [-100]])

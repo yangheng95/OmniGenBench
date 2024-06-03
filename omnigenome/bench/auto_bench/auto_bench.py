@@ -130,18 +130,21 @@ class AutoBench:
                     tokenizer=tokenizer,
                     label2id=bench_config["label2id"],
                     max_length=bench_config["max_length"],
+                    **kwargs,
                 )
                 test_set = dataset_cls(
                     data_source=bench_config["test_file"],
                     tokenizer=tokenizer,
                     label2id=bench_config["label2id"],
                     max_length=bench_config["max_length"],
+                    **kwargs,
                 )
                 valid_set = dataset_cls(
                     data_source=bench_config["valid_file"],
                     tokenizer=tokenizer,
                     label2id=bench_config["label2id"],
                     max_length=bench_config["max_length"],
+                    **kwargs,
                 )
 
                 train_loader = torch.utils.data.DataLoader(

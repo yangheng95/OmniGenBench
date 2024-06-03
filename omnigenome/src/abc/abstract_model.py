@@ -81,9 +81,9 @@ def last_hidden_state_forward(model, inputs, ss=None, tokenizer=None):
     elif hasattr(outputs, "hidden_states"):
         last_hidden_state = outputs.hidden_states[-1]
     elif (
-            isinstance(outputs, list)
-            or isinstance(outputs, tuple)
-            or isinstance(outputs, torch.Tensor)
+        isinstance(outputs, list)
+        or isinstance(outputs, tuple)
+        or isinstance(outputs, torch.Tensor)
     ):
         # For some models like DNABERT-2, the outputs is a list, tuple of tensors
         last_hidden_state = outputs[-1] if len(outputs[-1].shape) == 3 else outputs[0]
@@ -138,7 +138,6 @@ class OmniGenomePooling(torch.nn.Module):
         self.config = config
         self.pooler = BertPooler(self.config) if not self._is_causal_lm() else None
 
-
     def forward(self, inputs, last_hidden_state):
         if isinstance(inputs, tuple):
             input_ids = inputs[0]
@@ -167,10 +166,10 @@ class OmniGenomePooling(torch.nn.Module):
 
     def _is_causal_lm(self):
         if (
-                hasattr(self.config, "architectures")
-                and "CausalLM" in str(self.config.architectures)
+            hasattr(self.config, "architectures")
+            and "CausalLM" in str(self.config.architectures)
         ) or (
-                hasattr(self.config, "auto_map") and "CausalLM" in str(self.config.auto_map)
+            hasattr(self.config, "auto_map") and "CausalLM" in str(self.config.auto_map)
         ):
             return True
         else:
@@ -323,9 +322,9 @@ class OmniGenomeModel(torch.nn.Module):
             os.makedirs(path)
 
         for file in findfile.find_files(
-                self.config.name_or_path,
-                and_key=[],
-                exclude_key=["pytorch_model", "model", "safetensors"],
+            self.config.name_or_path,
+            and_key=[],
+            exclude_key=["pytorch_model", "model", "safetensors"],
         ):
             shutil.copyfile(file, f"{path}/{os.path.basename(file)}")
 
@@ -371,15 +370,15 @@ class OmniGenomeModel(torch.nn.Module):
 
     def _forward_from_raw_input(self, sequence_or_inputs, **kwargs):
         if not isinstance(sequence_or_inputs, BatchEncoding) and not isinstance(
-                sequence_or_inputs, dict
+            sequence_or_inputs, dict
         ):
             inputs = self.tokenizer(
                 sequence_or_inputs,
                 padding=kwargs.pop("padding", True),
                 max_length=kwargs.pop("max_length", 1024),
-                truncation=kwargs.pop('truncation', True),
-                return_tensors=kwargs.pop('return_tensors', 'pt'),
-                **kwargs
+                truncation=kwargs.pop("truncation", True),
+                return_tensors=kwargs.pop("return_tensors", "pt"),
+                **kwargs,
             )
         else:
             inputs = sequence_or_inputs

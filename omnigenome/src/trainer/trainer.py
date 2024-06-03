@@ -16,6 +16,7 @@ from tqdm import tqdm
 from ..misc.utils import env_meta_info, fprint, seed_everything
 
 import sklearn.metrics
+from hashlib import sha256
 
 
 def _infer_optimization_direction(metrics, prev_metrics):
@@ -106,6 +107,7 @@ class Trainer:
         self.metadata = env_meta_info()
         self.metrics = {}
 
+        self._optimization_direction = None
         self.trial_name = kwargs.get("trial_name", self.model.__class__.__name__)
 
     def _is_metric_better(self, metrics, stage="valid"):
@@ -123,34 +125,28 @@ class Trainer:
                 self.metrics.update({f"{stage}": [metrics]})
             else:
                 self.metrics[f"{stage}"].append(metrics)
-            return True
-
-        if stage not in self.metrics:
-            self.metrics.update({f"{stage}": [metrics]})
-        else:
-            self.metrics[f"{stage}"].append(metrics)
 
         if "best_valid" not in self.metrics:
             self.metrics.update({"best_valid": metrics})
+            return True
+        self._optimization_direction = (
+            _infer_optimization_direction(metrics, prev_metrics)
+            if self._optimization_direction is None
+            else self._optimization_direction
+        )
 
-        if _infer_optimization_direction(metrics, prev_metrics) == "larger_is_better":
+        if self._optimization_direction == "larger_is_better":
             if np.mean(list(metrics.values())[0]) > np.mean(
                 list(self.metrics["best_valid"].values())[0]
             ):
                 self.metrics.update({"best_valid": metrics})
                 return True
-            else:
-                return False
-        elif (
-            _infer_optimization_direction(metrics, prev_metrics) == "smaller_is_better"
-        ):
+        elif self._optimization_direction == "smaller_is_better":
             if np.mean(list(metrics.values())[0]) < np.mean(
                 list(self.metrics["best_valid"].values())[0]
             ):
                 self.metrics.update({"best_valid": metrics})
                 return True
-            else:
-                return False
 
         return False
 
@@ -280,26 +276,28 @@ class Trainer:
         self.model.save(path, overwrite, **kwargs)
 
     def _load_state_dict(self):
-        model_state_dict_path = (
-            self.model.model.__class__.__name__ + "_model_state_dict.pt"
-        )
-        if os.path.exists(model_state_dict_path):
-            self.model.load_state_dict(torch.load(model_state_dict_path))
+        if os.path.exists(self._model_state_dict_path):
+            self.model.load_state_dict(torch.load(self._model_state_dict_path))
         self.model.to(self.device)
 
     def _save_state_dict(self):
-        model_state_dict_path = (
-            self.model.model.__class__.__name__ + "_model_state_dict.pt"
-        )
-        if os.path.exists(model_state_dict_path):
-            os.remove(model_state_dict_path)
+        if not hasattr(self, "_model_state_dict_path"):
+            self._model_state_dict_path = (
+                sha256(self.__repr__().encode()).hexdigest() + "_model_state_dict.pt"
+            )
+
+        if os.path.exists(self._model_state_dict_path):
+            os.remove(self._model_state_dict_path)
+
         self.model.to("cpu")
-        torch.save(self.model.state_dict(), model_state_dict_path)
+        torch.save(self.model.state_dict(), self._model_state_dict_path)
         self.model.to(self.device)
 
     def _remove_state_dict(self):
-        model_state_dict_path = (
-            self.model.model.__class__.__name__ + "_model_state_dict.pt"
-        )
-        if os.path.exists(model_state_dict_path):
-            os.remove(model_state_dict_path)
+        if not hasattr(self, "_model_state_dict_path"):
+            self._model_state_dict_path = (
+                sha256(self.__repr__().encode()).hexdigest() + "_model_state_dict.pt"
+            )
+
+        if os.path.exists(self._model_state_dict_path):
+            os.remove(self._model_state_dict_path)

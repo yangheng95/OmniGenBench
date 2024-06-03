@@ -88,7 +88,8 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
             for example in tqdm.tqdm(self.examples):
                 try:
                     self.max_length = min(
-                        self.max_length, max(self.max_length, len(example["sequence"]) - 4)
+                        self.max_length,
+                        max(self.max_length, len(example["sequence"]) - 4),
                     )
                 except KeyError:
                     pass
@@ -256,10 +257,14 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
 
     def _preprocessing(self):
         for idx, ex in enumerate(self.examples):
-            if "seq" in self.examples[idx]:  # For the RNA or DNA stored in the "seq" field
+            if (
+                "seq" in self.examples[idx]
+            ):  # For the RNA or DNA stored in the "seq" field
                 self.examples[idx]["sequence"] = self.examples[idx]["seq"]
                 del self.examples[idx]["seq"]
-            if "text" in self.examples[idx]:  # For the RNA or DNA stored in the "text" field
+            if (
+                "text" in self.examples[idx]
+            ):  # For the RNA or DNA stored in the "text" field
                 self.examples[idx]["sequence"] = self.examples[idx]["text"]
                 del self.examples[idx]["text"]
 
