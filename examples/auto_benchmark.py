@@ -23,6 +23,7 @@ if __name__ == "__main__":
         "genomic_foundation_models/hyenadna-large-1m-seqlen-hf",
         "genomic_foundation_models/nucleotide-transformer-v2-100m-multi-species",
     ]
+    # bench_root could be "RGB", "GB", "PGB", "GUE", which will be downloaded from the Hugging Face model hub
     bench_root = "RGB"
     bench_size = 8
     seeds = [3407, 3408, 3409]

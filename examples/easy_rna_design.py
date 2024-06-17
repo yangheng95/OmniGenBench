@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     structures = target_structures[:]
 
-    model = OmniGenomeModelForSeq2SeqLM.from_pretrained("yangheng/OmniGenome-186M")
+    model = OmniGenomeModelForSeq2SeqLM.from_pretrained("anonymous8/OmniGenome-186M")
     model.to("cuda") if torch.cuda.is_available() else model.to("cpu")
 
     num_all = 0
