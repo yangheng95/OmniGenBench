@@ -9,6 +9,7 @@
 
 import importlib
 import os
+import time
 import warnings
 
 import autocuda
@@ -16,6 +17,7 @@ import findfile
 import torch
 from metric_visualizer import MetricVisualizer
 
+from ...utility.hub_utils import download_benchmark
 from ...src.abc.abstract_tokenizer import OmniGenomeTokenizer
 from ...src.misc.utils import seed_everything, fprint, load_module_from_path
 from ...src.trainer.trainer import Trainer
@@ -25,6 +27,13 @@ class AutoBench:
     def __init__(
         self, bench_root, model_name_or_path, tokenizer=None, device=None, **kwargs
     ):
+        if not os.path.exists(bench_root):
+            fprint(
+                "Benchmark:",
+                bench_root,
+                "does not exist. Search online for available benchmarks.",
+            )
+            bench_root = download_benchmark(bench_root)
         self.bench_root = bench_root.rstrip("/")
         self.model_name_or_path = model_name_or_path.rstrip("/")
         self.tokenizer = tokenizer.rstrip("/") if tokenizer else None
@@ -101,8 +110,15 @@ class AutoBench:
                 bench_config["seeds"] = [bench_config["seeds"]]
 
             for seed in bench_config["seeds"]:
+                # # for the peace in the lab
+                # import datetime
+                # hour = datetime.datetime.now().hour
+                # if hour >= 11 and hour <= 18:
+                #     print(f'Sleeping for {18 - hour} hours')
+                #     time.sleep((18 - hour) * 3600)
+
                 batch_size = (
-                    bench_config["batch_size"] if "batch_size" in bench_config else 16
+                    bench_config["batch_size"] if "batch_size" in bench_config else 8
                 )
 
                 record_name = f"{self.bench_root}-{self.model_name_or_path}-{bench}"

@@ -52,7 +52,7 @@ class ModelHub:
         model_lib = importlib.import_module(metadata["library_name"].lower()).model
         model_cls = getattr(model_lib, metadata["model_cls"])
 
-        if 'Omni' in metadata["tokenizer_cls"]:
+        if "Omni" in metadata["tokenizer_cls"]:
             lib = importlib.import_module(metadata["library_name"].lower())
             tokenizer_cls = getattr(lib, metadata["tokenizer_cls"])
             tokenizer = tokenizer_cls.from_pretrained(path, **kwargs)

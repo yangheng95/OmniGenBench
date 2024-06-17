@@ -18,9 +18,7 @@ import tqdm
 from termcolor import colored
 
 from omnigenome import __version__ as current_version
-from omnigenome.src.misc.utils import fprint
-
-default_repo = "https://huggingface.co/spaces/anonymous8/gfm_hub/"
+from omnigenome.src.misc.utils import fprint, default_omnigenome_repo
 
 
 def unzip_checkpoint(checkpoint_path):
@@ -76,7 +74,7 @@ def query_pipelines_info(
         with open("./pipelines_info.json", "r", encoding="utf8") as f:
             pipelines_info = json.load(f)
     else:
-        repo = repo if repo else default_repo
+        repo = (repo if repo else default_omnigenome_repo) + "/resolve/main/"
         try:
             response = requests.get(repo + "pipelines_info.json")
             pipelines_info = response.json()
@@ -101,36 +99,36 @@ def query_pipelines_info(
         return pipelines_info
 
 
-def query_datasets_info(
+def query_benchmark_info(
     keyword: Union[list, str], repo: str = None, local_only: bool = False, **kwargs
 ) -> Dict[str, Any]:
     if local_only:
-        with open("./datasets_info.json", "r", encoding="utf8") as f:
-            datasets_info = json.load(f)
+        with open("./benchmark_info.json", "r", encoding="utf8") as f:
+            benchmark_info = json.load(f)
     else:
-        repo = repo if repo else default_repo
+        repo = (repo if repo else default_omnigenome_repo) + "/resolve/main/"
         try:
-            response = requests.get(repo + "datasets_info.json")
-            datasets_info = response.json()
-            with open("./datasets_info.json", "w", encoding="utf8") as f:
-                json.dump(datasets_info, f)
+            response = requests.get(repo + "benchmark_info.json")
+            benchmark_info = response.json()
+            with open("./benchmark_info.json", "w", encoding="utf8") as f:
+                json.dump(benchmark_info, f)
         except Exception as e:
             fprint(
                 "Fail to download datasets info from huggingface space, the error is: {}".format(
                     e
                 )
             )
-            with open("./datasets_info.json", "r", encoding="utf8") as f:
-                datasets_info = json.load(f)
+            with open("./benchmark_info.json", "r", encoding="utf8") as f:
+                benchmark_info = json.load(f)
 
     if isinstance(keyword, str):
-        filtered_datasets_info = {}
-        for key in datasets_info:
+        filtered_benchmark_info = {}
+        for key in benchmark_info:
             if keyword in key:
-                filtered_datasets_info[key] = datasets_info[key]
-        return filtered_datasets_info
+                filtered_benchmark_info[key] = benchmark_info[key]
+        return filtered_benchmark_info
     else:
-        return datasets_info
+        return benchmark_info
 
 
 def download_model(
@@ -145,12 +143,18 @@ def download_model(
     :param cache_dir: The directory to cache the downloaded model.
     :return: A string representing the path to the downloaded model.
     """
-    cache_dir = cache_dir if cache_dir else "__OMNIGENOME_DATA__"
+    cache_dir = (cache_dir if cache_dir else "__OMNIGENOME_DATA__") + "/models/"
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir)
+    ckpt_config = findfile.find_files(cache_dir, ["config.json"])
+    if ckpt_config:
+        return os.path.dirname(ckpt_config[0])
+
     if local_only:
         with open("./models_info.json", "r", encoding="utf8") as f:
             models_info = json.load(f)
     else:
-        repo = repo if repo else default_repo
+        repo = (repo if repo else default_omnigenome_repo) + "/resolve/main/"
         try:
             response = requests.get(repo + "models_info.json")
             models_info = response.json()
@@ -165,16 +169,12 @@ def download_model(
             with open("./models_info.json", "r", encoding="utf8") as f:
                 models_info = json.load(f)
 
-    model_info = models_info[model_name_or_path]
-
     if model_name_or_path in models_info:
-        ckpt_config = findfile.find_files(cache_dir, ["config.json"])
-        if ckpt_config:
-            return os.path.dirname(ckpt_config[0])
+        model_info = models_info[model_name_or_path]
         try:
             model_url = f'{repo}/models/{model_info["filename"]}'
             response = requests.get(model_url, stream=True)
-            cache_path = os.path.join(cache_dir, f"models/{model_info['filename']}")
+            cache_path = os.path.join(cache_dir, f"{model_info['filename']}")
             with open(cache_path, "wb") as f:
                 for chunk in tqdm.tqdm(
                     response.iter_content(chunk_size=1024 * 1024),
@@ -207,12 +207,18 @@ def download_pipeline(
     :param cache_dir: The directory to cache the downloaded pipeline.
     :return: A string representing the path to the downloaded pipeline.
     """
-    cache_dir = cache_dir if cache_dir else "__OMNIGENOME_DATA__"
+    cache_dir = (cache_dir if cache_dir else "__OMNIGENOME_DATA__") + "/pipelines/"
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir)
+    ckpt_config = findfile.find_files(cache_dir, ["config.json"])
+    if ckpt_config:
+        return os.path.dirname(ckpt_config[0])
+
     if local_only:
         with open("./pipelines_info.json", "r", encoding="utf8") as f:
             pipelines_info = json.load(f)
     else:
-        repo = repo if repo else default_repo
+        repo = (repo if repo else default_omnigenome_repo) + "/resolve/main/"
         try:
             response = requests.get(repo + "pipelines_info.json")
             pipelines_info = response.json()
@@ -227,18 +233,13 @@ def download_pipeline(
             with open("./pipelines_info.json", "r", encoding="utf8") as f:
                 pipelines_info = json.load(f)
 
-    pipeline_info = pipelines_info[pipeline_name_or_path]
-
     if pipeline_name_or_path in pipelines_info:
-        ckpt_config = findfile.find_files(cache_dir, ["config.json"])
-        if ckpt_config:
-            return os.path.dirname(ckpt_config[0])
+        pipeline_info = pipelines_info[pipeline_name_or_path]
+
         try:
             pipeline_url = f'{repo}/pipelines/{pipeline_info["filename"]}'
             response = requests.get(pipeline_url, stream=True)
-            cache_path = os.path.join(
-                cache_dir, f"pipelines/{pipeline_info['filename']}"
-            )
+            cache_path = os.path.join(cache_dir, f"{pipeline_info['filename']}")
             with open(cache_path, "wb") as f:
                 for chunk in tqdm.tqdm(
                     response.iter_content(chunk_size=1024 * 1024),
@@ -256,13 +257,80 @@ def download_pipeline(
         raise ValueError("Pipeline not found in the repository.")
 
 
+def download_benchmark(
+    benchmark_name_or_path: str,
+    local_only: bool = False,
+    repo: str = None,
+    cache_dir=None,
+) -> str:
+    """
+
+    :param benchmark_name_or_path:
+    :param local_only:
+    :param repo:
+    :param cache_dir:
+    :return:
+    """
+
+    cache_dir = (cache_dir if cache_dir else "__OMNIGENOME_DATA__") + "/benchmarks/"
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir)
+    bench_config = findfile.find_file(
+        cache_dir, [benchmark_name_or_path, "metadata.py"]
+    )
+    if bench_config:
+        return os.path.dirname(bench_config)
+
+    if local_only:
+        with open("./benchmarks_info.json", "r", encoding="utf8") as f:
+            benchmarks_info = json.load(f)
+    else:
+        repo = (repo if repo else default_omnigenome_repo) + "resolve/main/"
+        try:
+            response = requests.get(repo + "benchmarks_info.json")
+            benchmarks_info = response.json()
+            with open("./benchmarks_info.json", "w", encoding="utf8") as f:
+                json.dump(benchmarks_info, f)
+        except Exception as e:
+            fprint(
+                "Fail to download datasets info from huggingface space, the error is: {}".format(
+                    e
+                )
+            )
+            with open("./benchmarks_info.json", "r", encoding="utf8") as f:
+                benchmarks_info = json.load(f)
+
+    if benchmark_name_or_path in benchmarks_info:
+        benchmark_info = benchmarks_info[benchmark_name_or_path]
+
+        try:
+            benchmark_url = f'{repo}benchmarks/{benchmark_info["filename"]}'
+            response = requests.get(benchmark_url, stream=True)
+            cache_path = os.path.join(cache_dir, f"{benchmark_info['filename']}")
+            with open(cache_path, "wb") as f:
+                for chunk in tqdm.tqdm(
+                    response.iter_content(chunk_size=1024 * 1024),
+                    unit="MB",
+                    total=int(response.headers["content-length"]) // 1024 // 1024,
+                    desc="Downloading benchmark",
+                ):
+                    f.write(chunk)
+        except Exception as e:
+            raise ConnectionError("Fail to download benchmark: {}".format(e))
+
+        return unzip_checkpoint(cache_path)
+
+    else:
+        raise ValueError("Benchmark not found in the repository.")
+
+
 def check_version(repo: str = None) -> None:
     """
     Checks the version of the package.
 
     :param repo: The URL of the repository to check the version from.
     """
-    repo = repo if repo else default_repo
+    repo = repo if repo else default_omnigenome_repo
     try:
         response = requests.get(repo + "version.json")
         version_info = response.json()

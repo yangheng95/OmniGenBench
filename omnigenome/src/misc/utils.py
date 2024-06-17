@@ -12,7 +12,10 @@ import pickle
 import sys
 import time
 
-import RNA
+
+default_omnigenome_repo = (
+    "https://huggingface.co/spaces/yangheng/OmniGenomeLeaderboard/"
+)
 
 
 def seed_everything(seed=42):

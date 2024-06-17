@@ -203,7 +203,7 @@ class OmniGenomeModelForTokenClassificationWith2DStructure(
     def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
         super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
-
+        self.pooler = OmniGenomePooling(self.config)
         self.cat_layer = torch.nn.Linear(
             self.config.hidden_size * 2, self.config.hidden_size
         )
@@ -245,7 +245,7 @@ class OmniGenomeModelForSequenceClassificationWith2DStructure(
     def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
         super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
-
+        self.pooler = OmniGenomePooling(self.config)
         self.cat_layer = torch.nn.Linear(
             self.config.hidden_size * 2, self.config.hidden_size
         )
