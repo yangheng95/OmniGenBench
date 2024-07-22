@@ -42,7 +42,7 @@ bench.run(autocast=False, batch_size=bench_size, seeds=seeds)
 ```
 
 # License
-OmniGenome is licensed under the MIT License. See the LICENSE file for more information.
+OmniGenome is licensed under the Apache License 2.0. See the LICENSE file for more information.
 
 # Citation
 TBC
