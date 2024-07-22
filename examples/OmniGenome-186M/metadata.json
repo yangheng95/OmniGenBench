@@ -1,0 +1,1 @@
+{"library_name": "OmniGenome", "omnigenome_version": "0.0.7alpha", "torch_version": "2.1.2+cu12.1+gita8e7c98cb95ff97bb30a728c6b2a1ce6bff946eb", "transformers_version": "4.42.0.dev0", "model_cls": "OmniGenomeModelForTokenClassificationWith2DStructure", "tokenizer_cls": "OmniGenomeTokenizer", "model_name": "OmniGenomeModelForTokenClassificationWith2DStructure"}

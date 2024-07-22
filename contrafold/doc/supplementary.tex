@@ -1,0 +1,1054 @@
+\documentclass{article}
+
+\usepackage{macros,fullpage}
+\usepackage[boxed,linesnumbered]{algorithm2e}
+
+\newcommand{\A}{\texttt{A}}
+\newcommand{\U}{\texttt{U}}
+\newcommand{\G}{\texttt{G}}
+\newcommand{\C}{\texttt{C}}
+\newcommand{\N}{\texttt{N}}
+\newcommand{\doouter}{\varphi_\text{do outer}}
+\newcommand{\Adoouter}{\alpha_\text{do outer}}
+\newcommand{\Bdoouter}{\beta_\text{do outer}}
+\newcommand{\outerunpaired}{\phi_\text{outer unpaired}}
+\newcommand{\outerbranch}{\phi_\text{outer branch}}
+\newcommand{\vhairpin}{\varphi_\text{hairpin}}
+\newcommand{\hairpinlength}{\phi_\text{hairpin length}}
+\newcommand{\hairpinbase}{\phi_\text{hairpin base}}
+\newcommand{\hairpinextend}{\phi_\text{hairpin extend}}
+\newcommand{\internallength}{\phi_\text{internal length}}
+\newcommand{\internalfull}{\phi_\text{internal full}}
+\newcommand{\internalasymmetry}{\phi_\text{internal asymmetry}}
+\newcommand{\loopbase}{\phi_\text{loop base}}
+\newcommand{\loopmultiplier}{\phi_\text{loop multiplier}}
+\newcommand{\mismatch}{\phi_\text{terminal mismatch}}
+\newcommand{\multimismatch}{\varphi_\text{multi mismatch}}
+\newcommand{\sbpstackingleft}{\phi_\text{single base pair stacking left}}
+\newcommand{\sbpstackingright}{\phi_\text{single base pair stacking right}}
+\newcommand{\closing}{\phi_\text{terminal closing}}
+\newcommand{\helix}{\varphi_\text{helix}}
+\newcommand{\helixstacking}{\phi_\text{helix stacking}}
+\newcommand{\helixbasepair}{\phi_\text{helix base pair}}
+\newcommand{\helixextend}{\phi_\text{helix extend}}
+\newcommand{\helixclosing}{\phi_\text{helix closing}}
+\newcommand{\helixchange}{\phi_\text{helix change}}
+\newcommand{\helixlength}{\varphi_\text{helix length}}
+\newcommand{\doloop}{\varphi_\text{do loop}}
+\newcommand{\Adoloop}{\alpha_\text{do loop}}
+\newcommand{\Bdoloop}{\beta_\text{do loop}}
+\newcommand{\single}{\varphi_\text{single}}
+\newcommand{\dosingle}{\varphi_\text{do single}}
+\newcommand{\Adosingle}{\alpha_\text{do single}}
+\newcommand{\Bdosingle}{\beta_\text{do single}}
+\newcommand{\multi}{\varphi_\text{multi}}
+\newcommand{\domulti}{\varphi_\text{do multi}}
+\newcommand{\Adomulti}{\alpha_\text{do multi}}
+\newcommand{\Bdomulti}{\beta_\text{do multi}}
+\newcommand{\startmulti}{\varphi_\text{start multi}}
+\newcommand{\Astartmulti}{\alpha_\text{start multi}}
+\newcommand{\Bstartmulti}{\beta_\text{start multi}}
+\newcommand{\multibase}{\phi_\text{multi base}}
+\newcommand{\multiunpaired}{\phi_\text{multi unpaired}}
+\newcommand{\multipaired}{\phi_\text{multi paired}}
+\newcommand{\generic}{\varphi_\text{loop}}
+\newcommand{\bulge}{\varphi_\text{bulge}}
+\newcommand{\bulgelength}{\phi_\text{bulge length}}
+\newcommand{\internal}{\varphi_\text{internal}}
+\newcommand{\dohelix}{\varphi_\text{do helix}}
+\newcommand{\Adohelix}{\alpha_\text{do helix}}
+\newcommand{\Bdohelix}{\beta_\text{do helix}}
+\newcommand{\Endpair}{\varphi_\text{end pair}}
+\newcommand{\AEndpair}{\alpha_\text{end pair}}
+\newcommand{\BEndpair}{\beta_\text{end pair}}
+
+\begin{document}
+  
+  \begin{center}
+    \textbf{\large Supplementary Material for \vskip 0.5cm \Large CONTRAfold: RNA Secondary Structure Prediction without Physics-Based Models} \\
+    \vskip 0.5cm
+    Chuong B. Do, Daniel A. Woods, and Serafim Batzoglou \\
+    \vskip 0.5cm
+    Stanford University, Stanford, CA 94305, USA, \\
+    \texttt{\{chuongdo,danwoods,serafim\}@cs.stanford.edu}, \\
+    WWW home page: \texttt{http://contra.stanford.edu/contrafold/}    
+  \end{center}
+  \vskip 0.5cm
+
+  \begin{abstract}
+    In this supplementary material, we describe in full the structured
+    conditional log-linear model (structured CLLM) used in the CONTRAfold
+    program.  We also provide detailed pseudocode explicitly showing the 
+    dynamic programming recurrences needed to reproduce the CONTRAfold
+    algorithm, specifically CONTRAfold version 1.10.
+  \end{abstract}
+
+  \section{Preliminaries}
+
+  Let $\Sigma = \set{\A,\C,\G,\U,\N}$ be an alphabet, and consider
+  some string $x \in \Sigma^L$ of length $L$.  In the RNA secondary
+  structure prediction problem, $x$ represents an unfolded RNA string,
+  and $x_i$ refers to the $i$th character of $x$, for $i=1,\ldots,L$.  
+  For ease of notation, we say that there are $L+1$
+  \emph{positions} corresponding to $x$---one position at each of the two
+  ends of $x$, and $L-1$ positions between consecutive nucleotides of $x$.
+  We will assign indices ranging from 0 to $L$ for each position.  This is
+  illustrated in Figure~\ref{fig:positions}.
+
+  Let $\cY$ be the space of all possible structures of a sequence $x$.  
+  Structured conditional log-linear models (structured CLLMs) define the 
+  conditional probability of a structure $y \in \cY$ given an input RNA sequence $x$ as
+  \begin{align}
+    P(y \mid x; \bw) &= \frac{\exp (\bw^T \bF(x,y))}{\sum_{y' \in \cY} \exp (\bw^T \bF(x,y'))} \\
+    &= \frac{1}{Z(x)} \cdot \exp (\bw^T \bF(x,y)) \label{cllmdef}
+  \end{align}
+  where $\bF(x,y) \in \reals^n$ is an $n$-dimensional vector of feature counts describing $x$ and $y$, 
+  $\bw \in \reals^n$ is an $n$-dimensional vector
+  of parameters, and $Z(x)$ (known as the \emph{partition function} of a sequence $x$) is a normalization
+  constant ensuring that $P(y \mid x; \bw)$ forms a legal probability distribution over the
+  space of possible structures $\cY$.  In this representation, the ``weight'' associated with a structure
+  $y$ for a sequence $x$ is $\exp(\bw^T\bF(x,y))$.  Because the \emph{logarithm} of the weight is
+  a \emph{linear} function of the features $\bF(x,y)$, this is typically known as the
+  \emph{log-linear} representation of a CRF.
+
+  Now, consider the following reparameterization of \eqref{cllmdef}.  For each entry $w_i$ of $\bw$,
+  define $\phi_i = \exp(w_i)$.  It follows that \eqref{cllmdef} may be rewritten as
+  \begin{align}
+    P(y \mid x; \bw) &= \frac{1}{Z(x)} \cdot \prod_{i=1}^n \phi_i^{F_i(x,y)}
+  \end{align}
+  where $F_i(x,y)$ is the $i$th component of $\bF(x,y)$.  In this alternative representation, the
+  weight associated with a structure $y$ for a sequence $x$ is a product, $\prod_{i=1}^n \phi_i^{F_i(x,y)}$.  
+  We refer to this as the \emph{potential} representation of a CRF, where each parameter $\phi_i$ is called
+  a \emph{potential}.  
+  
+  In Figure~\ref{fig:potentials},
+  we list all of the potentials $\set{\phi_i}$ involved in scoring a structure $y$.  Then, in Section~\ref{sec:featurecounts}, we
+  define the feature counts $\set{F_i(x,y)}$ for a sequence $x$ and its structure $y$.  Finally, in the remaining sections,
+  we describe the dynamic programming recurrences needed to perform inference using our probabilistic model.
+
+  \begin{figure}[t]
+    \centering
+    \rput{0}(-2.0,-1){\texttt{.}}
+    \rput{0}(-1.8,-1){\texttt{A}}
+    \rput{0}(-1.6,-1){\texttt{.}}
+    \rput{0}(-1.4,-1){\texttt{G}}
+    \rput{0}(-1.2,-1){\texttt{.}}
+    \rput{0}(-1.0,-1){\texttt{A}}
+    \rput{0}(-0.8,-1){\texttt{.}}
+    \rput{0}(-0.6,-1){\texttt{G}}
+    \rput{0}(-0.4,-1){\texttt{.}}
+    \rput{0}(-0.2,-1){\texttt{A}}
+    \rput{0}(0.0,-1){\texttt{.}}
+    \rput{0}(0.2,-1){\texttt{C}}
+    \rput{0}(0.4,-1){\texttt{.}}
+    \rput{0}(0.6,-1){\texttt{U}}
+    \rput{0}(0.8,-1){\texttt{.}}
+    \rput{0}(1.0,-1){\texttt{U}}
+    \rput{0}(1.2,-1){\texttt{.}}
+    \rput{0}(1.4,-1){\texttt{C}}
+    \rput{0}(1.6,-1){\texttt{.}}
+    \rput{0}(1.8,-1){\texttt{U}}
+    \rput{0}(2.0,-1){\texttt{.}}
+    \rput{0}(-2.5,-2){position 0}
+    \rput{0}(2.5,-2){position $L$}
+    \rput{0}(-1,-2.5){position 4}
+    \rput{0}(1,-2.5){position 5}
+    \rput{0}(0,0){nucleotide 5}
+    \psline{->}(0,-0.25)(-0.15,-0.75)
+    \psline{->}(-1,-2.25)(-0.45,-1.25)
+    \psline{->}(1,-2.25)(0.1,-1.25)
+    \psline{->}(-2.5,-1.75)(-2.1,-1.25)
+    \psline{->}(2.5,-1.75)(2.1,-1.25)
+    \vskip 2.85cm
+    \caption{Positions in a sequence of length $L=10$.}
+    \label{fig:positions}
+  \end{figure}
+
+  \begin{figure}
+    \begin{center}
+      \begin{tabular}{lll}
+	$\hairpinbase$ & $\hairpinlength[\cdot]$ & $\helixbasepair(\cdot,\cdot)$ \\
+	$\hairpinextend$ & $\helixchange[\cdot]$ & $\helixclosing(\cdot,\cdot)$ \\
+	$\helixextend$ & $\bulgelength[\cdot]$ & $\sbpstackingleft((\cdot,\cdot),\cdot)$ \\
+	$\multibase$ & $\internallength[\cdot]$ & $\sbpstackingright((\cdot,\cdot),\cdot)$ \\
+	$\multiunpaired$ & $\internalasymmetry[\cdot]$ & $\mismatch((\cdot,\cdot),\cdot,\cdot)$ \\
+	$\multipaired$ & $\internalfull[\cdot][\cdot]$ & $\helixstacking((\cdot,\cdot),(\cdot,\cdot))$ \\
+      \end{tabular}    
+    \end{center}
+    \caption{List of all potentials used in the CONTRAfold model.}
+    \label{fig:potentials}
+  \end{figure}
+  
+  \section{Basic feature set}
+  \label{sec:featurecounts}
+
+  In this section, we define the feature counts $\set{F_i(x,y)}$ for a sequence
+  $x$ and a structure $y$.  One way to do this is to give, for each potential $\phi_i$ shown
+  in Figure~\ref{fig:potentials}, a formula \emph{explicitly} specifying how to compute the corresponding
+  feature $F_i(x,y)$.
+
+  Here, we will instead define feature counts \emph{implicitly} by
+  \begin{enumerate}
+  \item decomposing a secondary structure $y$ into four fundamental
+    types of substructures: hairpins, single-branched loops, helices, and multi-branched loops;
+  \item defining a \emph{factor}\footnote{
+    To be clear, a \emph{factor} is simply a collection of potentials that are associated with
+    the presence of a particular secondary structure subunit in a structure $y$.  For example,
+    the factor associated with a hairpin loop is simply the product of the parameter potentials which
+    are involved in ``scoring'' the hairpin loop.
+  } for each type of substructure as a product of potentials from Figure~\ref{fig:potentials};
+  \item defining the product $\prod_{i=1}^n \phi_i^{F_i(x,y)}$ as a product of factors for
+    each substructure in $y$.
+  \end{enumerate}
+  By specifying which potentials are included in the computation of the factor for each type of
+  substructure, we thus define the feature counts $\set{F_i(x,y)}$ implicitly as the \emph{number of times
+  each potential $\phi_i$ is used in the product of factors for a structure $y$}.
+
+  \subsection{Hairpins}
+
+  A hairpin is a loop with only one adjacent base pair, known as
+  its \emph{closing base pair}.  For $1 \le i \le j < L$, we say that a
+  hairpin spans positions $i$ to $j$ if
+  $x_i$ and $x_{j+1}$ form the closing base pair (see Figure~\ref{fig:hairpin}).
+  For hairpins, energy-based secondary structure folding algorithms such as
+  Mfold assign free energy increments for each of the following:
+  \begin{itemize-compact}
+  \item energies corresponding to the length of the loop (i.e., a hairpin 
+    spanning positions $i$ to $j$ has length $j-i$),
+  \item terminal mismatch stacking energies as a function of the closing base
+    pair $(x_i,x_{j+1})$ and the first unpaired nucleotides in the loop,
+    $x_{i+1}$ and $x_j$,
+  \item bonus free energies for loops containing specific nucleotide sequences, and
+  \item other special cases.
+  \end{itemize-compact}
+  CONTRAfold uses a simplified scoring model for hairpins which ignores
+  the latter two cases.  In particular, the factor $\vhairpin(i,j)$ of a hairpin 
+  spanning positions $i$ to $j$ is
+  \begin{align}
+    &\vhairpin(i,j) = {} \nonumber \\
+    &\qquad\mismatch((x_i,x_{j+1}),x_{i+1},x_j) \nonumber \\
+    &\qquad{}\cdot\begin{cases}
+      \hairpinlength[j-i] & \text{if $0 \le j-i \le 30$} \\
+      \hairpinbase \cdot \left(\hairpinextend\right)^{\ln(j-i)} & \text{if $j-i > 30$}.
+    \end{cases}
+  \end{align}
+  In the above expression, the first term accounts for
+  terminal mismatches arising from the fact that $(x_i,x_{j+1})$ are paired, but
+  $x_{i+1}$ and $x_j$ are not.\footnote{
+    Here, note that the order of the arguments is important so as to ensure that the
+    parameters are invariant with respect to the orientation of the substructure.
+    For example, we expect the parameter for $\A\G$ stacking on top of $\C\U$ to be
+    the same as the parameter for $\U\C$ stacking on top of $\G\A$.
+  } The second term
+  scores the hairpin based on its length.
+  For loops under size 30, potentials are read directly from a table.
+  For longer loops, the factor above directly imitates
+  typical energy-based scoring schemes, which estimate the free energy increment of 
+  a loop of length $j-i$ as
+  \begin{align}
+    a + b \cdot \ln (j-i),
+  \end{align}
+  for fixed constants $a$ and $b$.  By analogy, we have
+  \begin{align}
+    &\hairpinbase \cdot \left(\hairpinextend\right)^{\ln(j-i)} \nonumber \\
+    &\qquad{} = \exp(\ln(\hairpinbase) + \ln(\hairpinextend) \cdot \ln(j-i)) \\
+    &\qquad{} = \exp(a' + b' \cdot \ln(j-i))
+  \end{align}
+  where
+  \begin{align}
+    a' &= \ln(\hairpinbase) \\
+    b' &= \ln(\hairpinextend).
+  \end{align}
+
+  \begin{figure}[t]
+    \centering
+    \vskip 0.5cm
+    \rput{0}(-2.0,-1){\texttt{.}}
+    \rput{0}(-1.8,-1){\texttt{A}}
+    \rput{0}(-1.6,-1){\texttt{.}}
+    \rput{0}(-1.4,-1){\texttt{G}}
+    \rput{0}(-1.2,-1){\texttt{.}}
+    \rput{0}(-1.0,-1){\texttt{A}}
+    \rput{0}(-1.8,-1.4){\texttt{|}}
+    \rput{0}(-1.4,-1.4){\texttt{|}}
+    \rput{0}(-1.0,-1.4){\texttt{|}}
+    \rput{0}(-2.0,-1.8){\texttt{.}}
+    \rput{0}(-1.8,-1.8){\texttt{U}}
+    \rput{0}(-1.6,-1.8){\texttt{.}}
+    \rput{0}(-1.4,-1.8){\texttt{C}}
+    \rput{0}(-1.2,-1.8){\texttt{.}}
+    \rput{0}(-1.0,-1.8){\texttt{U}}
+    \rput{0}(-0.8,-0.8){\texttt{.}}
+    \rput{0}(-0.8,-2.0){\texttt{.}}
+    \rput{0}(-0.6,-0.7){\texttt{A}}
+    \rput{0}(-0.6,-2.1){\texttt{G}}
+    \rput{0}(-0.4,-0.7){\texttt{.}}
+    \rput{0}(-0.4,-2.2){\texttt{.}}
+    \rput{0}(-0.2,-0.7){\texttt{A}}
+    \rput{0}(-0.2,-2.1){\texttt{U}}
+    \rput{0}(-0.0,-0.8){\texttt{.}}
+    \rput{0}(-0.0,-2.0){\texttt{.}}
+    \rput{0}(0.2,-1.0){\texttt{G}}
+    \rput{0}(0.2,-1.8){\texttt{A}}
+    \rput{0}(0.3,-1.4){\texttt{.}}
+    \psline{->}(-2.5,0)(-1.2,-0.8)
+    \psline{->}(-2.5,-2.8)(-1.2,-2.0)
+    \psline{->}(-0.8, 0.25)(-0.8,-0.65)
+    \psline{->}(-0.8,-3.05)(-0.8,-2.15)
+    \rput{0}(-3,0.25){nucleotide $i$}
+    \rput{0}(-3,-3.05){nucleotide $j+1$}
+    \rput{0}(-0.8,0.5){position $i$}
+    \rput{0}(-0.8,-3.3){position $j$}
+    \vskip 3.5cm
+    \caption{A hairpin loop of length 6 spanning positions $i$ to $j$.}
+    \label{fig:hairpin}
+  \end{figure}
+
+  \subsection{Single-branched loops}
+
+  \begin{figure}[t]
+    \centering
+    \vskip 0.5cm
+    \rput{0}(-2.0,-1){\texttt{.}}
+    \rput{0}(-1.8,-1){\texttt{A}}
+    \rput{0}(-1.6,-1){\texttt{.}}
+    \rput{0}(-1.4,-1){\texttt{G}}
+    \rput{0}(-1.2,-1){\texttt{.}}
+    \rput{0}(-1.0,-1){\texttt{A}}
+    \rput{0}(-1.8,-1.4){\texttt{|}}
+    \rput{0}(-1.4,-1.4){\texttt{|}}
+    \rput{0}(-1.0,-1.4){\texttt{|}}
+    \rput{0}(-2.0,-1.8){\texttt{.}}
+    \rput{0}(-1.8,-1.8){\texttt{U}}
+    \rput{0}(-1.6,-1.8){\texttt{.}}
+    \rput{0}(-1.4,-1.8){\texttt{C}}
+    \rput{0}(-1.2,-1.8){\texttt{.}}
+    \rput{0}(-1.0,-1.8){\texttt{U}}
+    \rput{0}(-0.8,-0.8){\texttt{.}}
+    \rput{0}(-0.7,-2.0){\texttt{.}}
+    \rput{0}(-0.6,-0.7){\texttt{A}}
+%    \rput{0}(-0.6,-2.1){\texttt{G}}
+    \rput{0}(-0.4,-0.7){\texttt{.}}
+    \rput{0}(-0.4,-2.0){\texttt{G}}
+    \rput{0}(-0.2,-0.7){\texttt{A}}
+%    \rput{0}(-0.2,-2.1){\texttt{U}}
+    \rput{0}(-0.0,-0.8){\texttt{.}}
+    \rput{0}(-0.1,-2.0){\texttt{.}}
+    \rput{0}(0.2,-1.4){\texttt{|}}
+    \rput{0}(0.6,-1.4){\texttt{|}}
+    \rput{0}(1.0,-1.4){\texttt{|}}
+    \rput{0}(0.2,-1.0){\texttt{G}}
+    \rput{0}(0.2,-1.8){\texttt{U}}
+    \rput{0}(0.4,-1.0){\texttt{.}}
+    \rput{0}(0.4,-1.8){\texttt{.}}
+    \rput{0}(0.6,-1.0){\texttt{G}}
+    \rput{0}(0.6,-1.8){\texttt{C}}
+    \rput{0}(0.8,-1.0){\texttt{.}}
+    \rput{0}(0.8,-1.8){\texttt{.}}
+    \rput{0}(1.0,-1.0){\texttt{U}}
+    \rput{0}(1.0,-1.8){\texttt{A}}
+    \rput{0}(1.2,-1.0){\texttt{.}}
+    \rput{0}(1.2,-1.8){\texttt{.}}
+    \rput{0}(1.3,-1.0){\texttt{.}}
+    \rput{0}(1.3,-1.8){\texttt{.}}
+    \rput{0}(1.4,-1.0){\texttt{.}}
+    \rput{0}(1.4,-1.8){\texttt{.}}
+    \psline{->}(-2.5,0)(-1.2,-0.8)
+    \psline{->}(-2.5,-2.8)(-1.2,-2.0)
+    \psline{->}(-1.4, 0.25)(-0.8,-0.65)
+    \psline{->}(-1.4,-3.05)(-0.8,-2.15)
+    \psline{->}(0.6, 0.25)(-0.0,-0.65)
+    \psline{->}(0.6,-3.05)(-0.0,-2.15)
+    \psline{->}(1.7,0)(0.4,-0.8)
+    \psline{->}(1.7,-2.8)(0.4,-2.0)
+    \rput{0}(-3,0.25){nucleotide $i$}
+    \rput{0}(-3,-3.05){nucleotide $j+1$}
+    \rput{0}(-1.4,0.7){position $i$}
+    \rput{0}(-1.4,-3.5){position $j$}
+    \rput{0}(0.8,0.7){position $i'$}
+    \rput{0}(0.8,-3.5){position $j'$}
+    \rput{0}(2.4,0.25){nucleotide $i'+1$}
+    \rput{0}(2.4,-3.05){nucleotide $j'$}
+    \vskip 3.5cm
+    \caption{A single-branched (internal) loop of lengths 2 and 1 spanning positions $i$ to $i'$ and $j'$ to $j$.  Here, $\A$-$\U$ is the external closing base
+    pair and $\G$-$\U$ is the internal closing base pair.}
+    \label{fig:single}
+  \end{figure}
+
+  A single-branched loop is a loop which has two adjacent base pairs.
+  The outermost base pair is called the \emph{external closing base pair}
+  whereas the innermost base pair is called the 
+  \emph{internal closing base pair}.  Suppose $1 \le i \le i'$ and $j' \le j < L$.  
+  We say that a single-branched loop spans positions $i$ to $i'$ and $j'$ to $j$ if
+  $x_i$ and $x_{j+1}$ form the external closing base pair and
+  $x_{i'+1}$ and $x_{j'}$ form the internal closing base pair.  To ensure 
+  that the internal closing base pair is well-defined, we require that $i'+2 \le j'$
+  (see Figure~\ref{fig:single}).
+
+  A single-branched loop for which $i'=i$ and $j=j'$ is called a \emph{stacking pair}.
+  A single-branched loop for which either $i'=i$ or $j=j'$ (but not both) is called a \emph{bulge}.
+  Finally, a single-branched loop for which both $i'>i$ and $j>j'$ is called an $\ell_1 \times \ell_2$ \emph{internal loop}, 
+  where $\ell_1 = i'-i$ and $\ell_2 = j-j'$.
+  For now, we will treat the problem of only scoring bulges and internal loops; we
+  consider the scoring of stacking pairs separately in the next section.
+  
+  Energy-based scoring methods typically score internal loops and bulges by accounting for the
+  following:
+  \begin{itemize-compact}
+  \item energies based on the total loop length, $\ell_1 + \ell_2$,
+  \item energies based on the asymmetry in sizes of each side of the loop, $|\ell_1 - \ell_2|$,
+  \item special corrections for highly asymmetric $1 \times \ell$ (or $\ell \times 1$) loops 
+  \item terminal mismatch stacking energies for the external closing base
+    pair $(x_i,x_{j+1})$ and its adjacent nucleotides in the loop,
+    $x_{i+1}$ and $x_j$,
+  \item terminal mismatch stacking energies for the internal closing base
+    pair $(x_{j'},x_{i'+1})$ and its adjacent nucleotides in the loop,
+    $x_{j'+1}$ and $x_{i'}$, and
+  \item specific free energy increments for $1 \times 1$, $1 \times 2$, and $2 \times 2$ interior loops
+    as a function of their closing base pairs and the nucleotides in the loop.
+  \end{itemize-compact}
+  For computational tractability, many programs such as Mfold limit total loop lengths of
+  single-branched loops to a small constant $c$ (typically, $c=30$).
+
+  In CONTRAfold, the total loop length, loop asymmetry, and terminal mismatch stacking interaction
+  terms are retained.  The special corrections for asymmetric interior loops are replaced with a more general
+  two-dimensional table for scoring $\ell_1 \times \ell_2$ interior loops.
+  Finally, the large lookup tables which exhaustively characterize the energies of 
+  all $1 \times 1$, $1 \times 2$, and $2 \times 2$ interior loops are omitted.
+
+  Specifically, for all $1 \le i \le i'$ and $j' \le j \le L-1$ such that $i'+2\le j'$
+  and $1 \le i'-i+j-j' \le c$, the factor $\single(i,j,i',j')$ for a bulge or internal loop
+  is given by
+  \begin{align}
+    &\single(i,j,i',j') = \nonumber \\
+    &\qquad
+    \begin{cases}
+      \bulgelength[i'-i+j-j'] & \text{if $i'-i=0$ or $j-j'=0$}  \\
+      \internallength[i'-i+j-j'] & \text{if $i'>i$ and $j>j'$} \\
+      \qquad{} \cdot \internalasymmetry[|(i'-i)-(j-j')|] \\
+      \qquad{} \cdot \internalfull[i'-i][j-j']
+    \end{cases} \nonumber \\
+    &\qquad {} \cdot \mismatch((x_i,x_{j+1}),x_{i+1},x_j) \nonumber \\
+    &\qquad {} \cdot \mismatch((x_{j'},x_{i'+1}),x_{j'+1},x_{i'}). 
+  \end{align}
+  Like most energy-based methods, we use $c=30$ for computational tractability.
+  
+  \subsection{Helices}
+
+  \begin{figure}[t]
+    \centering
+    \vskip 0.5cm
+    \rput{0}(-2.0,-1){\texttt{.}}
+    \rput{0}(-1.8,-1){\texttt{A}}
+    \rput{0}(-1.6,-1){\texttt{.}}
+    \rput{0}(-1.4,-1){\texttt{G}}
+    \rput{0}(-1.2,-1){\texttt{.}}
+    \rput{0}(-1.0,-1){\texttt{A}}
+    \rput{0}(-0.8,-1){\texttt{.}}
+    \rput{0}(-0.6,-1){\texttt{C}}
+    \rput{0}(-0.4,-1){\texttt{.}}
+    \rput{0}(-0.2,-1){\texttt{U}}
+    \rput{0}(-0.0,-1){\texttt{.}}
+    \rput{0}(0.2,-1){\texttt{G}}
+    \rput{0}(-2.0,-1.8){\texttt{.}}
+    \rput{0}(-1.8,-1.8){\texttt{U}}
+    \rput{0}(-1.6,-1.8){\texttt{.}}
+    \rput{0}(-1.4,-1.8){\texttt{C}}
+    \rput{0}(-1.2,-1.8){\texttt{.}}
+    \rput{0}(-1.0,-1.8){\texttt{U}}
+    \rput{0}(-0.8,-1.8){\texttt{.}}
+    \rput{0}(-0.6,-1.8){\texttt{G}}
+    \rput{0}(-0.4,-1.8){\texttt{.}}
+    \rput{0}(-0.2,-1.8){\texttt{A}}
+    \rput{0}(-0.0,-1.8){\texttt{.}}
+    \rput{0}(0.2,-1.8){\texttt{C}}
+    \rput{0}(-1.8,-1.4){\texttt{|}}
+    \rput{0}(-1.4,-1.4){\texttt{|}}
+    \rput{0}(-1.0,-1.4){\texttt{|}}
+    \rput{0}(-0.6,-1.4){\texttt{|}}
+    \rput{0}(-0.2,-1.4){\texttt{|}}
+    \rput{0}(0.2,-1.4){\texttt{|}}
+    \rput{0}(0.4,-0.8){\texttt{.}}
+    \rput{0}(0.4,-2.0){\texttt{.}}
+    \rput{0}(0.6,-0.7){\texttt{A}}
+    \rput{0}(0.6,-2.1){\texttt{G}}
+    \rput{0}(0.8,-0.7){\texttt{.}}
+    \rput{0}(0.8,-2.2){\texttt{.}}
+    \rput{0}(0.9,-0.7){\texttt{.}}
+    \rput{0}(0.9,-2.2){\texttt{.}}
+    \rput{0}(1.0,-0.7){\texttt{.}}
+    \rput{0}(1.0,-2.2){\texttt{.}}
+    \psline{->}(-3.5,0)(-2.2,-0.8)
+    \psline{->}(-3.5,-2.8)(-2.2,-2.0)
+    \psline{->}(-1.8, 0.25)(-1.8,-0.65)
+    \psline{->}(-1.8,-3.05)(-1.8,-2.15)
+    \psline{->}(0.2, 0.25)(0.2,-0.65)
+    \psline{->}(0.2,-3.05)(0.2,-2.15)
+    \rput{0}(-4,0.25){position $i$}
+    \rput{0}(-4,-3.05){position $j$}
+    \rput{0}(-2,0.5){nucleotide $i+1$}
+    \rput{0}(-2,-3.3){nucleotide $j$}
+    \rput{0}(1,0.5){nucleotide $i+\ell$}
+    \rput{0}(1,-3.3){nucleotide $j-\ell+1$}
+    \vskip 3.5cm
+    \caption{A helix of length $\ell=6$ spanning positions $i$ to $j$.}
+    \label{fig:helices}
+  \end{figure}
+
+  A single-branched loop for which $i'=i$ and $j=j'$ is known as
+  a \emph{stacking pair}.  A sequence of one or more consecutive
+  stacking pairs is called a \emph{helix} (or stem); informally
+  then, a helix consists of several consecutive nucleotides of an RNA molecule
+  directly base pairing to a set of consecutive nucleotides which appear later
+  in the RNA sequence.
+
+  Now, consider a helix that matches nucleotides $x_{i+1}x_{i+2}\ldots x_{i+\ell}$
+  in a sequence $x$ to nucleotides $x_{j-\ell+1}x_{j-\ell+2}\ldots x_{j}$ which appear 
+  later in the sequence.  We say that this is a
+  helix of length $\ell$ starting at positions $i$ and $j$.  Nucleotides
+  $x_{i+1}$ and $x_j$ form the \emph{external closing base pair} of the helix 
+  whereas nucleotides $x_{i+\ell}$ and $x_{j-\ell+1}$ form the 
+  \emph{internal closing base pair} (see Figure~\ref{fig:helices}).
+  
+  Traditional energy-based methods such as Mfold score helices using
+  \begin{itemize-compact}
+  \item a sum of interaction terms for each stacking pair, and
+  \item penalties for each non-GC terminal closing base pair.
+  \end{itemize-compact}
+  Since stacking pair interaction terms are based on the nearest neighbor model, 
+  only Watson-Crick and wobble $\G\U$ base pairs are allowed; other pairings
+  are necessarily treated as small symmetric interior loops.
+  
+  CONTRAfold extends on traditional energy-based methods by including penalties
+  for all possible closing base pairs (not just the ``canonical'' pairings).  CONTRAfold
+  also considers the interaction of every pair of bases in the stem rather than ignoring
+  the non-canonical/non-$\G\U$ base pairs which are not found in the regular nearest
+  neighbor energy rules.  Finally, CONTRAfold includes scores for helix lengths, allowing
+  arbitrary scores for helix lengths of at most $d$ (in practice, we set $d=5$), and assigning
+  affine scores for helices of length greater than $d$.
+  
+  In particular, for $0 \le i \le i + 2\ell+2 \le  j \le L$,
+  the factor $\helix(i,j,\ell)$ for a helix of length $\ell$ starting at 
+  $i$ and $j$ is:
+  \begin{align}
+    &\helix(i,j,\ell) = {} \nonumber \\
+    &\qquad \helixclosing(x_{i+1},x_j) \nonumber \\
+    &\qquad{} \cdot \helixclosing(x_{j-\ell+1},x_{i+\ell}) \nonumber \\
+    &\qquad{} \cdot \prod_{k=1}^{\ell}
+    \helixbasepair(x_{i+k},x_{j-k+1}) \nonumber \\
+    &\qquad{} \cdot \prod_{k=1}^{\ell-1}
+    \helixstacking((x_{i+k},x_{j-k+1}),(x_{i+k+1},x_{j-k})) \nonumber \\
+    &\qquad{} \cdot \helixlength(\ell),
+  \end{align}
+  where 
+  \begin{align}
+    \helixlength(\ell) = 
+    \left(\prod_{i=1}^{\min(d,\ell)} \helixchange[i]\right) \cdot
+    \left(\helixextend\right)^{\max(\ell-d,0)}.
+  \end{align}
+  In this formulation, $\helixclosing(x_i,x_j)$ scores the
+  use of a particular base pair for closing a helix.
+  Similarly, $\helixstacking((x_i,x_j),(x_{i+1},x_{j-1}))$ scores the
+  interaction for stacking $(x_{i+1},x_{j-1})$ on top of $(x_i,x_j)$.  
+  Finally, the helix length score $\helixlength(\ell)$ is designed so that
+  the length component of the score for any helix of length $\ell \le d$ is given explicitly as
+  \begin{align}
+    (\helixchange[1]) \cdot (\helixchange[2]) \cdot \ldots \cdot (\helixchange[\ell]),
+  \end{align}
+  and helices of length $\ell > d$ have a correction potential of 
+  $\helixextend$ applied for each additional base pair.
+
+  \subsection{Multi-branched loops}
+  
+  \begin{figure}[t]
+    \centering
+    \vskip 0.5cm
+    \rput{0}(-2.0,-1){\texttt{.}}
+    \rput{0}(-1.8,-1){\texttt{A}}
+    \rput{0}(-1.6,-1){\texttt{.}}
+    \rput{0}(-1.4,-1){\texttt{G}}
+    \rput{0}(-1.2,-1){\texttt{.}}
+    \rput{0}(-1.0,-1){\texttt{A}}
+    \rput{0}(-1.8,-1.4){\texttt{|}}
+    \rput{0}(-1.4,-1.4){\texttt{|}}
+    \rput{0}(-1.0,-1.4){\texttt{|}}
+    \rput{0}(-2.0,-1.8){\texttt{.}}
+    \rput{0}(-1.8,-1.8){\texttt{U}}
+    \rput{0}(-1.6,-1.8){\texttt{.}}
+    \rput{0}(-1.4,-1.8){\texttt{C}}
+    \rput{0}(-1.2,-1.8){\texttt{.}}
+    \rput{0}(-1.0,-1.8){\texttt{U}}
+%
+    \rput{0}(-0.85,-2.1){\texttt{.}}
+    \rput{0}(-0.65,-2.2){\texttt{A}}
+    \rput{0}(-0.4,-2.3){\texttt{.}}
+    \rput{0}(-0.15,-2.3){\texttt{A}}
+    \rput{90}(0.15,-2.3){\texttt{|}}
+    \rput{0}(0.45,-2.3){\texttt{A}}
+%    \rput{0}(0.5,-2.35){\texttt{.}}
+    \rput{0}(0.7,-2.1){\texttt{.}}
+%    \rput{0}(0.85,-2){\texttt{.}}
+%
+    \rput{0}(-0.85,-0.8){\texttt{.}}
+    \rput{0}(-0.7,-0.6){\texttt{A}}
+    \rput{0}(-0.5,-0.45){\texttt{.}}
+    \rput{0}(-0.3,-0.35){\texttt{A}}
+    \rput{90}(-0.1,-0.35){\texttt{.}}
+    \rput{0}(0.1,-0.35){\texttt{A}}
+    \rput{0}(0.3,-0.45){\texttt{.}}
+    \rput{0}(0.5,-0.6){\texttt{A}}
+    \rput{0}(0.65,-0.8){\texttt{.}}
+%
+    \rput{0}(2.0,-1){\texttt{.}}
+    \rput{0}(1.9,-1){\texttt{.}}
+    \rput{0}(1.8,-1){\texttt{.}}
+    \rput{0}(1.6,-1){\texttt{A}}
+    \rput{0}(1.4,-1){\texttt{.}}
+    \rput{0}(1.2,-1){\texttt{G}}
+    \rput{0}(1.0,-1){\texttt{.}}
+    \rput{0}(0.8,-1){\texttt{A}}
+    \rput{0}(1.6,-1.4){\texttt{|}}
+    \rput{0}(1.2,-1.4){\texttt{|}}
+    \rput{0}(0.8,-1.4){\texttt{|}}
+    \rput{0}(2.0,-1.8){\texttt{.}}
+    \rput{0}(1.9,-1.8){\texttt{.}}
+    \rput{0}(1.8,-1.8){\texttt{.}}
+    \rput{0}(1.6,-1.8){\texttt{U}}
+    \rput{0}(1.4,-1.8){\texttt{.}}
+    \rput{0}(1.2,-1.8){\texttt{C}}
+    \rput{0}(1.0,-1.8){\texttt{.}}
+    \rput{0}(0.8,-1.8){\texttt{U}}
+%
+    \rput{0}(-0.15,-2.55){\texttt{.}}
+    \rput{0}(0.45,-2.55){\texttt{.}}
+    \rput{0}(-0.15,-2.8){\texttt{A}}
+    \rput{90}(0.15,-2.8){\texttt{|}}
+    \rput{0}(0.45,-2.8){\texttt{A}}
+    \rput{0}(-0.15,-3.05){\texttt{.}}
+    \rput{0}(0.45,-3.05){\texttt{.}}
+    \rput{0}(-0.15,-3.3){\texttt{A}}
+    \rput{90}(0.15,-3.3){\texttt{|}}
+    \rput{0}(0.45,-3.3){\texttt{A}}
+    \rput{0}(-0.15,-3.55){\texttt{.}}
+    \rput{0}(0.45,-3.55){\texttt{.}}
+    \rput{0}(-0.15,-3.65){\texttt{.}}
+    \rput{0}(0.45,-3.65){\texttt{.}}
+    \rput{0}(-0.15,-3.75){\texttt{.}}
+    \rput{0}(0.45,-3.75){\texttt{.}}
+    \psline{->}(-2.3,-2.8)(-1.0,-2.15)
+    \psline{->}(-1.4, 0.25)(-0.9,-0.65)
+    \psline{->}(-1.1,-3.05)(-0.5,-2.4)
+    \psline{->}(1.6, 0.25)(0.8,-0.65)
+    \psline{->}(1.1,-3.05)(0.8,-2.25)
+    \psline{->}(2.2,-2.8)(0.85,-2.2)
+    \rput{0}(-3,-3.05){position $j$}
+    \rput{0}(-1.4,0.7){position $i$}
+    \rput{0}(-1.4,-3.5){position $j_2$}
+    \rput{0}(1.7,0.7){position $i_1$}
+    \rput{0}(1.7,-3.5){position $i_2$}
+    \rput{0}(3,-3.05){position $j_1$}
+    \vskip 4cm
+    \caption{A multi-branched loop spanning positions $i$ to $i_1$, $j_1$ to $i_2$, and $j_2$ to $j$.}
+    \label{fig:multi}
+  \end{figure}
+
+  A multi-branched loop is a loop containing at least three adjacent base pairs.
+  More formally, suppose $i \le i_1 \le j_1 \le i_2 \le j_2 \le \ldots \le i_m \le j_m \le j$
+  where $m \ge 2$ and $i_k + 2 \le j_k$ for $k=1,\ldots,m$.  We say that a multibranch
+  loop spans positions $i$ to $i_1$, $j_1$ to $i_2$, \ldots, and $j_m$ to $j$ if
+  nucleotides $(x_i,x_{j+1})$ form the external closing base pair, and $(x_{j_k},x_{i_k+1})$
+  form the internal closing base pairs for $k=1,\ldots,m$ (see Figure~\ref{fig:multi}).
+
+  Let the length $\ell$ of a multi-branched loop be the number of unpaired bases, 
+  \begin{align}
+    \ell = i_1-i + j-j_m + \sum_{k=2}^{m} (i_k-j_{k-1}).
+  \end{align}
+  For computational tractability, most programs score multi-branched loops using
+  \begin{itemize-compact}
+  \item energy terms dependent on the length of the loop.
+  \item single base pair stacking energies describing the attachment of each helix to the multi-branched loop,
+  \item coaxial stacking terms for helices on the multi-branched loop that are separated by at most one unpaired position
+  \end{itemize-compact}
+
+  CONTRAfold uses a similar scoring scheme for multi-branched loops which ignores coaxial
+  stacking.  Specifically, if $1 \le i \le i_1 \le i_1 + 2 \le j_1 \le i_2 \le \ldots \le j \le L-1$, 
+  then the factor associated with a multi-branched loop spanning
+  positions $i$ to $i_1$, $j_1$ to $i_2$, \ldots, and $j_m$ to $j$ is
+  \begin{align}
+    &\multi(i,j,i_1,j_1,\ldots,i_m,j_m) = {} \nonumber \\
+    &\qquad\multibase \cdot \left(\multiunpaired\right)^\ell \cdot \left(\multipaired\right)^{m+1} \nonumber \\
+    &\qquad{} \cdot \multimismatch((x_i,x_{j+1}),x_{i+1},x_j) \nonumber \\
+    &\qquad{} \cdot \prod_{k=1}^m \multimismatch((x_{j_k},x_{i_k+1}),x_{j_k+1},x_{i_k}).
+  \end{align}
+  where
+  \begin{align}
+    &\multimismatch((x_i,x_{j+1}),x_{i+1},x_j) = {} \nonumber \\
+    &\qquad\sbpstackingleft((x_i,x_{j+1}),x_{i+1}) \cdot \sbpstackingright((x_i,x_{j+1}),x_j) 
+  \end{align}
+  This mirrors the affine energy models typically used for multi-branched loops
+  in energy-based methods.
+  
+  \newpage
+  \section{The Viterbi algorithm}
+
+  We now specify the Viterbi algorithm for computing the most likely structure via 
+  dynamic programming recurrences. Let $c$ be the maximum length of an internal loop or
+  bulge.  
+
+  \subsection{Definitions}
+  
+  We define the following factors:
+
+  \begin{itemize}
+  \item $\doouter(i)$, $0 \le i \le L$: the best possible score for folding the 
+    substring $x_{i+1} x_{i+2} \cdots x_L$, assuming that the ends of this substring
+    belong to the exterior loop of the RNA.
+  \item $\dohelix(i,j,n)$, $0 \le i \le j \le L$
+    \begin{itemize}
+    \item $0 \le n < d$: the best possible score for folding the substring 
+      $x_{i+1} x_{i+2} \cdots x_j$, assuming that exactly $n$ letters on each side of the substring 
+      are paired in a helix -- i.e., $(x_i,x_{j+1}), (x_{i-1},x_{j+2}), \ldots, (x_{i-n+1},x_{j+n})$ all form
+      base pairs, but $x_{i-n}$ and $x_{j+n+1}$ do not base pair.
+    \item $n=d$: the best possible score for folding the substring 
+      $x_{i+1} x_{i+2} \cdots x_j$, assuming that at least $d$ letters on each side of the substring
+      are paired in a helix -- i.e., $(x_i,x_{j+1}), (x_{i-1},x_{j+2}), \ldots, (x_{i-d+1},x_{j+d})$ all form
+      base pairs, and possibly more.      
+    \end{itemize}
+  \item $\domulti(i,j,n)$, $0 \le i \le j \le L$
+    \begin{itemize}
+    \item $0 \le n < 2$: the best possible score for folding the substring 
+      $x_{i+1} x_{i+2} \cdots x_j$, assuming that the substring is part of a multibranch loop
+      that contains exactly contains $n$ adjacent helices besides the exterior helix.
+    \item $n = 2$: the best possible score for folding the substring 
+      $x_{i+1} x_{i+2} \cdots x_j$, assuming that the substring is part of a multibranch loop
+      that contains exactly at least 2 adjacent helices besides the exterior helix.
+    \end{itemize}
+  \end{itemize}
+
+  \subsection{Recurrences}
+
+  For each of the factors described in the previous subsection, we now give the appropriate
+  recurrence along with a description of the cases handled by the recurrence.
+
+  \subsubsection{Exterior loop}
+
+  When generating a substring belonging to the exterior loop, there are three cases:
+  \begin{enumerate}
+  \item the substring is of zero length,
+  \item the first base of the substring belongs to the exterior loop,
+  \item the first base belongs to a helix that is adjacent to the exterior loop.
+  \end{enumerate}
+  This gives:
+  \begin{align*}
+    \doouter(i) &= \max \begin{cases}
+      1 & \text{if $i=L$} \\
+      \outerunpaired \cdot \doouter(i+1) & \text{if $0 \le i < L$} \\
+      \displaystyle \max_{\substack{i' \\ i+2 \le i' \le L}} \left(\outerbranch \cdot \dohelix(i,i',0) \cdot \doouter(i')\right)
+      & \text{if $0 \le i \le L$}.
+    \end{cases}
+  \end{align*}
+  Note that in the last case, we require that $i+2 \le i'$ so as to ensure that
+  the definition of $\doouter(i)$ is not circular (actually, it would suffice to
+  require that $i < i'$; however, the requirement we make here works as well since
+  a helix must contain at least two base pairs).
+
+  \subsubsection{Helix}
+
+  To generate a helix for the substring $x_{i+1} x_{i+2} \cdots x_j$, there are several cases:
+  \begin{enumerate}
+  \item no surrounding positions belong to the helix yet and $(x_{i+1},x_j)$ base pair,
+  \item $n$ surrounding positions belong to the helix (where $0 < n < d$) and $(x_{i+1},x_j)$ base pair,
+  \item at least $d$ surrounding positions belong to the helix and $(x_{i+1},x_j)$ base pair,
+  \item at least one surrounding position belongs to the helix and $x_{i+1} x_{i+2} \cdots x_j$ form a hairpin loop,
+  \item at least one surrounding position belongs to the helix and $x_{i+1} x_{i+2} \cdots x_j$ form the beginning of a single-branched loop,
+  \item at least one surrounding position belongs to the helix and $x_{i+1} x_{i+2} \cdots x_j$ form the beginning of a multi-branched loop.
+  \end{enumerate}
+  This gives:
+  \begin{align*}
+    &\dohelix(i,j,n) = \\
+    &\max \begin{cases}
+      \helixchange[1] \cdot \helixclosing (x_{i+1}, x_j) & \text{if $0\le i < i+2\le j \le L$ and $n=0$} \\
+      \qquad{} \cdot \helixbasepair (x_{i+1}, x_j) \cdot \dohelix(i+1,j-1,1) \\
+      \helixchange[n+1] \cdot \helixstacking((x_{i},x_{j+1}),(x_{i+1},x_{j})) & \text{if $0 < i < i+2\le j < L$ and $0 < n < d$} \\
+      \qquad{} \cdot \helixbasepair (x_{i+1}, x_j) \cdot \dohelix(i+1,j-1,n+1) \\
+      \helixextend \cdot \helixstacking((x_{i},x_{j+1}),(x_{i+1},x_{j})) & \text{if $0<i < i+2\le j<L$ and $n=d$} \\
+      \qquad{} \cdot \helixbasepair (x_{i+1}, x_j) \cdot \dohelix(i+1,j-1,d) \\
+      \helixclosing (x_{j+1}, x_i) \cdot \doloop(i,j) & \text{if $0<i\le j<L$ and $n>0$} \\
+    \end{cases}
+  \end{align*}
+  Here, note that whenever a case depends on $(x_i,x_{j+1})$, we ensure that $0 < i$ and $j < L$.  Also,
+  if a case depends on $x_{i+1}$ and $x_j$, we ensure that $i+2 \le j$.
+
+  \subsubsection{Loop}
+
+  To generate a loop for the substring $x_{i+1} x_{i+2} \cdots x_j$, there are several cases:
+  \begin{enumerate}
+  \item $x_{i+1} x_{i+2} \cdots x_j$ form a hairpin loop,
+  \item $x_{i+1} x_{i+2} \cdots x_j$ form the beginning of a single-branched loop,
+  \item $x_{i+1} x_{i+2} \cdots x_j$ form the beginning of a multi-branched loop.
+  \end{enumerate}
+  This gives:
+  \begin{align*}
+    &\doloop(i,j) = \\
+    &\max \begin{cases}
+      \vhairpin(i,j) & \text{if $0<i\le j<L$ and $n>0$} \\
+      \displaystyle \max_{\substack{i', j' \\ i \le i' < i'+2 \le j' \le j \\ 1 \le i'-i + j-j' \le c}}
+      \bigl(\single(i,j,i',j') \cdot \dohelix(i',j',0)\bigr) & \text{if $0<i\le j<L$ and $n>0$} \\
+      \multibase \cdot \multipaired & \text{if $0<i\le i+2 \le j<L$ and $n>0$.} \\
+      \qquad{} \cdot \multimismatch((x_i,x_{j+1}),x_{i+1},x_j) \cdot \domulti(i,j,0)
+    \end{cases}
+  \end{align*}
+  Note that in the case of single-branched
+  loops, $i'+2 \le j'$ since the inner helix must have at least one base pairing, and $1 \le i'-i+j-j' \le c$ to
+  ensure that the loop has length at least 1, but no more than $c$ (for efficiency).
+
+  \subsubsection{Multi-branched loops}
+  
+  To generate a multi-branched loop for the substring $x_{i+1} x_{i+2} \cdots x_j$, there are several cases:
+  \begin{enumerate}
+  \item the substring is of length zero and has at least 2 adjacent helices (other than the exterior helix),
+  \item the first letter of the substring is unpaired,
+  \item the first letter of the substring belongs to a helix that is adjacent to the multi-branch loop and fewer than
+    2 adjacent helices (other than the exterior helix) have been generated already.
+  \item the first letter of the substring belongs to a helix that is adjacent to the multi-branch loop and at least
+    2 adjacent helices (other than the exterior helix) have been generated already.
+  \end{enumerate}
+  From this, we obtain
+  \begin{align*}
+    &\domulti(i,j,n) = \\
+    &\max \begin{cases}
+      1 & \text{if $0 \le i=j \le L$ and $n=2$} \\
+      \multiunpaired \cdot \domulti(i+1,j,n) & \text{if $0 \le i < j \le L$ and $0 \le n \le 2$} \\
+      \displaystyle \max_{\substack{j' \\ i+2 \le j' \le j}} 
+      \left(
+      \begin{matrix}
+	\multipaired \cdot \multimismatch((x_{j'},x_{i+1}),x_{j'+1},x_i) \\
+	{} \cdot \dohelix(i,j',0) \cdot \domulti(j',j,\min(2,n+1))
+      \end{matrix}
+      \right) & \text{if $0 < i \le j < L$ and $0 \le n \le 2$} \\
+    \end{cases}
+  \end{align*}
+  As before, in the last case, the condition $i+2 \le j'$ ensures that $x_{j'}$ and $x_{i+1}$ 
+  are valid, and the conditions $0 < i$ and $j < L$ ensure that $x_{j'+1}$ and $x_i$ are valid.
+
+  \newpage
+  \section{The inside algorithm}
+  \label{sec:inside}
+
+  The inside algorithm looks just like Viterbi, with $\max$'s replaced by $\sum$'s.  We repeat
+  these recurrences here, for convenience: \\
+  \\
+  \noindent
+  For $0 \le i \le L$,
+  \begin{align*}
+    \Adoouter(i) &= \sum \begin{cases}
+      1 & \text{if $i=L$} \\
+      \outerunpaired \cdot \Adoouter(i+1) & \text{if $0 \le i < L$} \\
+      \displaystyle \sum_{\substack{i' \\ i+2 \le i' \le L}} \left(\outerbranch \cdot \Adohelix(i,i',0) \cdot \Adoouter(i')\right)
+      & \text{if $0 \le i \le L$}
+    \end{cases}
+  \end{align*}
+  
+  \noindent
+  For $0 \le n \le d$ and $0 \le i \le j \le L$,
+  \begin{align*}
+    &\Adohelix(i,j,n) = \\
+    &\sum \begin{cases}
+      \helixchange[1] \cdot \helixclosing (x_{i+1}, x_j) & \text{if $0 \le i < i+2\le j \le L$ and $n=0$} \\
+      \qquad{} \cdot \helixbasepair (x_{i+1}, x_j) \cdot \Adohelix(i+1,j-1,1) \\
+      \helixchange[n+1] \cdot \helixstacking((x_{i},x_{j+1}),(x_{i+1},x_{j})) & \text{if $0 < i < i+2\le j < L$ and $0 < n < d$} \\
+      \qquad{} \cdot \helixbasepair (x_{i+1}, x_j) \cdot \Adohelix(i+1,j-1,n+1) \\
+      \helixextend \cdot \helixstacking((x_{i},x_{j+1}),(x_{i+1},x_{j})) & \text{if $0<i<i+2\le j<L$ and $n=d$} \\
+      \qquad{} \cdot \helixbasepair (x_{i+1}, x_j) \cdot \Adohelix(i+1,j-1,d) \\
+      \helixclosing (x_{j+1}, x_i) \cdot \Adoloop(i,j) & \text{if $0<i\le j<L$ and $n>0$} 
+    \end{cases}
+  \end{align*}
+
+  \noindent
+  For $0 \le i \le j \le L$,
+  \begin{align*}
+    &\Adoloop(i,j) = \\
+    &\sum \begin{cases}
+      \vhairpin(i,j) & \text{if $0<i\le j<L$ and $n>0$} \\
+      \displaystyle \sum_{\substack{i', j' \\ i \le i' < i'+2 \le j' \le j \\ 1 \le i'-i + j-j' \le c}}
+      \bigl(\single(i,j,i',j') \cdot \Adohelix(i',j',0)\bigr) & \text{if $0<i\le j<L$ and $n>0$} \\
+      \multibase \cdot \multipaired & \text{if $0<i\le i+2 \le j<L$ and $n>0$.} \\
+      \qquad{} \cdot \multimismatch((x_i,x_{j+1}),x_{i+1},x_j) \cdot \Adomulti(i,j,0)
+    \end{cases}
+  \end{align*}
+  
+  \noindent
+  For $0 \le n \le 2$ and $0 \le i \le j \le L$,
+  \begin{align*}
+    &\Adomulti(i,j,n) = \\
+    &\sum \begin{cases}
+      1 & \text{if $0 \le i=j \le L$ and $n=2$} \\
+      \multiunpaired \cdot \Adomulti(i+1,j,n) & \text{if $0 \le i < j \le L$ and $0 \le n \le 2$} \\
+      \displaystyle \sum_{\substack{j' \\ i+2 \le j' \le j}} 
+      \left(
+      \begin{matrix}
+	\multipaired \cdot \multimismatch((x_{j'},x_{i+1}),x_{j'+1},x_i) \\
+	{} \cdot \Adohelix(i,j',0) \cdot \Adomulti(j',j,\min(2,n+1))
+      \end{matrix}
+      \right) & \text{if $0 < i \le j < L$ and $0 \le n \le 2$} \\
+    \end{cases}
+  \end{align*}
+
+  \newpage
+  \section{The outside algorithm}
+  \label{sec:outside}
+
+  The outside algorithm corresponding to the inside algorithm given in the previous section
+  is shown below: \\
+  \\ 
+  \noindent
+  For $0 \le i \le L$,
+  \begin{align*}
+    \Bdoouter(i) &= \sum \begin{cases}
+      1 & \text{if $i=0$} \\
+      \outerunpaired \cdot \Bdoouter(i-1) & \text{if $i > 0$} \\
+      \displaystyle \sum_{\substack{i' \\ 0 \le i' \le i'+2 \le i}} \left(\outerbranch \cdot \Adohelix(i',i,0) \cdot \Bdoouter(i')\right)
+    \end{cases}
+  \end{align*} 
+
+  \noindent
+  For $0 \le n \le d$ and $0 \le i \le j \le L$,
+  \begin{align*}
+    &\Bdohelix(i,j,n) = \\
+    &\sum \begin{cases}
+      \outerbranch \cdot \Bdoouter(i) \cdot \Adoouter(j) & \text{if $0 \le i < i+2 \le j \le L$ and $n=0$} \\
+      \displaystyle \sum_{\substack{i', j' \\ 0 < i' \le i < j \le j' < L\\ 1' \le i-i' + j'-j \le c}}
+      \left(
+      \begin{matrix}
+	\single(i',j',i,j) \cdot \Bdoloop(i',j')
+      \end{matrix}
+      \right) & \text{if $0 < i < i+2 \le j < L$ and $n = 0$} \\
+      \displaystyle \sum_{n'=0}^1 \sum_{\substack{j' \\ j \le j' < L}} 
+      \left(
+      \begin{matrix}
+	\multipaired \cdot \Bdomulti(i,j',n') \\
+        {} \cdot \multimismatch((x_j,x_{i+1}),x_{j+1},x_i) \\
+	{} \cdot \Adomulti(j,j',n'+1)
+      \end{matrix} 
+      \right) & \text{if $0 < i \le j < L$ and $n = 0$} \\
+      \displaystyle \sum_{\substack{j' \\ j \le j' < L}} 
+      \left(
+      \begin{matrix}
+	\multipaired \cdot \Bdomulti(i,j',2) \\
+        {} \cdot \multimismatch((x_j,x_{i+1}),x_{j+1},x_i) \\
+	{} \cdot \Adomulti(j,j',2)
+      \end{matrix} 
+      \right) & \text{if $0 < i \le j < L$ and $n = 0$} \\
+      \helixchange[1] \cdot \helixclosing (x_i, x_{j+1}) & \text{if $0 < i \le j < L$, and $n=1$} \\
+      \qquad{} \cdot \helixbasepair (x_i, x_{j+1}) \cdot \Bdohelix(i-1,j+1,0) \\
+      \helixchange[n] \cdot \helixstacking((x_{i-1},x_{j+2}),(x_{i},x_{j+1})) & \text{if $1 < i \le j < L-1$, and $1 < n \le d$} \\
+      \qquad{} \cdot \helixbasepair (x_i, x_{j+1}) \cdot \Bdohelix(i-1,j+1,n-1) \\
+      \helixextend \cdot \helixstacking((x_{i-1},x_{j+2}),(x_i,x_{j+1})) & \text{if $1 < i \le j < L-1$ and $n=d$} \\
+      \qquad{} \cdot \helixbasepair (x_i, x_{j+1}) \cdot \Bdohelix(i-1,j+1,d) 
+    \end{cases}
+  \end{align*} 
+
+  \noindent
+  For $0 \le i \le j \le L$,
+  \begin{align*}
+    \Bdoloop(i,j) = \sum_{n'=1}^d \helixclosing(x_{j+1},x_i) \cdot \Bdohelix(i,j,n') \qquad \text{if $0 < i \le j < L$ and $n > 0$}
+  \end{align*} 
+
+  \noindent
+  For $0 \le n \le 2$ and $0 \le i \le j \le L$,
+  \begin{align*}
+    &\Bdomulti(i,j,n) = \\
+    &\sum \begin{cases}
+      \multibase \cdot \multipaired & \text{if $0<i < i+2 \le j<L$ and $n=0$}\\
+      \qquad {} \cdot \multimismatch((x_i,x_{j+1}),x_{i+1},x_j) \cdot \Bdoloop(i,j) \\
+      \multiunpaired \cdot \Bdomulti(i-1,j,n) & \text{if $0 < i \le j \le L$ and $0 \le n \le 2$} \\
+      \displaystyle \sum_{\substack{i' \\ 1 \le i' < i'+2 \le i}}
+      \left(
+      \begin{matrix}
+	\multipaired \cdot \multimismatch((x_i,x_{i'+1}),x_{i+1},x_{i'}) \\
+	{} \cdot \Adohelix(i',i,0) \cdot \Bdomulti(i',j,n-1)
+      \end{matrix}
+      \right) & \text{if $2 < i \le j < L$ and $1 \le n \le 2$} \\
+      \displaystyle \sum_{\substack{i' \\ 1 \le i' < i'+2 \le i}}
+      \left(
+      \begin{matrix}
+	\multipaired \cdot \multimismatch((x_i,x_{i'+1}),x_{i+1},x_{i'}) \\
+	{} \cdot \Adohelix(i',i,0) \cdot \Bdomulti(i',j,2)
+      \end{matrix}
+      \right) & \text{if $2 < i \le j < L$ and $n=2$.}
+    \end{cases}
+  \end{align*}
+
+  \newpage
+  \section{Posterior decoding}
+
+  Given the inside and outside matrices computed in the previous sections, we can now compute the
+  posterior probabilities for paired and unpaired residues.  Specifically, the posterior probability
+  $p_{ij}$ that nucleotide $i$ pairs with nucleotide $j$ (where $1 \le i < j \le L$) is given by
+  \begin{align}
+    p_{ij} = \frac{1}{Z(x)} \cdot \sum \begin{cases}
+      \helixchange[1] \cdot \helixclosing(x_i,x_j) & \text{if $1 \le i < j \le L$ and $n=0$}\\
+      \qquad{} \cdot \helixbasepair(x_i,x_j) \cdot \Adohelix(i,j-1,1) \\
+      \qquad{} \cdot \Bdohelix(i-1,j,0) \\
+      \displaystyle\sum_{n=2}^{d} \left(
+      \begin{matrix}
+	\helixchange[n] \cdot \helixstacking((x_{i-1},x_{j+1}),(x_{i},x_j)) \\
+		    {} \cdot \helixbasepair (x_{i}, x_j) \cdot \Adohelix(i,j-1,n) \\
+		    {} \cdot \Bdohelix(i-1,j,n-1)
+      \end{matrix}
+      \right) & \text{if $1 < i < j < L$} \\
+      \helixextend \cdot \helixstacking((x_{i-1},x_{j+1}),(x_{i},x_{j})) & \text{if $1<i<j<L$} \\
+      \qquad{} \cdot \helixbasepair (x_{i}, x_j) \cdot \Adohelix(i,j-1,d) \\
+      \qquad{} \cdot \Bdohelix(i-1,j,d) \\
+    \end{cases}
+  \end{align}
+  where
+  \begin{align}
+    Z(x) = \Adoouter(0) = \Bdoouter(L).
+  \end{align}
+  Using these posterior probabilities, the posterior decoding algorithm described in the
+  full paper can be used to find the maximum expected accuracy parse.
+
+  \newpage
+  \section{Gradient}
+  
+  The gradient of the CONTRAfold conditional log-likelihood objective with respect to the
+  parameters $\bw$ is
+  \begin{align*}
+    \nabla_\bw \ell(\bw : \cD) = \sum_{i=1}^m \left(\bF(x\at{i},y\at{i}) - \bbE_{y' \sim P(y \mid x\at{i}; \bw)} [\bF(x\at{i}, y')]\right),
+  \end{align*}
+  where the expectation is taken with respect to the conditional distribution over structures $y'$ for the sequence $x\at{i}$ given by the
+  current parameters $\bw$.  We now describe the construction of a dynamic programming algorithm for computing the expectation 
+  $\bbE_{y' \sim P(y \mid x\at{i}; \bw)} [\bF(x\at{i}, y')]$ based on modifying an implementation of the inside 
+  recurrences from Section~\ref{sec:inside}.
+  
+  First, initialize a vector $\bz \in \reals^n$ to the zero vector.  In a typical implementation of the inside algorithm,
+  computing entries of inside table involves repetitions of statements of the form
+  \begin{align*}
+    \alpha_{a}(i,j) \leftarrow \alpha_{a}(i,j) + (\text{product of some $\phi$'s}) \cdot (\text{product of some $\alpha_{a'}(i',j')$'s}).
+  \end{align*}
+  We will replace each such statement with several statements---one for each $\phi_k$ appearing in the product above.
+  Specifically, for each $\phi_k$ in the product, we will create a statement of the form
+  \begin{align*}
+    z_k \leftarrow z_k + \frac{\beta_{a}(i,j) \cdot (\text{product of some $\phi$'s}) \cdot (\text{product of some $\alpha_{a'}(i',j')$'s})}{Z(x)}
+  \end{align*}
+  where $Z(x) = \Adoouter(0)$.  At the end of this modified inside algorithm, then, the vector $\bz$ will contain the desired feature
+  expectations.
+
+  For example, applying the transformation to the rules for the $\Adoouter$ recurrence gives the following:
+  \vskip 0.5cm
+  \begin{algorithm}[H]
+    \SetNoline
+    \SetKw{KwAnd}{and}
+    $\bz \leftarrow \zero$ \\
+    \For{$i \leftarrow 0$ \KwTo $L$}{
+      \If{$i<L$}{
+        $z_\text{outer unpaired} \leftarrow z_\text{outer unpaired} + \Bdoouter(i) \cdot \outerunpaired \cdot \Adoouter(i+1)$ \\
+      }
+      \For{$i' \leftarrow i+2$ \KwTo $L$}{
+        $z_\text{outer branch} \leftarrow z_\text{outer branch} + \Bdoouter(i) \cdot \outerbranch \cdot \Adohelix(i,i',0) \cdot \Adoouter(i')$ \\
+      }
+    }
+  \end{algorithm}
+  
+\end{document}

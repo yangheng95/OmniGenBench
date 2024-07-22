@@ -1,0 +1,836 @@
+\documentclass{article}
+\usepackage{macros,palatino,fancyhdr,lastpage}
+
+\lhead{\textbf{CONTRAfold 2.02 User Manual}}
+\chead{}
+\rhead{\thepage\ of \pageref{LastPage}}
+\lfoot{}
+\cfoot{}
+\rfoot{}
+
+\begin{document}
+
+  \begin{center}
+    \includegraphics[height=10.0cm]{logo.jpg}
+  \end{center}
+  \rule{5in}{0.15cm}
+  \begin{center}
+    \textbf{\Huge CONTRAfold 2.02} \\ 
+  \end{center}
+  \begin{center}
+    \textbf{\LARGE User Manual} \\ 
+  \end{center}
+  \vskip 1.0cm
+  \begin{center}
+    (Last modified: August 14, 2008)
+  \end{center}
+  
+  \newpage
+
+  \pagestyle{fancy}
+  \setcounter{page}{1}
+
+  \ \vskip 1.0cm
+
+  \tableofcontents
+
+  \newpage
+  \section{Description}
+
+  CONTRAfold is a novel algorithm for the prediction of RNA secondary
+  structure based on conditional log-linear models (CLLMs).  Unlike
+  previous secondary structure prediction programs, CONTRAfold is the
+  first fully probabilistic algorithm to achieve state-of-the-art
+  accuracy in RNA secondary structure prediction.
+  
+  The CONTRAfold program was developed by Chuong Do at Stanford
+  University in collaboration with Daniel Woods, Serafim Batzoglou.
+  The source code for CONTRAfold is available for download from
+  \begin{center}
+    \emph{http://contra.stanford.edu/contrafold/}
+  \end{center}
+  under the BSD license.  The CONTRAfold logo was designed by Marina
+  Sirota.
+
+  Any comments or suggestions regarding the program should be sent 
+  to Chuong Do (\emph{chuongdo@cs.stanford.edu}).  
+  
+  \newpage
+  \section{License (BSD)}
+
+  \noindent
+  Copyright \copyright\ 2006, Chuong Do \\
+  All rights reserved.\\
+  \\
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are
+  met:
+  
+  \begin{itemize}
+  \item 
+    Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+  \item
+    Redistributions in binary form must reproduce the above
+    copyright notice, this list of conditions and the following disclaimer
+    in the documentation and/or other materials provided with the
+    distribution.
+  \item
+    Neither the name of Stanford University nor the names of its
+    contributors may be used to endorse or promote products derived from
+    this software without specific prior written permission.
+  \end{itemize}
+
+  \noindent
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+  \newpage
+  \section{Installation}
+
+  At the moment, CONTRAfold is only available for Unix-based systems
+  (e.g., Linux).  We will be porting CONTRAfold to other architectures
+  and making the binaries available.
+
+  \subsection{*nix installation}
+
+  To compile CONTRAfold from the source code (for a *nix machine):
+  \begin{enumerate}
+  \item 
+    Download the latest version of the CONTRAfold source code from
+    \begin{center}
+      \emph{http://contra.stanford.edu/contrafold/download.html}
+    \end{center}
+  \item
+    Decompress the archive:
+    \begin{verbatim}
+      $ tar zxvf contrafold_v#_##.tar.gz\end{verbatim}
+    where the \#'s are replaced with the appropriate version
+    numbers for the tar.gz you want to install.  This will create
+    a subdirectory called \texttt{contrafold} inside of the current
+    directory.
+  \item
+    Change to the \texttt{contrafold/src} subdirectory and compile the
+    program.
+    \begin{verbatim}
+      $ cd contrafold/src
+      $ make clean
+      $ make\end{verbatim}
+  \end{enumerate}
+  Now, your installation is complete!
+
+  \newpage
+  \section{Supported file formats}
+
+  In this section, we describe the input and output file formats supported by
+  the CONTRAfold program.
+
+  \subsection{Input file formats}
+  \label{sec:input-general}
+  
+  CONTRAfold accepts input files which either contain only RNA
+  sequences or contain both sequences and (partial) structural
+  annotations.  
+  
+  For the file formats that support specification of (partial)
+  structural annotations (in particular, FASTA and BPSEQ), the
+  provided structures must obey the following properties:
+  \begin{enumerate}
+  \item Each position in the RNA sequence is marked as either 
+    unpaired, paired to some specific nucleotide, or unknown.
+  \item If position $i$ is marked as pairing with position $j$, then
+    position $j$ must be marked as pairing with position $i$.
+  \item The (partial) structures specified must not have pseudoknots.
+  \item A position $i$ cannot be marked as pairing unless its specific
+    base-pairing partner has been specified.
+  \end{enumerate}
+  These structural annotations are generally ignored when performing
+  predictions, unless the \texttt{--constraints} flag is specified on
+  the command-line.  These structural annotations are required for training CONTRAfold.
+
+  The three specific input file formats supported by
+  CONTRAfold are plain text, FASTA and BPSEQ.  We describe each of
+  these formats in turn.
+
+  \subsubsection{Plain text format}
+  \label{sec:plain}
+
+  A plain text format file consists of one or more lines containing
+  RNA sequence data. Each of these lines may contain the letters `A',
+  `C', `G', `T', `U', or `N' in either upper or lower case (the output
+  of the program will retain the case of the input).  Any T's are
+  automatically converted to U's.  Any other letters are automatically
+  converted to N's.  All whitespace (space, tab, newline) is ignored.
+  N's are treated as masked sequence positions which are ignored
+  during all calculations (i.e., any scoring terms involving an N will
+  be skipped).  Other non-whitespace characters are not permitted.
+  Plain text files cannot contain any secondary structural annotation.
+
+  For example, the following is a valid plain text file:
+  \begin{verbatim}
+    NACGACAGUGUAUCACUAGUAcuuA
+    GUAUGUACUAUC
+
+    AGUAGUUGUUGUAGUUC\end{verbatim}
+  Note that the blank third line will be ignored, and the initial `N'
+  character will be treated as a placeholder character which appears
+  in the output folded RNA but makes no contribution to the computations.
+
+  \subsubsection{FASTA format}
+  \label{sec:fasta}
+
+  A FASTA format file consists of:
+  \begin{enumerate}
+  \item A \textbf{single header line} beginning with the character `$>$' followed by
+    a text description of the RNA sequence.  Note that the description
+    must fit on the same line as the `$>$' character.
+  \item One or more lines containing \textbf{RNA sequence data}.  Each
+    of these lines may contain the letters `A', `C', `G', `T', `U' or
+    `N' in either upper or lower case (the output of the program will
+    retain the case of the input).  Any T's are automatically
+    converted to U's.  Any other letters are automatically converted
+    to N's.  All whitespace (space, tab, newline) is ignored.  N's are
+    treated as masked sequence positions which are ignored during all
+    calculations (i.e., any scoring terms involving an N will be
+    skipped).  Other non-whitespace characters are not permitted.
+  \item (Optional) A \textbf{structural annotation} for the sequence provided above.  
+    The structural annotation requires:
+    \begin{enumerate}
+    \item A \textbf{single header line} beginning
+      with the character `$>$' followed by a description (any text after the
+      description is ignored)
+    \item One or more lines of \textbf{parenthesized structural
+      annotation}.  These lines provided a structural annotation for
+      each nucleotide in the RNA sequence using a sequence of `(',
+      `)', `.', and `?' characters.  A nucleotide annotated with `('
+      pairs with the nucleotide annotated with the matching `)'.  A
+      `.' character indicates that the corresponding nucleotide is
+      unpaired.  Finally, a `?' indicates a position for which the
+      proper matching (either paired or unpaired) is unknown.  Observe
+      that the parentheses in the input file must be well-balanced,
+      i.e., for each left parenthesis, the corresponding pairing
+      position must be marked with a right parenthesis (not a `?'),
+      and vice versa.  Since CONTRAfold generates only
+      non-pseudoknotted structure predictions, the proper pairing will
+      always be unambiguous.
+    \end{enumerate}
+  \end{enumerate}
+
+  For example, the following is a valid FASTA file:
+  \begin{verbatim}
+    >sequence
+    acggagaGUGUUGAU
+    CUGUGUGUUACUACU
+    caucuguaguucuag
+    uugua\end{verbatim}
+
+  Similarly, the following is a valid FASTA file with a structural annotation:
+  \begin{verbatim}
+    >sequence
+    acguuggcu
+    >structure
+    (??(..).)\end{verbatim}
+
+  But the following is not (starts with the wrong header character):
+  \begin{verbatim}
+    # sequence
+    ATGACGGT\end{verbatim}
+
+  Also, the following file is not valid (because the parenthesized structure is not
+  properly balanced):
+  \begin{verbatim}
+    >sequence
+    acguuggcu
+    >structure
+    (..(..).?\end{verbatim}
+
+  Finally, the following file is not valid (because the structural information header is
+  missing):
+  \begin{verbatim}
+    >sequence
+    acguuggcu
+    (??(..).)\end{verbatim}
+  
+  \subsubsection{BPSEQ format}
+  \label{sec:bpseq}
+
+  A BPSEQ format file is used for describing a single RNA sequence and its annotated
+  secondary structure.  This file format contains exactly one line for each nucleotide in
+  an RNA sequence.  The $i$th line of the file contains three items
+  separated by single spaces:
+  \begin{enumerate}
+  \item The integer $i$ (with $i=1$ representing the first nucleotide).
+  \item The $i$th character of the RNA sequence (which may be `A',
+    `C', `G', `T', `U', or `N' in either upper or lower case; the
+    output of the program will retain the case of the input; any T's
+    are automatically converted to U's; any other letters are
+    automatically converted to N's).  N's are treated as masked
+    sequence positions which are ignored during all calculations
+    (i.e., any scoring terms involving an N will be skipped)
+  \item The index of the character to which the $i$th character base
+    pairs, if known.  If the character is known to be unpaired, then 0
+    appears here.  If it is unknown whether this character base-pairs,
+    then a -1 appears here.  Note if the BPSEQ file specifies that
+    character $i$ base-pairs with character $j$, then it must also
+    specify that character $j$ base-pairs with character $i$.
+  \end{enumerate}
+
+  For example, the following is a BPSEQ format file:
+  \begin{verbatim}
+    1 A 7
+    2 G -1
+    3 U -1
+    4 C 0
+    5 c -1
+    6 c -1
+    7 u 1\end{verbatim}
+  in which it is known that the first and last positions base pair,
+  and the middle position does not base pair.  However, the folding of
+  the other positions is unknown.
+
+  However, the following is not a valid BPSEQ format file:
+  \begin{verbatim}
+    2 G -1
+    3 U -1
+    1 A 7
+    4 C 0
+    5 C -1
+    6 C -1
+    7 U 1\end{verbatim}
+  since all nucleotides in the file must appear in order.
+
+  Finally, the following is also not a valid BPSEQ format file:
+  \begin{verbatim}
+    1 A 7
+    2 G -1
+    3 U -1
+    4 C 0
+    5 c -1
+    6 c -1
+    7 u -1\end{verbatim}
+  since the first position is specified as pairing with the last
+  position, but not vice versa.
+
+  \subsection{Output formats}
+
+  The results of a CONTRAfold secondary structure prediction are given
+  in either FASTA, BPSEQ, or posteriors format.  We describe each
+  of these in detail.
+  
+  \subsubsection{FASTA format}
+
+  The FASTA output format is identical to the FASTA input format (see
+  Section~\ref{sec:fasta}) with structures.  Since CONTRAfold provides
+  predictions for the pairing or non-pairing of every single
+  nucleotides, no ?'s will appear in the output.
+
+  The output will always consist of exactly four lines, where the
+  first and third lines are FASTA headers for the sequence and
+  structure, respectively, the second line specifies the sequence
+  data, and the fourth line specifies the parenthesized structure.
+  If a FASTA file is provided as input, then the header in the FASTA input
+  file will be used as the first line header in the output file; otherwise,
+  the (relative) path to the input file is used as the header.
+  The FASTA header for the structure will always be ``structure.''
+  Since CONTRAfold generates only non-pseudoknotted structure predictions,
+  the proper pairing will always be unambiguous.
+
+  For example, the following parenthesized structure is a completion of the
+  valid BPSEQ file from Section~\ref{sec:bpseq}, assuming that the input file
+  is specified in the file \texttt{data/input}.
+  \begin{verbatim}
+    >data/input
+    AGUCccu
+    >structure
+    ((...))\end{verbatim}
+
+  \subsubsection{BPSEQ format}
+  
+  The BPSEQ output format is identical to the BPSEQ input format (see
+  Section~\ref{sec:bpseq}).  Since CONTRAfold provides predictions for
+  the pairing or non-pairing of every single nucleotide, no -1's will
+  appear in the output.
+  
+  \subsubsection{Posteriors format}
+  \label{sec:posteriors}
+  
+  The posteriors output format is distinct from the BPSEQ and FASTA
+  formats in that it does \emph{not} provide a single prediction of RNA
+  secondary structure.  Instead, it provides a sparse representation of the
+  base pairing posterior probabilities for pairs of letters in the RNA
+  sequence.  Specifically, the $i$th line contains
+  \begin{enumerate}
+  \item The integer $i$.
+  \item The $i$th character of the file.
+  \item A space-separated list of base-pairing probabilities of the form
+    $j$:$p_{ij}$, where $j>i$ is the index of  nucleotide to which the $i$th
+    nucleotide might pair, and $p_{ij}$ is the probability that this
+    base pairing occurs.
+  \end{enumerate}
+  For example, the following is a posteriors format output:
+  \begin{verbatim}
+    1 A 7:0.035 9:0.10
+    2 G 6:0.036 8:0.11
+    3 U
+    4 C
+    5 C
+    6 C
+    7 U
+    8 C
+    9 A\end{verbatim}
+  In the above, we see that nucleotide 2 has an 11\% probability of pairing
+  to nucleotide 8.  Note that each pairing probability is reported only once
+  (i.e., on the $i$th line, we show only the pairing probabilities to nucleotides
+  $j > i$ which appear \emph{after} the $i$th position in the RNA sequence).
+
+  \newpage
+  \section{Usage}
+  \label{sec:usage}
+
+  CONTRAfold has two modes of operation: prediction mode and training
+  mode.
+  \begin{itemize}
+  \item In ``prediction'' mode, CONTRAfold folds new RNA
+    sequences using either the default parameters or a CONTRAfold-format 
+    parameter file.
+  \item In ``training'' mode, CONTRAfold learns new parameters from 
+    training data consisting of RNA sequences with pre-existing structural annotations.
+  \end{itemize}
+  Most users of this software will likely only ever need to use
+  CONTRAfold's prediction functionality.  The optimization procedures
+  used in the training algorithm are fairly computationally expensive;
+  for this purpose, the CONTRAfold program is designed to support
+  automatic training in a parallel computing environment via MPI 
+  (Message Passing Interface).
+
+  \subsection{Prediction mode}
+
+  In prediction mode, CONTRAfold predicts the secondary structure of one
+  or more unfolded input RNA sequence, and prints the result to either 
+  the console or output files.  The basic syntax for running CONTRAfold
+  in prediction mode is
+  \begin{verbatim}
+    $ ./contrafold predict [OPTIONS] INFILE(s)\end{verbatim}
+
+  \subsubsection{A single input file}
+
+  For single sequence prediction, CONTRAfold generates FASTA
+  output (see Section~\ref{sec:fasta}) to the console (i.e., stdout) by default.  
+
+  For example, suppose the file ``seq.fasta'' contains a FASTA 
+  formatted sequence to be folded.  Then the command
+  \begin{verbatim}
+    $ ./contrafold predict seq.fasta\end{verbatim}
+  will fold the sequence and display the results to the console in
+  FASTA format.
+  
+  CONTRAfold can also write parenthesized FASTA, BPSEQ, or posteriors formatted
+  output to an output file.  To write FASTA output to a file,
+  \begin{verbatim}
+    $ ./contrafold predict seq.fasta --parens seq.parens\end{verbatim}
+  To write BPSEQ output to a file,
+  \begin{verbatim}
+    $ ./contrafold predict seq.fasta --bpseq seq.bpseq\end{verbatim}
+  To write all posterior pairing probabilities greater than
+  0.001 to a file, 
+  \begin{verbatim}
+    $ ./contrafold predict seq.fasta --posteriors \
+           0.001 seq.posteriors\end{verbatim}
+  Note that here, the backslash character is used to denote that a
+  command-line is broken over several lines; it is not necessary if you
+  type everything on a single line.
+
+  Finally, it is also possible to obtain multiple different types of output
+  simultaneously.  For example, the command
+  \begin{verbatim}
+    $ ./contrafold predict seq.fasta --parens \
+           seq.parens --bpseq seq.bpseq --posteriors \
+           0.001 seq.posteriors\end{verbatim}
+  will generate three different output files simultaneously.
+
+  \subsubsection{Multiple input files}
+
+  For multiple input files, CONTRAfold generates FASTA
+  output (see Section~\ref{sec:fasta}) to the console by default.
+  The output is presented in the order of the input files on the
+  command-line.  Using console output is not allowed when MPI is 
+  enabled, or when certain other options are selected; in general,
+  we recommend the usage of explicitly specified output files or
+  subdirectories when dealing with multiple input files (see below).
+
+  CONTRAfold can also write FASTA, BPSEQ, or posteriors formatted
+  output to several output files.  In particular, CONTRAfold creates
+  a subdirectory (whose name is specified by the user) in which to store
+  the results, and writes each prediction to a file in that subdirectory
+  of the same name as the original file being processed.  
+
+  For example, suppose that the files ``seq1.fasta'' and ``seq2.fasta'' each
+  contain a FASTA formatted sequence to be folded.  Then the command
+  \begin{verbatim}
+    $ ./contrafold predict seq1.fasta seq2.fasta \
+           --parens output\end{verbatim}
+  will create a subdirectory called \texttt{output} and will place the results 
+  in the files \texttt{output/seq1.fasta} and \texttt{output/seq2.fasta}.
+  
+  Alternatively, 
+  \begin{verbatim}
+    $ ./contrafold predict seq1.fasta seq2.fasta \
+           --bpseq output\end{verbatim}
+  and
+  \begin{verbatim}
+    $ ./contrafold predict seq1.fasta seq2.fasta \
+           --posteriors 0.001 output\end{verbatim}
+  generate BPSEQ and posteriors formatted outputs instead.
+
+  Observe that if multiple input files have the same base name, then
+  overwriting of output may occur.  For example, if the input files list
+  contains two different files called \texttt{seq/input} and \texttt{input},
+  the output subdirectory will contain only a single file called \texttt{input}.
+
+  Finally, you may also generate multiple types of output simultaneously,
+  as before.  Remember, however, to use different output subdirectory names
+  for each.  The command
+  \begin{verbatim}
+    $ ./contrafold predict seq1.fasta seq2.fasta --parens \
+           parens_output --bpseq bpseq_output --posteriors \
+           0.001 posteriors_output\end{verbatim}
+  generates three different output subdirectories (parens\_output,
+  bpseq\_output, and posteriors\_output) each containing two files
+  (seq1.fasta, seq2.fasta).
+
+  \subsubsection{Optional arguments}
+
+  CONTRAfold accepts a number of optional arguments, which alter the default behavior
+  of the program.  To use any of these options, simply pass the option to the CONTRAfold
+  program on the command line.  For example,
+  \begin{verbatim}
+    $ ./contrafold predict seq.fasta --viterbi \
+           --noncomplementary\end{verbatim}
+  The optional arguments include:
+  \begin{description}
+  \item \texttt{--gamma $\gamma$} \\
+    \\
+    This option sets the sensitivity/specificity tradeoff parameter for the maximum
+    expected accuracy decoding algorithm.  In particular, consider a scoring
+    system in which each nucleotide which is correctly base paired gets a
+    score of $\gamma$, and each nucleotide which is correctly not base paired gets
+    a score of 1.  Then, CONTRAfold finds the folding of the input sequence with
+    maximum \emph{expected accuracy} with respect to this scoring system.
+
+    Intuitively,
+    \begin{itemize}
+    \item If $\gamma > 1$, the parsing algorithm emphasizes sensitivity.
+    \item If $0 \le \gamma \le 1$, the parsing algorithm emphasizes specificity.
+    \end{itemize}
+    In addition, if the user specifies any value of $\gamma < 0$, then CONTRAfold
+    tries trade-off parameters of $2^k$ for $k \in \set{-5,-4,\ldots,10}$, and
+    generates one output file for each trade-off parameter.  Note that this
+    must be used in conjunction with either 
+    \texttt{--parens}, \texttt{--bpseq}, or \texttt{--posteriors} in order to
+    allow for writing to output files.
+    
+    For example, the command
+    \begin{verbatim}
+      $ ./contrafold predict seq.fasta --gamma 100000\end{verbatim}
+    runs the maximum expected accuracy placing almost all emphasis on sensitivity
+    (predict correct base pairs).  
+    
+    The naming convention used by CONTRAfold when $\gamma < 0$ follows somewhat
+    different conventions from normal.  Running
+    \begin{verbatim}
+      $ ./contrafold predict seq.fasta --gamma -1 \
+             --bpseq output\end{verbatim}
+    will create the files
+    \begin{verbatim}
+      output/output.gamma=0.031250
+      output/output.gamma=0.062500
+      ...
+      output/output.gamma=1024.000000\end{verbatim}
+    For multiple input files,
+    \begin{verbatim}
+      $ ./contrafold predict seq1.fasta seq2.fasta \
+             --gamma -1 --bpseq output\end{verbatim}
+    will generate 
+    \begin{verbatim}
+      output/output.gamma=0.031250/seq1.fasta
+      output/output.gamma=0.031250/seq2.fasta
+      ...
+      output/output.gamma=1024.000000/seq1.fasta
+      output/output.gamma=1024.000000/seq2.fasta.\end{verbatim}
+
+    Like before, multiple types of output (parens, BPSEQ, posteriors) may
+    be requested simultaneously.
+
+  \item \texttt{--viterbi} \\
+    \\
+    This option uses the Viterbi algorithm to compute structures rather than the
+    maximum expected accuracy (posterior decoding) algorithm.  The structures generated
+    by the Viterbi option tend to be of slightly lower accuracy than posterior decoding,
+    so this option is not enabled by default.
+  \item \texttt{--noncomplementary} \\
+    \\
+    This option uses a folding model that allows non \texttt{AU}/\texttt{CG}/\texttt{GU} 
+    pairings in the CONTRAfold output.  This option is slower and generally slightly less
+    accurate than the default option of allowing only ``canonical'' base-pairings.
+  \item \texttt{--constraints} \\
+    \\
+    This option requires the use of BPSEQ format input files.
+    By default, any base pairings that are included in the BPSEQ file
+    above are ignored.  However, if the \texttt{--constraints} flag is used,
+    then any base pairings in an input BPSEQ file are treated as
+    constraints on the allowed structures.  In particular,
+    \begin{enumerate}
+    \item A nucleotide mapping to a positive index i is constrained to
+      base-pair with nucleotide i.
+    \item A nucleotide mapping to 0 is constrained to be unpaired.
+    \item A nucleotide mapping to -1 is unconstrained.
+    \end{enumerate}
+    For example, given the following input BPSEQ file:
+    \begin{verbatim}
+      1 A -1
+      2 C -1
+      3 G -1
+      4 U 7
+      5 U 0
+      6 C 0
+      7 G 4
+      8 C -1
+      9 G -1
+      10 U -1\end{verbatim}
+    and the \texttt{--constraints} flag, then CONTRAfold will assume that
+    positions 4 and 7 are constrained to be base-pairing, while positions
+    5 and 6 are constrained to be unpaired.  The base-pairing of the
+    remaining positions is decided by CONTRAfold.  The constraints must follow
+    the restrictions described in Section~\ref{sec:input-general}.
+  \item \texttt{--params PARAMSFILE} \\
+    \\
+    This option uses a trained CONTRAfold parameter file instead of the
+    default program parameters.  The format of the parameter file should
+    be the same as the \texttt{contrafold.params.complementary} file in the CONTRAfold
+    source code; each line contains a single parameter name and a parameter
+    value.
+  \item \texttt{--version} \\
+    \\
+    Display the program version number.
+  \item \texttt{--verbose} \\
+    \\
+    Show detailed console output.
+  \item \texttt{--partition} \\
+    \\
+    Compute the log partition function for the input sequence.  This option
+    may be used in conjunction with the \texttt{--constraints} option in order
+    to determine the CONTRAfold ``energy'' of a given RNA secondary structure
+    specified in a BPSEQ file.  For example, to compute the energy of a
+    Viterbi parse generated via
+    \begin{verbatim}
+      $ ./contrafold predict seq.fasta --viterbi \
+             --bpseq seq.bpseq\end{verbatim}
+    we can simply run
+    \begin{verbatim}
+      $ ./contrafold predict seq.bpseq --constraints \
+             --partition\end{verbatim}
+    Some quick notes regarding the partition function:
+    \begin{itemize}
+    \item 
+      When used in conjunction with partial constraints (i.e., only some of the
+      mappings in the input BPSEQ file are -1's; see above), then this option
+      computes the log of the summed unnormalized probabilities for all structures consistent
+      with the partial constraints.
+    \item
+      In order to compute the log of the summed \emph{probabilities} (which are
+      normalized as opposed to the quantities mentioned above), you must also
+      run
+      \begin{verbatim}
+      $ ./contrafold predict seq.bpseq --partition\end{verbatim}
+      and subtract this log partition value from the previous log partition 
+      value described above.  Note that this quantity will always be greater than
+      or equal to the log-partition above, implying that the log of the summed
+      probabilities is necessarily non-positive (which makes sense as probabilities
+      are at most 1).
+    \end{itemize}      
+  \end{description}
+  
+  \subsection{Training mode}
+  
+  In training mode, CONTRAfold infers a parameter set using RNA sequences 
+  with known (or partially known) secondary structures in BPSEQ format.  By
+  default, CONTRAfold uses the L-BFGS algorithm for optimization.
+  
+  For example, suppose \texttt{input/*.bpseq} refers to a collection of 100 files
+  which represent sequences with known structures.  Calling
+  \begin{verbatim}
+    $ ./contrafold train input/*.bpseq\end{verbatim}
+  instructs CONTRAfold to learn parameters for predict all structures
+  in
+  \begin{verbatim}
+    input/*.bpseq\end{verbatim}
+  without using any regularization.  The learned parameters
+  after each iteration of the optimization algorithm are stored in 
+  \begin{verbatim}
+    optimize.params.iter1
+    optimize.params.iter2
+    ...\end{verbatim}
+  in the current directory.  The final parameters are stored in
+  \begin{verbatim}
+    optimize.params.final\end{verbatim}
+  and a log file describing the optimization is stored in
+  \begin{verbatim}
+    optimize.log
+  \end{verbatim}
+  \emph{In general, running CONTRAfold without regularization is almost always
+  a bad idea because of overfitting}.  There are currently two ways to 
+  use regularization that are supported in the CONTRAfold program:  
+  \begin{enumerate}
+  \item
+    Regularization may be \emph{manually specified}.  The current build of
+    CONTRAfold uses 15 regularization hyperparameters, each of which is
+    used for some subset of the parameters.  To specify a single value shared 
+    between all of the regularization hyperparameters manually, one can use the \texttt{--regularize} flag.
+    For example,
+    \begin{verbatim}
+      $ ./contrafold train --regularize 1 input/*.bpseq\end{verbatim}
+    uses a regularization constant of 1 for each hyperparameter.  In
+    general, we recommend that you do not perform training yourself
+    unless you know what you are doing; also do not hesitate to ask us.
+  \item
+    The recommended usage is to use CONTRAfold's holdout cross-validation 
+    procedure to \emph{automatically select} regularization constants.  
+    To reserve a fraction $p$ of the training data as a holdout set, run
+    CONTRAfold with the \texttt{--holdout $p$} flag.
+    
+    For example, to reserve $1/4^\text{th}$ of the training set for holdout
+    cross-validation, use
+    \begin{verbatim}    
+      $ ./contrafold train --holdout 0.25 \
+             input/*.bpseq\end{verbatim}
+    Note that the \texttt{--holdout} and \texttt{--regularize} flags should
+    not be used simultaneously.
+  \end{enumerate}
+
+  \newpage
+  \section{Visualization of folded RNAs}
+
+  Besides the main program, the CONTRAfold package contains some additional
+  tools for visualization of folded RNAs:
+  \begin{itemize}
+  \item \texttt{make\_coords}: generates a set of coordinates for plotting
+    a CONTRAfold BPSEQ file.
+  \item \texttt{plot\_rna}: converts a set of coordinates and a BPSEQ file
+    into a viewable PNG.
+  \end{itemize}
+  In the following subsections, we describe the installation and use of
+  these two tools for RNA visualization.
+
+  \subsection{Installation}
+  
+  Currently, only UNIX installation is supported.
+
+  \subsubsection{*nix installation}
+
+  To compile CONTRAfold visualization tools from the source code 
+  (for a *nix machine):
+  \begin{enumerate}
+  \item
+    Install the \texttt{libgd} graphics development library, available
+    from
+    \begin{center}
+      \textit{http://www.boutell.com/gd/}
+    \end{center}
+  \item
+    Install the \texttt{libpng} PNG image library, available from
+    \begin{center}
+      \textit{http://www.libpng.org/pub/png/libpng.html}
+    \end{center}
+  \item
+    Compile the visualization tools:    
+    \begin{verbatim}
+      $ make viz\end{verbatim}
+  \end{enumerate}
+
+  \subsection{Usage}
+
+  Given an input FASTA file, generating an image of the predicted
+  CONTRAfold structure involves three steps:
+  \begin{enumerate}
+  \item 
+    Generate a secondary structure prediction in BPSEQ format:
+    \begin{verbatim}
+      $ ./contrafold predict seq.fasta --bpseq \
+             seq.bpseq\end{verbatim}
+  \item
+    Run the \texttt{make\_coords} program to generate an RNA layout:
+    \begin{verbatim}
+      $ ./make_coords output.bpseq output.coords\end{verbatim}
+    The resulting coordinates are placed in the \texttt{output.coords}
+    file.  
+  \item
+    Run the \texttt{plot\_rna} program to convert the 
+    layout into a PNG image:
+    \begin{verbatim}
+      $ ./plot_rna output.bpseq output.coords \
+             --png output.png\end{verbatim}
+    The resulting PNG is placed in the \texttt{output.png} file and
+    can be viewed with a web browser such as Mozilla Firefox.
+    Alternatively, EPS format output is also available:
+    \begin{verbatim}
+      $ ./plot_rna output.bpseq output.coords \
+             --eps output.eps\end{verbatim}
+  \end{enumerate}
+  
+  \subsection{Additional options}
+  
+  The \texttt{plot\_rna} has a couple of options which you can
+  use to control the generated PNG files:
+  \begin{description}
+    \item \texttt{--posteriors $posteriorsfile$} \\
+      \\
+      If a CONTRAfold posteriors file is also available,then
+      using the above option will generate a PNG file in which
+      the letters of each RNA nucleotide is colored according
+      to posterior probability confidence.  Black letters indicate
+      high confidence structure whereas lighter gray letters indicate
+      lower confidence structure.
+    \item \texttt{--title "$title$"} \\
+      \\
+      This option allows the user to annotate the generated
+      RNA image with a title.  Note that the title string should
+      be surrounded with double quotation marks so as to ensure
+      that it is interpreted as a single argument to the program.
+  \end{description}
+
+  In general, the CONTRAfold visualization tools generate RNA layouts which 
+  tend to be visually pleasing.  The layout algorithm uses a simple
+  deterministic layout rule, followed by a gradient-based optimization
+  procedure.  This type of procedure is not guaranteed to generate 
+  non-overlapping layouts for all RNA structures; in practice, however
+  the visualization tools can provide reasonable visualizations for
+  a large range of RNA structures.
+  
+  \newpage
+  \section{Citing CONTRAfold}
+
+  If you use CONTRAfold in your work, please cite:
+  \begin{quote}
+    Do, C.B., Woods, D.A., and Batzoglou, S.  (2006) CONTRAfold: RNA 
+    secondary structure prediction without physics-based models.
+    \emph{Bioinformatics}, 22(14): e90-e98.
+  \end{quote}
+  
+  \noindent
+  Other relevant references include:
+  \begin{quote}
+    Do, C.B., Foo, C.-S., Ng, A.Y.  (2007) Efficient multiple
+    hyperparameter learning for log-linear models.  In \emph{Advances
+      in Neural Information Processing Systems} 20.
+  \end{quote}
+
+\end{document}

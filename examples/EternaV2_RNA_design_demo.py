@@ -20,16 +20,40 @@ from transformers import AutoModelForMaskedLM, AutoTokenizer
 import requests
 
 
-def predict_structure(sequence):
-    import ViennaRNA
+from concurrent.futures import ThreadPoolExecutor
+import ViennaRNA
 
-    if isinstance(sequence, list):
-        structures = [
-            ViennaRNA.fold(sequence.replace("T", "U"))[0] for sequence in sequence
-        ]
+def predict_structure_single(sequence):
+    """Predicts the RNA structure for a single sequence."""
+    return ViennaRNA.fold(sequence.replace("T", "U"))[0]
+
+def predict_structure(sequences):
+    """Predicts structures for multiple sequences using multithreading."""
+    if isinstance(sequences, list):
+        with ThreadPoolExecutor() as executor:
+            # Map the predict_structure_single function to each sequence
+            structures = list(executor.map(predict_structure_single, sequences))
         return structures
     else:
-        return ViennaRNA.fold(sequence)[0]
+        # Single sequence case
+        return predict_structure_single(sequences)
+
+# def predict_contrafold_structure(sequences):
+#     structures = []
+#     contra_fold_bin = '../contrafold/src/contrafold'
+#     if not isinstance(sequences, list):
+#         sequences = [sequences]
+#
+#     for i, seq in enumerate(sequences):
+#         fname = f'temp/temp_{seq[:100]}_{i}.txt'
+#         with open(fname, 'w') as f:
+#             f.write(f'{seq}\n')
+#         with os.popen(f'{contra_fold_bin} predict {fname}') as p:
+#             result = p.read()
+#             structure = result.split('\n')[-2]
+#         # print(structure)
+#         structures.append(structure)
+#     return structures
 
 
 def genetic_algorithm_for_rna_design(structure, **kwargs):
@@ -37,11 +61,12 @@ def genetic_algorithm_for_rna_design(structure, **kwargs):
     num_population = kwargs.get("num_population", 100)
     num_generation = kwargs.get("num_generation", 50)
     puzzle_id = kwargs.get("puzzle_id", 0)
-    model = "anonymous8/OmniGenome-186M"
+    # model = "anonymous8/OmniGenome-186M"
+    model = "benchmark/genomic_foundation_models/OmniGenomeV3-186M"
     # model = "anonymous8/OmniGenome-52M"
     device = autocuda.auto_cuda()
     tokenizer = AutoTokenizer.from_pretrained(model)
-    model = AutoModelForMaskedLM.from_pretrained(model)
+    model = AutoModelForMaskedLM.from_pretrained(model, trust_remote_code=True)
     model.to(device)
 
     import tqdm
@@ -62,6 +87,7 @@ def genetic_algorithm_for_rna_design(structure, **kwargs):
     for generation_id in tqdm.tqdm(
         range(num_generation), desc="Designing RNA Sequence"
     ):
+        mutation_ratio = mutation_ratio * 0.99
         population_fitness = evaluate_structure_fitness(
             population,
             structure,
@@ -111,7 +137,6 @@ def genetic_algorithm_for_rna_design(structure, **kwargs):
 def init_population(structure, num_population, model, tokenizer):
     population = []
     mlm_inputs = []
-
     for _ in range(num_population):
         masked_sequence = [
             random.choice(["A", "G", "C", "T", "<mask>"]) for _ in range(len(structure))
@@ -143,6 +168,7 @@ def mlm_mutate(population, structure, model, tokenizer, mutation_ratio):
         sequence[masked_indices] = "$"
         mut_seq = "".join(sequence.tolist()).replace("$", "<mask>")
         return mut_seq
+
 
     def mutate_with_spans_mask(sequence, mutation_rate):
         """使用numpy一次性对多个span应用mask突变"""
@@ -237,6 +263,7 @@ def evaluate_structure_fitness(sequences, structure):
     structures = []
     for i in range(0, len(sequences), 10):
         structures += predict_structure(sequences[i : i + 10])
+    # structures = predict_contrafold_structure(sequences)
     # structures, mfe_values = zip(*structures)
     fitness_values = []
     for predicted_structure in structures:
@@ -281,14 +308,17 @@ def mlm_predict(mlm_inputs, structure, model, tokenizer):
 
 if __name__ == "__main__":
     torch.multiprocessing.set_start_method("spawn")
-
+    benchmark_file = "eterna100_vienna2.txt"
+    # benchmark_file = "eterna100_contrafold.txt"
     structures = []
     sequences = []
     solved_sequences = {}
 
-    with open("eterna100_vienna2.txt", encoding="utf8", mode="r") as f:
+    with open(benchmark_file, encoding="utf8", mode="r") as f:
         for line in f.readlines()[1:]:
             parts = line.split("\t")
+            if len(parts[5].strip()) > 200:
+                continue
             structures.append(parts[4].strip())
             sequences.append(parts[5].strip())
 
@@ -302,7 +332,7 @@ if __name__ == "__main__":
     #         genetic_algorithm_for_rna_design(structure, **dict(
     #             mutation_ratio=0.5,
     #             num_population=50,
-    #             num_generation=50,
+    #             num_generation=200,
     #             puzzle_id=i
     #         )))
     #     pred_count += 1
@@ -328,9 +358,9 @@ if __name__ == "__main__":
                     genetic_algorithm_for_rna_design,
                     target_structure,
                     **dict(
-                        mutation_ratio=0.5,
-                        num_population=100,
-                        num_generation=50,
+                        mutation_ratio=0.9,
+                        num_population=5000,
+                        num_generation=100,
                         puzzle_id=i,
                     ),
                 )

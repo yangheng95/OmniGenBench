@@ -20,26 +20,29 @@ from omnigenome import (
 from omnigenome import ClassificationMetric
 from omnigenome import (
     OmniGenomeModelForTokenClassification,
+    OmniGenomeModelForTokenClassificationWith2DStructure,
 )
 from omnigenome import OmniGenomeTokenizer, ModelHub
 from omnigenome import Trainer
 
 
 # Step 1: Load the model
-model_name_or_path = "anonymous8/OmniGenome-52M"
+# model_name_or_path = "anonymous8/OmniGenome-52M"
+model_name_or_path = "benchmark/genomic_foundation_models/OmniGenomeV3-186M"
 # SN_tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
 SN_tokenizer = OmniGenomeTokenizer.from_pretrained(model_name_or_path)
 
 label2id = {"(": 0, ")": 1, ".": 2}
-model = OmniGenomeModelForTokenClassification(
+# model = OmniGenomeModelForTokenClassification(
+model = OmniGenomeModelForTokenClassificationWith2DStructure(
     model_name_or_path, tokenizer=SN_tokenizer, label2id=label2id
 )
 
 # Step 2: Set up the training environment
-epochs = 1
+epochs = 10
 learning_rate = 2e-5
 weight_decay = 1e-5
-batch_size = 8
+batch_size = 4
 seed = random.randint(0, 1000)
 
 
@@ -101,16 +104,16 @@ trainer = Trainer(
     device=autocuda.auto_cuda(),
 )
 
-# metrics = trainer.train()
+metrics = trainer.train()
 # Save the model
-model.save("OmniGenome-52M", overwrite=True)
+model.save("OmniGenome-186M", overwrite=True)
 
 
 # Load the model: Option 1
-model.load("OmniGenome-52M")
+model.load("OmniGenome-186M")
 
 # Load the model: Option 2
-model = ModelHub.load("OmniGenome-52M")
+model = ModelHub.load("OmniGenome-186M")
 
 # inference
 output = model.inference(

@@ -12,7 +12,11 @@ import pickle
 import sys
 import time
 
-import RNA
+import ViennaRNA as RNA
+
+default_omnigenome_repo = (
+    "https://huggingface.co/spaces/yangheng/OmniGenomeLeaderboard/"
+)
 
 
 def seed_everything(seed=42):
@@ -32,7 +36,6 @@ class RNA2StructureCache(dict):
     def __init__(self, cache_file=None, *args, **kwargs):
         import RNA
 
-        self.RNA = RNA
         super().__init__(*args, **kwargs)
 
         if not cache_file:

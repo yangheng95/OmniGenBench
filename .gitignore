@@ -3,10 +3,16 @@ output/
 cache/
 .idea/
 __pycache__/
+tutorials/
+genomic_foundation_models/
+__OMNIGENOME_DATA__/
+
 *.ffi
 *.pyc
 *.bin
 *.safetensor
 *.pt
+*.mv
+*.result
 
 release.sh

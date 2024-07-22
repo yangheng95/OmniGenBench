@@ -14,7 +14,7 @@ from transformers import OmniGenomeForTokenClassification, AutoTokenizer
 if __name__ == "__main__":
     sequence = "GAAAAAAAAGGGGAGAAAUCCCGCCCGAAAGGGCGCCCAAAGGGC"
 
-    # yangheng/OmniGenome-186M is a model trained on the RNA secondary structure prediction task
+    # anonymous8/OmniGenome-186M is a model trained on the RNA secondary structure prediction task
     # Use it in zero-shot RNA secondary structure prediction
     ssp_model = OmniGenomeForTokenClassification.from_pretrained(
         "anonymous8/OmniGenome-186M"
