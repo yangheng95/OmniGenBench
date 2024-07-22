@@ -31,10 +31,18 @@ pip install -e .
 ```
 
 # Quick Start
-TBC
+## Auto-benchmark for genomic foundation models (a.k.a., pretrained models)
+```
+from omnigenome import AutoBench
+gfm = 'LongSafari/hyenadna-medium-160k-seqlen-hf'
+# bench_root could be "RGB", "GB", "PGB", "GUE", which will be downloaded from the Hugging Face model hub
+bench_root = "RGB"
+bench = AutoBench(bench_root=bench_root, model_name_or_path=gfm, overwrite=False)
+bench.run(autocast=False, batch_size=bench_size, seeds=seeds)
+```
 
 # License
-OmniGenome is licensed under the MIT License. See the LICENSE file for more information.
+OmniGenome is licensed under the Apache License 2.0. See the LICENSE file for more information.
 
 # Citation
 TBC

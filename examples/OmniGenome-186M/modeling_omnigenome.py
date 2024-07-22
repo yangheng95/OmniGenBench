@@ -133,7 +133,7 @@ class RotaryEmbedding(torch.nn.Module):
         return self._cos_cached, self._sin_cached
 
     def forward(
-            self, q: torch.Tensor, k: torch.Tensor
+        self, q: torch.Tensor, k: torch.Tensor
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         self._cos_cached, self._sin_cached = self._update_cos_sin_tables(
             k, seq_dimension=-2
@@ -150,10 +150,10 @@ class OmniGenomeContactPredictionHead(nn.Module):
     """Performs symmetrization, apc, and computes a logistic regression on the output features"""
 
     def __init__(
-            self,
-            in_features: int,
-            bias=True,
-            eos_idx: int = 2,
+        self,
+        in_features: int,
+        bias=True,
+        eos_idx: int = 2,
     ):
         super().__init__()
         self.in_features = in_features
@@ -220,12 +220,12 @@ class OmniGenomeEmbeddings(nn.Module):
         self.mask_token_id = config.mask_token_id
 
     def forward(
-            self,
-            input_ids=None,
-            attention_mask=None,
-            position_ids=None,
-            inputs_embeds=None,
-            past_key_values_length=0,
+        self,
+        input_ids=None,
+        attention_mask=None,
+        position_ids=None,
+        inputs_embeds=None,
+        past_key_values_length=0,
     ):
         if position_ids is None:
             if input_ids is not None:
@@ -257,16 +257,16 @@ class OmniGenomeEmbeddings(nn.Module):
                 (input_ids == self.mask_token_id).unsqueeze(-1), 0.0
             )
             mask_ratio_train = (
-                    0.15 * 0.8
+                0.15 * 0.8
             )  # Hardcoded as the ratio used in all OmniGenome model training runs
             src_lengths = attention_mask.sum(-1)
             mask_ratio_observed = (input_ids == self.mask_token_id).sum(
                 -1
             ).float() / src_lengths
             embeddings = (
-                    embeddings
-                    * (1 - mask_ratio_train)
-                    / (1 - mask_ratio_observed)[:, None, None]
+                embeddings
+                * (1 - mask_ratio_train)
+                / (1 - mask_ratio_observed)[:, None, None]
             ).to(embeddings.dtype)
 
         if self.position_embedding_type == "absolute":
@@ -309,7 +309,7 @@ class OmniGenomeSelfAttention(nn.Module):
     def __init__(self, config, position_embedding_type=None):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(
-                config, "embedding_size"
+            config, "embedding_size"
         ):
             raise ValueError(
                 f"The hidden size ({config.hidden_size}) is not a multiple of the number of attention "
@@ -330,8 +330,8 @@ class OmniGenomeSelfAttention(nn.Module):
         )
         self.rotary_embeddings = None
         if (
-                self.position_embedding_type == "relative_key"
-                or self.position_embedding_type == "relative_key_query"
+            self.position_embedding_type == "relative_key"
+            or self.position_embedding_type == "relative_key_query"
         ):
             self.max_position_embeddings = config.max_position_embeddings
             self.distance_embedding = nn.Embedding(
@@ -351,14 +351,14 @@ class OmniGenomeSelfAttention(nn.Module):
         return x.permute(0, 2, 1, 3)
 
     def forward(
-            self,
-            hidden_states: torch.Tensor,
-            attention_mask: Optional[torch.FloatTensor] = None,
-            head_mask: Optional[torch.FloatTensor] = None,
-            encoder_hidden_states: Optional[torch.FloatTensor] = None,
-            encoder_attention_mask: Optional[torch.FloatTensor] = None,
-            past_key_value: Optional[Tuple[Tuple[torch.FloatTensor]]] = None,
-            output_attentions: Optional[bool] = False,
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: Optional[torch.FloatTensor] = None,
+        head_mask: Optional[torch.FloatTensor] = None,
+        encoder_hidden_states: Optional[torch.FloatTensor] = None,
+        encoder_attention_mask: Optional[torch.FloatTensor] = None,
+        past_key_value: Optional[Tuple[Tuple[torch.FloatTensor]]] = None,
+        output_attentions: Optional[bool] = False,
     ) -> Tuple[torch.Tensor]:
         mixed_query_layer = self.query(hidden_states)
 
@@ -391,7 +391,7 @@ class OmniGenomeSelfAttention(nn.Module):
         # OmniGenome scales the query down by the same factor instead. Modulo numerical stability these are equivalent,
         # but not when rotary embeddings get involved. Therefore, we scale the query here to match the original
         # OmniGenome code and fix rotary embeddings.
-        query_layer = query_layer * self.attention_head_size ** -0.5
+        query_layer = query_layer * self.attention_head_size**-0.5
 
         if self.is_decoder:
             # if cross_attention save Tuple(torch.Tensor, torch.Tensor) of all cross attention key/value_states.
@@ -410,8 +410,8 @@ class OmniGenomeSelfAttention(nn.Module):
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
 
         if (
-                self.position_embedding_type == "relative_key"
-                or self.position_embedding_type == "relative_key_query"
+            self.position_embedding_type == "relative_key"
+            or self.position_embedding_type == "relative_key_query"
         ):
             seq_length = hidden_states.size()[1]
             position_ids_l = torch.arange(
@@ -441,9 +441,9 @@ class OmniGenomeSelfAttention(nn.Module):
                     "bhrd,lrd->bhlr", key_layer, positional_embedding
                 )
                 attention_scores = (
-                        attention_scores
-                        + relative_position_scores_query
-                        + relative_position_scores_key
+                    attention_scores
+                    + relative_position_scores_query
+                    + relative_position_scores_key
                 )
 
         if attention_mask is not None:
@@ -518,19 +518,19 @@ class OmniGenomeAttention(nn.Module):
         # Update hyper params and store pruned heads
         self.self.num_attention_heads = self.self.num_attention_heads - len(heads)
         self.self.all_head_size = (
-                self.self.attention_head_size * self.self.num_attention_heads
+            self.self.attention_head_size * self.self.num_attention_heads
         )
         self.pruned_heads = self.pruned_heads.union(heads)
 
     def forward(
-            self,
-            hidden_states,
-            attention_mask=None,
-            head_mask=None,
-            encoder_hidden_states=None,
-            encoder_attention_mask=None,
-            past_key_value=None,
-            output_attentions=False,
+        self,
+        hidden_states,
+        attention_mask=None,
+        head_mask=None,
+        encoder_hidden_states=None,
+        encoder_attention_mask=None,
+        past_key_value=None,
+        output_attentions=False,
     ):
         hidden_states_ln = self.LayerNorm(hidden_states)
         self_outputs = self.self(
@@ -544,8 +544,8 @@ class OmniGenomeAttention(nn.Module):
         )
         attention_output = self.output(self_outputs[0], hidden_states)
         outputs = (attention_output,) + self_outputs[
-                                        1:
-                                        ]  # add attentions if we output them
+            1:
+        ]  # add attentions if we output them
         return outputs
 
 
@@ -595,14 +595,14 @@ class OmniGenomeLayer(nn.Module):
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
     def forward(
-            self,
-            hidden_states,
-            attention_mask=None,
-            head_mask=None,
-            encoder_hidden_states=None,
-            encoder_attention_mask=None,
-            past_key_value=None,
-            output_attentions=False,
+        self,
+        hidden_states,
+        attention_mask=None,
+        head_mask=None,
+        encoder_hidden_states=None,
+        encoder_attention_mask=None,
+        past_key_value=None,
+        output_attentions=False,
     ):
         # decoder uni-directional self-attention cached key/values tuple is at positions 1,2
         self_attn_past_key_value = (
@@ -623,8 +623,8 @@ class OmniGenomeLayer(nn.Module):
             present_key_value = self_attention_outputs[-1]
         else:
             outputs = self_attention_outputs[
-                      1:
-                      ]  # add self attentions if we output attention weights
+                1:
+            ]  # add self attentions if we output attention weights
 
         cross_attn_present_key_value = None
         if self.is_decoder and encoder_hidden_states is not None:
@@ -649,7 +649,7 @@ class OmniGenomeLayer(nn.Module):
             )
             attention_output = cross_attention_outputs[0]
             outputs = (
-                    outputs + cross_attention_outputs[1:-1]
+                outputs + cross_attention_outputs[1:-1]
             )  # add cross attentions if we output attention weights
 
             # add cross-attn cache to positions 3,4 of present_key_value tuple
@@ -686,17 +686,17 @@ class OmniGenomeEncoder(nn.Module):
         self.gradient_checkpointing = False
 
     def forward(
-            self,
-            hidden_states,
-            attention_mask=None,
-            head_mask=None,
-            encoder_hidden_states=None,
-            encoder_attention_mask=None,
-            past_key_values=None,
-            use_cache=None,
-            output_attentions=False,
-            output_hidden_states=False,
-            return_dict=True,
+        self,
+        hidden_states,
+        attention_mask=None,
+        head_mask=None,
+        encoder_hidden_states=None,
+        encoder_attention_mask=None,
+        past_key_values=None,
+        use_cache=None,
+        output_attentions=False,
+        output_hidden_states=False,
+        return_dict=True,
     ):
         if self.gradient_checkpointing and self.training:
             if use_cache:
@@ -941,19 +941,19 @@ class OmniGenomeModel(OmniGenomePreTrainedModel):
         config_class=_CONFIG_FOR_DOC,
     )
     def forward(
-            self,
-            input_ids: Optional[torch.Tensor] = None,
-            attention_mask: Optional[torch.Tensor] = None,
-            position_ids: Optional[torch.Tensor] = None,
-            head_mask: Optional[torch.Tensor] = None,
-            inputs_embeds: Optional[torch.Tensor] = None,
-            encoder_hidden_states: Optional[torch.Tensor] = None,
-            encoder_attention_mask: Optional[torch.Tensor] = None,
-            past_key_values: Optional[List[torch.FloatTensor]] = None,
-            use_cache: Optional[bool] = None,
-            output_attentions: Optional[bool] = None,
-            output_hidden_states: Optional[bool] = None,
-            return_dict: Optional[bool] = None,
+        self,
+        input_ids: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.Tensor] = None,
+        head_mask: Optional[torch.Tensor] = None,
+        inputs_embeds: Optional[torch.Tensor] = None,
+        encoder_hidden_states: Optional[torch.Tensor] = None,
+        encoder_attention_mask: Optional[torch.Tensor] = None,
+        past_key_values: Optional[List[torch.FloatTensor]] = None,
+        use_cache: Optional[bool] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
     ) -> Union[Tuple[torch.Tensor], BaseModelOutputWithPoolingAndCrossAttentions]:
         r"""
         encoder_hidden_states  (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
@@ -1103,7 +1103,8 @@ class OmniGenomeModel(OmniGenomePreTrainedModel):
 
 
 @add_start_docstrings(
-    """OmniGenome Model with a `language modeling` head on top.""", OmniGenome_START_DOCSTRING
+    """OmniGenome Model with a `language modeling` head on top.""",
+    OmniGenome_START_DOCSTRING,
 )
 # Copied from transformers.models.esm.modeling_esm.EsmForMaskedLM with Esm->OmniGenome
 class OmniGenomeForMaskedLM(OmniGenomePreTrainedModel):
@@ -1138,18 +1139,18 @@ class OmniGenomeForMaskedLM(OmniGenomePreTrainedModel):
         mask="<mask>",
     )
     def forward(
-            self,
-            input_ids: Optional[torch.LongTensor] = None,
-            attention_mask: Optional[torch.Tensor] = None,
-            position_ids: Optional[torch.LongTensor] = None,
-            head_mask: Optional[torch.Tensor] = None,
-            inputs_embeds: Optional[torch.FloatTensor] = None,
-            encoder_hidden_states: Optional[torch.FloatTensor] = None,
-            encoder_attention_mask: Optional[torch.Tensor] = None,
-            labels: Optional[torch.LongTensor] = None,
-            output_attentions: Optional[bool] = None,
-            output_hidden_states: Optional[bool] = None,
-            return_dict: Optional[bool] = None,
+        self,
+        input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        head_mask: Optional[torch.Tensor] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        encoder_hidden_states: Optional[torch.FloatTensor] = None,
+        encoder_attention_mask: Optional[torch.Tensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
     ) -> Union[Tuple, MaskedLMOutput]:
         r"""
         labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -1251,16 +1252,16 @@ class OmniGenomeForSequenceClassification(OmniGenomePreTrainedModel):
         config_class=_CONFIG_FOR_DOC,
     )
     def forward(
-            self,
-            input_ids: Optional[torch.LongTensor] = None,
-            attention_mask: Optional[torch.Tensor] = None,
-            position_ids: Optional[torch.LongTensor] = None,
-            head_mask: Optional[torch.Tensor] = None,
-            inputs_embeds: Optional[torch.FloatTensor] = None,
-            labels: Optional[torch.LongTensor] = None,
-            output_attentions: Optional[bool] = None,
-            output_hidden_states: Optional[bool] = None,
-            return_dict: Optional[bool] = None,
+        self,
+        input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        head_mask: Optional[torch.Tensor] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
     ) -> Union[Tuple, SequenceClassifierOutput]:
         r"""
         labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
@@ -1293,7 +1294,7 @@ class OmniGenomeForSequenceClassification(OmniGenomePreTrainedModel):
                 if self.num_labels == 1:
                     self.config.problem_type = "regression"
                 elif self.num_labels > 1 and (
-                        labels.dtype == torch.long or labels.dtype == torch.int
+                    labels.dtype == torch.long or labels.dtype == torch.int
                 ):
                     self.config.problem_type = "single_label_classification"
                 else:
@@ -1353,16 +1354,16 @@ class OmniGenomeForTokenClassification(OmniGenomePreTrainedModel):
         config_class=_CONFIG_FOR_DOC,
     )
     def forward(
-            self,
-            input_ids: Optional[torch.LongTensor] = None,
-            attention_mask: Optional[torch.Tensor] = None,
-            position_ids: Optional[torch.LongTensor] = None,
-            head_mask: Optional[torch.Tensor] = None,
-            inputs_embeds: Optional[torch.FloatTensor] = None,
-            labels: Optional[torch.LongTensor] = None,
-            output_attentions: Optional[bool] = None,
-            output_hidden_states: Optional[bool] = None,
-            return_dict: Optional[bool] = None,
+        self,
+        input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        head_mask: Optional[torch.Tensor] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
     ) -> Union[Tuple, TokenClassifierOutput]:
         r"""
         labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -1428,11 +1429,7 @@ class OmniGenomeForTokenClassification(OmniGenomePreTrainedModel):
 
         return structure
 
-    def predict_rna_structure(
-            self,
-            sequence: str,
-            **kwargs
-    ) -> List[str]:
+    def predict_rna_structure(self, sequence: str, **kwargs) -> List[str]:
         r"""
         Load the pretrained OmniGenome Model to do zero-shot prediction of the secondary structure
          of a sequence given the sequence
@@ -1441,11 +1438,14 @@ class OmniGenomeForTokenClassification(OmniGenomePreTrainedModel):
             tokenizer = kwargs.get("tokenizer", None)
             if tokenizer is None:
                 from transformers import AutoTokenizer
+
                 self.tokenizer = AutoTokenizer.from_pretrained(self.config.name_or_path)
             else:
                 self.tokenizer = tokenizer
 
-        inputs = self.tokenizer(sequence, return_tensors="pt", padding="max_length", truncation=True)
+        inputs = self.tokenizer(
+            sequence, return_tensors="pt", padding="max_length", truncation=True
+        )
         input_ids = inputs["input_ids"]
         attention_mask = inputs["attention_mask"]
         outputs = self.forward(input_ids, attention_mask, **kwargs)
@@ -1482,8 +1482,10 @@ class OmniGenomeModelForSeq2SeqLM(OmniGenomePreTrainedModel):
         self.tokenizer = None
         self.predict_structure = None
 
-        warnings.warn(f"This model {self.__class__.__name__} is not a real Seq2Seq model. "
-                      f"Instead, this model is designed for RNA design tasks")
+        warnings.warn(
+            f"This model {self.__class__.__name__} is not a real Seq2Seq model. "
+            f"Instead, this model is designed for RNA design tasks"
+        )
 
     @add_start_docstrings_to_model_forward(
         OmniGenome_INPUTS_DOCSTRING.format("batch_size, sequence_length")
@@ -1494,29 +1496,28 @@ class OmniGenomeModelForSeq2SeqLM(OmniGenomePreTrainedModel):
         config_class=_CONFIG_FOR_DOC,
     )
     def forward(
-            self,
-            input_ids: Optional[torch.LongTensor] = None,
-            attention_mask: Optional[torch.Tensor] = None,
-            position_ids: Optional[torch.LongTensor] = None,
-            head_mask: Optional[torch.Tensor] = None,
-            inputs_embeds: Optional[torch.FloatTensor] = None,
-            labels: Optional[torch.LongTensor] = None,
-            output_attentions: Optional[bool] = None,
-            output_hidden_states: Optional[bool] = True,
-            return_dict: Optional[bool] = None,
+        self,
+        input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        head_mask: Optional[torch.Tensor] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = True,
+        return_dict: Optional[bool] = None,
     ) -> Union[Tuple, TokenClassifierOutput]:
         r"""
         labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
             Labels for computing the token classification loss. Indices should be in `[0, ..., config.num_labels - 1]`.
         """
-        raise NotImplementedError("This model is not designed for standard Seq2Seq tasks. "
-                                  "Use model.rna_sequence_design() for RNA sequences design instead.")
+        raise NotImplementedError(
+            "This model is not designed for standard Seq2Seq tasks. "
+            "Use model.rna_sequence_design() for RNA sequences design instead."
+        )
 
     def rna_sequence_design(
-            self,
-            structure: str,
-            predict_structure_func=None,
-            **kwargs
+        self, structure: str, predict_structure_func=None, **kwargs
     ) -> List[str]:
         """
         Assemble the RNA sequence given the reference sequence structure
@@ -1525,15 +1526,20 @@ class OmniGenomeModelForSeq2SeqLM(OmniGenomePreTrainedModel):
             tokenizer = kwargs.get("tokenizer", None)
             if tokenizer is None:
                 from transformers import AutoTokenizer
+
                 self.tokenizer = AutoTokenizer.from_pretrained(self.config.name_or_path)
             else:
                 self.tokenizer = tokenizer
 
-        candidates = self.genetic_algorithm_for_rna_design(structure, predict_structure_func=None, **kwargs)
+        candidates = self.genetic_algorithm_for_rna_design(
+            structure, predict_structure_func=None, **kwargs
+        )
 
         return candidates
 
-    def genetic_algorithm_for_rna_design(self, structure, predict_structure_func=None, **kwargs):
+    def genetic_algorithm_for_rna_design(
+        self, structure, predict_structure_func=None, **kwargs
+    ):
         if predict_structure_func is None:
             import ViennaRNA
 
@@ -1547,17 +1553,30 @@ class OmniGenomeModelForSeq2SeqLM(OmniGenomePreTrainedModel):
         num_population = kwargs.get("num_population", self.num_population)
         num_generation = kwargs.get("num_generation", self.num_generation)
         import tqdm
+
         population = self.init_population(structure, num_population)
-        population = self.mlm_mutate(population, structure, mutation_ratio=mutation_ratio)
-        for generation_id in tqdm.tqdm(range(num_generation), desc="Designing RNA Sequence"):
-            population_fitness = self.sequence_fitness(population, structure)[:num_population]
-            population = sorted(zip(population, population_fitness), key=lambda x: x[1])[:num_population]
+        population = self.mlm_mutate(
+            population, structure, mutation_ratio=mutation_ratio
+        )
+        for generation_id in tqdm.tqdm(
+            range(num_generation), desc="Designing RNA Sequence"
+        ):
+            population_fitness = self.sequence_fitness(population, structure)[
+                :num_population
+            ]
+            population = sorted(
+                zip(population, population_fitness), key=lambda x: x[1]
+            )[:num_population]
             population = [x[0] for x in population]
             next_generation = population  # Elitism
             next_generation += self.crossover(population, structure)
-            next_generation += self.mlm_mutate(next_generation, structure, mutation_ratio)
+            next_generation += self.mlm_mutate(
+                next_generation, structure, mutation_ratio
+            )
             fitness_values = self.sequence_fitness(next_generation, structure)
-            next_generation = sorted(zip(next_generation, fitness_values), key=lambda x: x[1])
+            next_generation = sorted(
+                zip(next_generation, fitness_values), key=lambda x: x[1]
+            )
 
             candidate_sequences = []
             for sequence, fitness in next_generation:
@@ -1567,7 +1586,9 @@ class OmniGenomeModelForSeq2SeqLM(OmniGenomePreTrainedModel):
                     break
             if candidate_sequences:
                 return candidate_sequences
-            print(f"Generation {generation_id}: {next_generation[0][0]} with fitness {next_generation[0][1]}")
+            print(
+                f"Generation {generation_id}: {next_generation[0][0]} with fitness {next_generation[0][1]}"
+            )
             population = [x[0] for x in next_generation[:num_population]]
 
         return []
@@ -1577,7 +1598,9 @@ class OmniGenomeModelForSeq2SeqLM(OmniGenomePreTrainedModel):
         population = []
         mlm_inputs = []
         # Iterate over the number of individuals in the population
-        for _ in range(num_population):  # Changed from self.num_population to num_population
+        for _ in range(
+            num_population
+        ):  # Changed from self.num_population to num_population
             # Create a sequence by randomly choosing nucleotides or a mask token for each position in the structure
             masked_sequence = [
                 random.choice(["A", "G", "C", "T", "<mask>"])
@@ -1594,7 +1617,7 @@ class OmniGenomeModelForSeq2SeqLM(OmniGenomePreTrainedModel):
             sequence = self.tokenizer.convert_ids_to_tokens(outputs[i].tolist())
             fixed_sequence = [
                 x if x in "AGCT" else random.choice(["G", "C"])
-                for x, y in zip(sequence, list(mlm_inputs[i].replace('<mask>', '$')))
+                for x, y in zip(sequence, list(mlm_inputs[i].replace("<mask>", "$")))
             ]
             population.append("".join(fixed_sequence))
 
@@ -1630,7 +1653,9 @@ class OmniGenomeModelForSeq2SeqLM(OmniGenomePreTrainedModel):
             sequence = self.tokenizer.convert_ids_to_tokens(outputs[i].tolist())
             fixed_sequence = [
                 x if x in "AGCT" else random.choice(["G", "C"])
-                for x, y in zip(sequence, list(masked_sequences[i].replace('<mask>', '$')))
+                for x, y in zip(
+                    sequence, list(masked_sequences[i].replace("<mask>", "$"))
+                )
             ]
             mut_population.append("".join(fixed_sequence))
 
@@ -1653,7 +1678,9 @@ class OmniGenomeModelForSeq2SeqLM(OmniGenomePreTrainedModel):
             sequence = self.tokenizer.convert_ids_to_tokens(outputs[i].tolist())
             fixed_sequence = [
                 x if x in "AGCT" else random.choice(["G", "C"])
-                for x, y in zip(sequence, list(batch_crossover_inputs[i].replace('<mask>', '$')))
+                for x, y in zip(
+                    sequence, list(batch_crossover_inputs[i].replace("<mask>", "$"))
+                )
             ]
             crossover_population.append("".join(fixed_sequence))
 
@@ -1668,10 +1695,10 @@ class OmniGenomeModelForSeq2SeqLM(OmniGenomePreTrainedModel):
                 if predicted_structure[i] == structure[i]:
                     scores.append(1)
                 elif (
-                        predicted_structure[i] == ")"
-                        and structure[i] == "("
-                        or predicted_structure[i] == "("
-                        and structure[i] == ")"
+                    predicted_structure[i] == ")"
+                    and structure[i] == "("
+                    or predicted_structure[i] == "("
+                    and structure[i] == ")"
                 ):
                     scores.append(-3)
                 else:
@@ -1684,12 +1711,13 @@ class OmniGenomeModelForSeq2SeqLM(OmniGenomePreTrainedModel):
         batch_size = 4
         all_outputs = []
         from transformers import set_seed
+
         set_seed(random.randint(0, 99999999), deterministic=False)
 
         with torch.no_grad():
             for i in range(0, len(mlm_inputs), batch_size):
                 batch_mlm_inputs = self.tokenizer(
-                    mlm_inputs[i:i + batch_size],
+                    mlm_inputs[i : i + batch_size],
                     padding=True,
                     max_length=len(mlm_inputs[0]) // 2,
                     truncation=True,
@@ -1701,7 +1729,7 @@ class OmniGenomeModelForSeq2SeqLM(OmniGenomePreTrainedModel):
                 outputs = outputs.argmax(dim=-1)
                 all_outputs.append(outputs)
         outputs = torch.cat(all_outputs, dim=0)
-        return outputs[:, 1:1 + len(structure)]
+        return outputs[:, 1 : 1 + len(structure)]
 
 
 # Copied from transformers.models.esm.modeling_esm.EsmClassificationHead with Esm->OmniGenome
@@ -1725,7 +1753,7 @@ class OmniGenomeClassificationHead(nn.Module):
 
 
 def create_position_ids_from_input_ids(
-        input_ids, padding_idx, past_key_values_length=0
+    input_ids, padding_idx, past_key_values_length=0
 ):
     """
     Replace non-padding symbols with their position numbers. Position numbers begin at padding_idx+1. Padding symbols
@@ -1739,6 +1767,6 @@ def create_position_ids_from_input_ids(
     # The series of casts and type-conversions here are carefully balanced to both work with ONNX export and XLA.
     mask = input_ids.ne(padding_idx).int()
     incremental_indices = (
-                                  torch.cumsum(mask, dim=1).type_as(mask) + past_key_values_length
-                          ) * mask
+        torch.cumsum(mask, dim=1).type_as(mask) + past_key_values_length
+    ) * mask
     return incremental_indices.long() + padding_idx

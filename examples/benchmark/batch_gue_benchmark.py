@@ -13,7 +13,6 @@ import random
 from omnigenome import AutoBench
 
 if __name__ == "__main__":
-
     gfms = [
         # "genomic_foundation_models/OmniGenomeV2-186M",
         # "anonymous8/OmniGenome-186M",

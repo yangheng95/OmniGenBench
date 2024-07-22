@@ -12,22 +12,24 @@ import torch
 import os
 from transformers import OmniGenomeModelForSeq2SeqLM
 
+
 def predict_contrafold_structure(sequences):
     structures = []
-    contra_fold_bin = '../contrafold/src/contrafold'
+    contra_fold_bin = "../contrafold/src/contrafold"
     if not isinstance(sequences, list):
         sequences = [sequences]
 
     for i, seq in enumerate(sequences):
-        fname = f'temp/temp_{seq[:100]}_{i}.txt'
-        with open(fname, 'w') as f:
-            f.write(f'{seq}\n')
-        with os.popen(f'{contra_fold_bin} predict {fname}') as p:
+        fname = f"temp/temp_{seq[:100]}_{i}.txt"
+        with open(fname, "w") as f:
+            f.write(f"{seq}\n")
+        with os.popen(f"{contra_fold_bin} predict {fname}") as p:
             result = p.read()
-            structure = result.split('\n')[-2]
+            structure = result.split("\n")[-2]
         # print(structure)
         structures.append(structure)
     return structures
+
 
 if __name__ == "__main__":
     target_structures = []
@@ -48,7 +50,9 @@ if __name__ == "__main__":
     structures = target_structures[:]
 
     # model = OmniGenomeModelForSeq2SeqLM.from_pretrained("anonymous8/OmniGenome-186M")
-    model = OmniGenomeModelForSeq2SeqLM.from_pretrained("benchmark/genomic_foundation_models/OmniGenomeV3-186M")
+    model = OmniGenomeModelForSeq2SeqLM.from_pretrained(
+        "benchmark/genomic_foundation_models/OmniGenomeV3-186M"
+    )
     model.to("cuda") if torch.cuda.is_available() else model.to("cpu")
 
     num_all = 0

@@ -13,7 +13,6 @@ import random
 from omnigenome import AutoBench
 
 if __name__ == "__main__":
-
     gfms = [
         "genomic_foundation_models/OmniGenomeV3-186M",
         # "genomic_foundation_models/OmniGenomeV2-186M",
@@ -25,10 +24,8 @@ if __name__ == "__main__":
         # "genomic_foundation_models/nucleotide-transformer-v2-100m-multi-species",
     ]
     bench_root = "RGB"
-    bench_size = 8
+    bench_size = 4
     seeds = [3407, 3408, 3409]
     for gfm in gfms:
-        bench = AutoBench(
-            bench_root=bench_root, model_name_or_path=gfm, overwrite=True
-        )
+        bench = AutoBench(bench_root=bench_root, model_name_or_path=gfm, overwrite=True)
         bench.run(autocast=False, batch_size=bench_size, seeds=seeds)

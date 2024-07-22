@@ -13,4 +13,3 @@ if __name__ == "__main__":
     # benchmarks = ["RGB", "GB", "PGB", "GUE"]
     bench = download_benchmark("RGB")
     print(bench)
-

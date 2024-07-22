@@ -23,9 +23,11 @@ import requests
 from concurrent.futures import ThreadPoolExecutor
 import ViennaRNA
 
+
 def predict_structure_single(sequence):
     """Predicts the RNA structure for a single sequence."""
     return ViennaRNA.fold(sequence.replace("T", "U"))[0]
+
 
 def predict_structure(sequences):
     """Predicts structures for multiple sequences using multithreading."""
@@ -37,6 +39,7 @@ def predict_structure(sequences):
     else:
         # Single sequence case
         return predict_structure_single(sequences)
+
 
 # def predict_contrafold_structure(sequences):
 #     structures = []
@@ -168,7 +171,6 @@ def mlm_mutate(population, structure, model, tokenizer, mutation_ratio):
         sequence[masked_indices] = "$"
         mut_seq = "".join(sequence.tolist()).replace("$", "<mask>")
         return mut_seq
-
 
     def mutate_with_spans_mask(sequence, mutation_rate):
         """使用numpy一次性对多个span应用mask突变"""

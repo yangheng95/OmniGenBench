@@ -56,6 +56,7 @@ class OmniGenomePooling(torch.nn.Module):
         else:
             return False
 
+
 # class InteractingAttention(nn.Module):
 #     def __init__(self, embed_size, num_heads=12):
 #         super(InteractingAttention, self).__init__()
@@ -104,9 +105,13 @@ class OmniGenomePooling(torch.nn.Module):
 class InteractingAttention(nn.Module):
     def __init__(self, embed_size, num_heads=24):
         super(InteractingAttention, self).__init__()
-        assert embed_size % num_heads == 0, "Embedding size should be divisible by number of heads"
+        assert (
+            embed_size % num_heads == 0
+        ), "Embedding size should be divisible by number of heads"
 
-        self.attention = nn.MultiheadAttention(embed_dim=embed_size, num_heads=num_heads, batch_first=True)
+        self.attention = nn.MultiheadAttention(
+            embed_dim=embed_size, num_heads=num_heads, batch_first=True
+        )
 
         self.layer_norm = nn.LayerNorm(embed_size, eps=1e-6)
 

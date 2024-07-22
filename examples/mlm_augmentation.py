@@ -26,21 +26,21 @@ model = AutoModelForMaskedLM.from_pretrained(model_name_or_path, trust_remote_co
 device = autocuda.auto_cuda()
 model.to(device)
 
-input_file = 'toy_datasets/test.json'
+input_file = "toy_datasets/test.json"
 
 sequences = []
-with open(input_file, 'r') as f:
+with open(input_file, "r") as f:
     for line in f.readlines():
         sequences.append(json.loads(line))
 
-sequences = [sequences[i]['seq'] for i in range(len(sequences))]
+sequences = [sequences[i]["seq"] for i in range(len(sequences))]
 
 # add_noise
 for i, seq in enumerate(sequences):
     sequences[i] = list(seq)
     for _ in range(int(len(seq) * 0.15)):
         sequences[i][random.randint(0, len(seq) - 1)] = tokenizer.mask_token
-    sequences[i] = ''.join(sequences[i])
+    sequences[i] = "".join(sequences[i])
 
 
 for seq in tqdm.tqdm(sequences):
@@ -56,8 +56,12 @@ for seq in tqdm.tqdm(sequences):
     prediction = prediction.argmax(dim=-1).view(-1).to("cpu")
 
     tokenized_inputs = tokenized_inputs.to("cpu")
-    tokenized_inputs['input_ids'][0][tokenized_inputs['input_ids'][0] == tokenizer.mask_token_id] = prediction[tokenized_inputs['input_ids'][0] == tokenizer.mask_token_id]
-    aug_seq = tokenizer.decode(tokenized_inputs['input_ids'][0], skip_special_tokens=True)
+    tokenized_inputs["input_ids"][0][
+        tokenized_inputs["input_ids"][0] == tokenizer.mask_token_id
+    ] = prediction[tokenized_inputs["input_ids"][0] == tokenizer.mask_token_id]
+    aug_seq = tokenizer.decode(
+        tokenized_inputs["input_ids"][0], skip_special_tokens=True
+    )
 
     print(f"Original sequence: {seq}")
     print(f"Augmented sequence: {aug_seq}")

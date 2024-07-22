@@ -95,7 +95,6 @@ class OmniGenomeModel(torch.nn.Module):
         self.dropout = torch.nn.Dropout(kwargs.get("dropout", 0.0))
         self.activation = torch.nn.Tanh()
 
-
     def last_hidden_state_forward(self, inputs):
         """
 
@@ -117,7 +116,7 @@ class OmniGenomeModel(torch.nn.Module):
             )
 
         try:
-            if '2DStructure' in self.metadata['model_name']:
+            if "2DStructure" in self.metadata["model_name"]:
                 outputs = self._structure_hidden_state_forward(inputs)
 
             else:
@@ -146,12 +145,14 @@ class OmniGenomeModel(torch.nn.Module):
         elif hasattr(outputs, "hidden_states"):
             last_hidden_state = outputs.hidden_states[-1]
         elif (
-                isinstance(outputs, list)
-                or isinstance(outputs, tuple)
-                or isinstance(outputs, torch.Tensor)
+            isinstance(outputs, list)
+            or isinstance(outputs, tuple)
+            or isinstance(outputs, torch.Tensor)
         ):
             # For some models like DNABERT-2, the outputs is a list, tuple of tensors
-            last_hidden_state = outputs[-1] if len(outputs[-1].shape) == 3 else outputs[0]
+            last_hidden_state = (
+                outputs[-1] if len(outputs[-1].shape) == 3 else outputs[0]
+            )
         else:
             raise ValueError(
                 f"Cannot find the last hidden state in the outputs from the {model.__class__.__name__} \
@@ -179,7 +180,9 @@ class OmniGenomeModel(torch.nn.Module):
         return raw_outputs
 
     def _structure_hidden_state_forward(self, inputs):
-        if '2DStructure' in self.metadata['model_name'] and not hasattr(self, 'interaction_attn'):
+        if "2DStructure" in self.metadata["model_name"] and not hasattr(
+            self, "interaction_attn"
+        ):
             self.interaction_attn = InteractingAttention(
                 self.config.hidden_size,
             )
@@ -191,9 +194,7 @@ class OmniGenomeModel(torch.nn.Module):
         input_ids = inputs["input_ids"]
         sequences = tokenizer.batch_decode(input_ids, skip_special_tokens=True)
         sequences = [seq.replace(" ", "") for seq in sequences]
-        structures = model.rna2structure.fold(
-            [seq for seq in sequences]
-        )
+        structures = model.rna2structure.fold([seq for seq in sequences])
         structures = [
             f"{sequence}{tokenizer.eos_token}{structure}"
             for (sequence, structure) in zip(sequences, structures)
