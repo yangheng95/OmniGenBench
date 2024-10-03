@@ -64,37 +64,40 @@ class RNA2StructureCache(dict):
     def __repr__(self):
         return str(self.cache)
 
-    def fold(self, sequence, return_mfe=False, num_workers=1):
+    def fold(self, sequence, return_mfe=False, num_workers=None):
+        if num_workers is None or num_workers < 1:
+            num_workers = os.cpu_count()
+
         if not isinstance(sequence, list):
-            sequence = [sequence]
+            sequences = [sequence]
+        else:
+            sequences = sequence
 
         structures = []
 
-        if not all([seq in self.cache for seq in sequence]):
+        if not all([seq in self.cache for seq in sequences]):
             if num_workers == 1:
-                for seq in sequence:
+                for seq in sequences:
                     if seq not in self.cache:
                         self.cache[seq] = RNA.fold(seq)
             else:
                 if num_workers is None:
-                    num_workers = min(os.cpu_count(), len(sequence))
+                    num_workers = min(os.cpu_count(), len(sequences))
 
                 with multiprocessing.Pool(num_workers) as pool:
-                    for seq in sequence:
-                        if seq in self.cache:
-                            continue
-                        self.queue_num += 1
-                        async_result = pool.apply_async(RNA.fold, args=(seq,))
-                        structures.append(async_result)
+                    for seq in sequences:
+                        if seq not in self.cache:
+                            self.queue_num += 1
+                            async_result = pool.apply_async(RNA.fold, args=(seq,))
+                            structures.append((seq, async_result))
 
-                    for seq, result in zip(sequence, structures):
+                    for seq, result in structures:
                         self.cache[seq] = result.get()  # result is a tuple
 
         if return_mfe:
-            structures = [self.cache[seq] for seq in sequence]
+            structures = [self.cache[seq] for seq in sequences]
         else:
-            structures = [self.cache[seq][0] for seq in sequence]
-
+            structures = [self.cache[seq][0] for seq in sequences]
         self.update_cache_file(self.cache_file)
 
         if len(structures) == 1:

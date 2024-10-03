@@ -31,7 +31,6 @@ class OmniGenomeMetric:
         Compute the metric, based on the true and predicted values.
         :param y_true: the true values
         :param y_pred: the predicted values
-        :param ignore_y: the values to ignore in the predictions and true values in corresponding positions
         """
         raise NotImplementedError(
             "Method compute() is not implemented in the child class. "

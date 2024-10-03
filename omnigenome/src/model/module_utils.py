@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 
 from transformers.models.bert.modeling_bert import BertPooler
+from transformers.tokenization_utils_base import BatchEncoding
 import torch.nn.functional as F
 
 
@@ -28,6 +29,24 @@ class OmniGenomePooling(torch.nn.Module):
             attention_mask = (
                 inputs["attention_mask"] if "attention_mask" in inputs else None
             )
+        elif isinstance(inputs, torch.Tensor):
+            shape = inputs.shape
+            try:
+                if len(shape) == 3:
+                    # compatible with hf_trainer in AutoBenchmark
+                    if shape[1] == 2:
+                        input_ids = inputs[:, 0]
+                        attention_mask = inputs[:, 1]
+                    else:
+                        input_ids = inputs[0]
+                        attention_mask = inputs[1] if len(inputs) > 1 else None
+                elif len(shape) == 2:
+                    input_ids = inputs
+                    attention_mask = None
+            except:
+                raise ValueError(
+                    f"Failed to get the input_ids and attention_mask from the inputs, got shape {shape}."
+                )
         else:
             raise ValueError(
                 f"The inputs should be a tuple, BatchEncoding or a dictionary-like object, got {type(inputs)}."

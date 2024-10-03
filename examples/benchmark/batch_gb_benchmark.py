@@ -14,27 +14,42 @@ from omnigenome import AutoBench
 
 if __name__ == "__main__":
     gfms = [
-        # "genomic_foundation_models/OmniGenomeV2-186M",
-        # "anonymous8/OmniGenome-186M",
-        "genomic_foundation_models/SpliceBERT-510nt",
+        # "genomic_foundation_models/OmniGenomeV3-186M",
+        "kuleshov-group/caduceus-ph_seqlen-131k_d_model-256_n_layer-16",
+        # "multimolecule/rnamsm",
+        # "multimolecule/rnafm",
+        # "multimolecule/rnabert",
+        # "genomic_foundation_models/SpliceBERT-510nt",
         # "genomic_foundation_models/DNABERT-2-117M",
         # "genomic_foundation_models/3utrbert",
         # "genomic_foundation_models/hyenadna-large-1m-seqlen-hf",
         # "genomic_foundation_models/nucleotide-transformer-v2-100m-multi-species",
+
     ]
     bench_root = "GB"
-    bench_size = 8
-    seeds = [3408]
+    batch_size = 64
+    max_length = 512
+    max_examples = 10000
     patience = 3
+    seeds = [3401]
     for gfm in gfms:
+        if 'multimolecule' in gfm:
+            from multimolecule import RnaTokenizer, AutoModelForTokenPrediction
+            tokenizer = RnaTokenizer.from_pretrained(gfm)
+            gfm = AutoModelForTokenPrediction.from_pretrained(gfm, trust_remote_code=True).base_model
+        else:
+            tokenizer = None
         bench = AutoBench(
-            bench_root=bench_root, model_name_or_path=gfm, overwrite=False
+            autocast="fp16",
+            bench_root=bench_root,
+            model_name_or_path=gfm,
+            tokenizer=tokenizer,
+            overwrite=True
         )
         bench.run(
-            autocast=False,
-            batch_size=bench_size,
-            seeds=seeds,
-            max_examples=10000,
+            batch_size=batch_size,
+            max_length=max_length,
+            max_examples=max_examples,
             patience=patience,
-            shuffle=True,
+            seeds=seeds
         )

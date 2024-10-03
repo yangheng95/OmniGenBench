@@ -6,7 +6,7 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
-
+import numpy as np
 import torch
 from transformers import BatchEncoding
 
@@ -49,7 +49,7 @@ class OmniGenomeModelForMLM(OmniGenomeModel):
 
         predictions = []
         for i in range(logits.shape[0]):
-            predictions.append(logits[i].argmax(dim=-1).detach().cpu().numpy())
+            predictions.append(logits[i].argmax(dim=-1).cpu())
 
         if not isinstance(sequence_or_inputs, list):
             outputs = {
@@ -59,7 +59,9 @@ class OmniGenomeModelForMLM(OmniGenomeModel):
             }
         else:
             outputs = {
-                "predictions": predictions,
+                "predictions": torch.stack(predictions)
+                if predictions[0].shape
+                else torch.tensor(predictions),
                 "logits": logits,
                 "last_hidden_state": last_hidden_state,
             }
@@ -78,7 +80,7 @@ class OmniGenomeModelForMLM(OmniGenomeModel):
             i_logit = logits[i][inputs["input_ids"][i].ne(self.config.pad_token_id)][
                 1:-1
             ]
-            prediction = self.tokenizer.decode(i_logits.argmax(dim=-1)).replace(" ", "")
+            prediction = self.tokenizer.decode(i_logit.argmax(dim=-1)).replace(" ", "")
             predictions.append(list(prediction))
 
         if not isinstance(sequence_or_inputs, list):

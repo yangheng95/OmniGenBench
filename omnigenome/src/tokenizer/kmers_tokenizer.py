@@ -59,8 +59,7 @@ class OmniKmersTokenizer(OmniGenomeTokenizer):
         tokenized_inputs = self.base_tokenizer.pad(
             tokenized_inputs,
             padding="max_length",
-            max_length=self.max_length,
-            pad_to_multiple_of=self.max_length,
+            max_length=len(sequence_tokens),
             return_attention_mask=True,
             return_tensors="pt",
         )
@@ -68,6 +67,8 @@ class OmniKmersTokenizer(OmniGenomeTokenizer):
 
     @staticmethod
     def from_pretrained(model_name_or_path, **kwargs):
+        from transformers import AutoTokenizer
+
         self = OmniKmersTokenizer(
             AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
         )

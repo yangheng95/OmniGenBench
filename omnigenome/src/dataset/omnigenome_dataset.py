@@ -58,7 +58,6 @@ class OmniGenomeDatasetForTokenClassification(OmniGenomeDataset):
             truncation=True,
             max_length=self.max_length,
             return_tensors="pt",
-            **kwargs
         )
         for col in tokenized_inputs:
             tokenized_inputs[col] = tokenized_inputs[col].squeeze()
@@ -85,7 +84,7 @@ class OmniGenomeDatasetForSequenceClassification(OmniGenomeDataset):
             {
                 "library_name": __name__,
                 "omnigenome_version": __version__,
-                "task": "genome_token_classification",
+                "task": "genome_sequence_classification",
             }
         )
         for key, value in kwargs.items():
@@ -113,7 +112,6 @@ class OmniGenomeDatasetForSequenceClassification(OmniGenomeDataset):
             truncation=True,
             max_length=self.max_length,
             return_tensors="pt",
-            **kwargs
         )
         for col in tokenized_inputs:
             tokenized_inputs[col] = tokenized_inputs[col].squeeze()
@@ -165,7 +163,6 @@ class OmniGenomeDatasetForTokenRegression(OmniGenomeDataset):
             truncation=True,
             max_length=self.max_length,
             return_tensors="pt",
-            **kwargs
         )
         for col in tokenized_inputs:
             tokenized_inputs[col] = tokenized_inputs[col].squeeze()
@@ -238,7 +235,6 @@ class OmniGenomeDatasetForSequenceRegression(OmniGenomeDataset):
             truncation=True,
             max_length=self.max_length,
             return_tensors="pt",
-            **kwargs
         )
         for col in tokenized_inputs:
             tokenized_inputs[col] = tokenized_inputs[col].squeeze()

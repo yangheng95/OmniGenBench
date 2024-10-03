@@ -14,9 +14,21 @@ from omnigenome import AutoBench
 
 if __name__ == "__main__":
     gfms = [
+        # "yangheng/PlantRNA-FM",
+        # "genomic_foundation_models/OmniGenome-52M-1000",
+        # "kuleshov-group/caduceus-ph_seqlen-131k_d_model-256_n_layer-16",
         "genomic_foundation_models/OmniGenomeV3-186M",
-        # "genomic_foundation_models/OmniGenomeV2-186M",
-        # "anonymous8/OmniGenome-186M",
+
+        # "multimolecule/rnamsm",
+        # "multimolecule/rnafm",
+        # "multimolecule/rnabert",
+        # "facebook/esm2_t12_35M_UR50D",
+
+        # "genomic_foundation_models/OmniGenomeV3-186M",
+
+        # "anonymous8/OmniGenome-52M",
+        # "genomic_foundation_models/OmniGenome-418M",
+
         # "genomic_foundation_models/SpliceBERT-510nt",
         # "genomic_foundation_models/DNABERT-2-117M",
         # "genomic_foundation_models/3utrbert",
@@ -24,8 +36,28 @@ if __name__ == "__main__":
         # "genomic_foundation_models/nucleotide-transformer-v2-100m-multi-species",
     ]
     bench_root = "RGB"
-    bench_size = 4
-    seeds = [3407, 3408, 3409]
+    batch_size = 4
+    max_length = 512
+    patience = 3
+    seeds = [3401, 3402]
     for gfm in gfms:
-        bench = AutoBench(bench_root=bench_root, model_name_or_path=gfm, overwrite=True)
-        bench.run(autocast=False, batch_size=bench_size, seeds=seeds)
+        if 'multimolecule' in gfm:
+            from multimolecule import RnaTokenizer, AutoModelForTokenPrediction
+            tokenizer = RnaTokenizer.from_pretrained(gfm)
+            gfm = AutoModelForTokenPrediction.from_pretrained(gfm, trust_remote_code=True).base_model
+        else:
+            tokenizer = None
+        bench = AutoBench(
+            autocast="fp32",
+            bench_root=bench_root,
+            model_name_or_path=gfm,
+            tokenizer=tokenizer,
+            overwrite=True,
+            # use_hf_trainer=True
+        )
+        bench.run(
+            batch_size=batch_size,
+            max_length=max_length,
+            patience=patience,
+            seeds=seeds
+        )

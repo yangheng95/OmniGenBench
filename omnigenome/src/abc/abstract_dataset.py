@@ -13,9 +13,10 @@ import warnings
 import numpy as np
 import torch
 import tqdm
+
 from transformers import BatchEncoding
 
-from ..misc.utils import fprint, env_meta_info
+from ..misc.utils import fprint, env_meta_info, RNA2StructureCache
 
 
 def covert_input_to_tensor(data):
@@ -57,6 +58,12 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
         self.metadata = env_meta_info()
         self.tokenizer = tokenizer
         self.label2id = kwargs.get("label2id", None)
+        self.shuffle = kwargs.get("shuffle", True)
+        self.structure_in = kwargs.get("structure_in", False)
+        self.drop_long_seq = kwargs.get("drop_long_seq", False)
+        if self.structure_in and not hasattr(self, "rna2structure"):
+            self.rna2structure = RNA2StructureCache()
+
         if self.label2id is not None:
             self.id2label = {v: k for k, v in self.label2id.items()}
 
@@ -89,12 +96,55 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                 try:
                     self.max_length = min(
                         self.max_length,
-                        max(self.max_length, len(example["sequence"]) - 4),
+                        max(self.max_length, len(example["sequence"]) - 2),
                     )
+                    if self.max_length % 8 != 0:
+                        self.max_length = self.max_length + 8 - self.max_length % 8
                 except KeyError:
                     pass
                 self.tokenizer.max_length = self.max_length
-                self.data.append(self.prepare_input(example))
+                prepared_input = self.prepare_input(example, **kwargs)
+
+                if self.drop_long_seq and len(prepared_input["input_ids"]) > self.max_length:
+                    print(f"Dropping sequence {example['sequence']} due to length > {self.max_length}")
+                else:
+                    self.data.append(prepared_input)
+
+            # prepared_inputs = []
+            # for example in tqdm.tqdm(self.examples):
+            #     try:
+            #         self.max_length = min(
+            #             self.max_length,
+            #             max(self.max_length, len(example["sequence"]) - 2),
+            #         )
+            #     except KeyError:
+            #         pass
+            #     self.tokenizer.max_length = self.max_length
+            # try:
+            #     # fprint("Paralleling the data preparation process...")
+            #     # from joblib import Parallel, delayed
+            #     # prepared_inputs = Parallel(n_jobs=os.cpu_count(), verbose=50)(
+            #     #     delayed(self.prepare_input)(example, **kwargs) for example in self.examples
+            #     # )
+            #     import time
+            #     time_start = time.time()
+            #     from pathos.multiprocessing import ProcessingPool as Pool
+            #     pool = Pool()
+            #     results = pool.map(self.prepare_input, self.examples)
+            #     pool.close()
+            #     pool.join()
+            #     time_end = time.time()
+            #     fprint(f"Time cost: {time_end - time_start}s")
+            # except:
+            #     fprint("pip install joblib to enable parallel data preparation.")
+            #     for example in tqdm.tqdm(self.examples):
+            #         prepared_inputs.append(self.prepare_input(example, **kwargs))
+            #
+            # for prepared_input in prepared_inputs:
+            #     if self.drop_long_seq and len(prepared_input["input_ids"]) > self.max_length:
+            #         fprint(f"Dropping sequence due to length > {self.max_length}")
+            #     else:
+            #         self.data.append(prepared_input)
 
             self._postprocessing()
 
@@ -177,7 +227,7 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                         data_item[key] = value[:max_length]
                     data_item[key] = data_item[key].to(dtype)
 
-                elif isinstance(value, torch.Tensor) and value.dim() == 1:
+                elif isinstance(value, torch.Tensor) and len(value.shape) == 1:
                     if padding_length > 0:
                         if key == "input_ids":
                             if hasattr(self.tokenizer, "pad_token_id"):
@@ -239,7 +289,7 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
 
         fprint(f"Loaded {len(examples)} examples from {data_source}")
 
-        if "shuffle" in kwargs and kwargs["shuffle"]:
+        if self.shuffle is True:
             fprint("Detected shuffle=True, shuffling the examples...")
             random.shuffle(examples)
 
@@ -270,6 +320,14 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
 
             if "sequence" not in self.examples[idx]:
                 warnings.warn("The 'sequence' field is missing in the raw dataset.")
+        if "sequence" in self.examples[0]:
+            sequences = [ex["sequence"] for ex in self.examples]
+            if self.structure_in:
+                structures = self.rna2structure.fold(sequences)
+                for idx, (sequence, structure) in enumerate(zip(sequences, structures)):
+                    self.examples[idx][
+                        "sequence"
+                    ] = f"{sequence}{self.tokenizer.eos_token}{structure}"
 
     def _postprocessing(self):
         for idx, ex in enumerate(self.data):
@@ -305,9 +363,16 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
         all_seq_lengths = [
             torch.sum(data_item["input_ids"] != pad_token_id) for data_item in self.data
         ]
-        length["avg"] = np.mean(all_seq_lengths)
-        length["max"] = np.max(all_seq_lengths)
-        length["min"] = np.min(all_seq_lengths)
+        all_label_lengths = [
+            data_item["labels"].shape[0] if data_item["labels"].shape else 1
+            for data_item in self.data
+        ]
+        length["avg_seq_len"] = np.mean(all_seq_lengths)
+        length["max_seq_len"] = np.max(all_seq_lengths)
+        length["min_seq_len"] = np.min(all_seq_lengths)
+        length["avg_label_len"] = np.mean(all_label_lengths)
+        length["max_label_len"] = np.max(all_label_lengths)
+        length["min_label_len"] = np.min(all_label_lengths)
         return length
 
     def _max_labels_length(self):

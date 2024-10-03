@@ -6,7 +6,7 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
-
+import numpy as np
 import torch
 from transformers import BatchEncoding
 from transformers.models.bert.modeling_bert import BertPooler
@@ -25,12 +25,16 @@ class OmniGenomeModelForTokenRegression(OmniGenomeModel):
         self.loss_fn = torch.nn.MSELoss()
         self.model_info()
 
-    def forward(self, inputs):
+    def forward(self, inputs, labels=None):
         last_hidden_state = self.last_hidden_state_forward(inputs)
         last_hidden_state = self.dropout(last_hidden_state)
         last_hidden_state = self.activation(last_hidden_state)
         logits = self.classifier(last_hidden_state)
-        outputs = {"logits": logits, "last_hidden_state": last_hidden_state}
+        outputs = {
+            "logits": logits,
+            "last_hidden_state": last_hidden_state,
+            "labels": labels
+        }
         return outputs
 
     def predict(self, sequence_or_inputs, **kwargs):
@@ -41,10 +45,12 @@ class OmniGenomeModelForTokenRegression(OmniGenomeModel):
 
         predictions = []
         for i in range(logits.shape[0]):
-            predictions.append(logits[i].detach().cpu().numpy())
+            predictions.append(logits[i].cpu())
 
         outputs = {
-            "predictions": predictions,
+            "predictions": torch.stack(predictions)
+            if predictions[0].shape
+            else torch.tensor(predictions),
             "logits": logits,
             "last_hidden_state": last_hidden_state,
         }
@@ -63,7 +69,7 @@ class OmniGenomeModelForTokenRegression(OmniGenomeModel):
             i_logit = logits[i][inputs["input_ids"][i].ne(self.config.pad_token_id)][
                 1:-1
             ]
-            predictions.append(i_logits.detach().cpu().numpy())
+            predictions.append(i_logit.detach().cpu())
 
         if not isinstance(sequence_or_inputs, list):
             outputs = {
@@ -106,13 +112,17 @@ class OmniGenomeModelForSequenceRegression(OmniGenomeModel):
         self.loss_fn = torch.nn.MSELoss()
         self.model_info()
 
-    def forward(self, inputs):
+    def forward(self, inputs, labels=None):
         last_hidden_state = self.last_hidden_state_forward(inputs)
         last_hidden_state = self.dropout(last_hidden_state)
         last_hidden_state = self.activation(last_hidden_state)
         last_hidden_state = self.pooler(inputs, last_hidden_state)
         logits = self.classifier(last_hidden_state)
-        outputs = {"logits": logits, "last_hidden_state": last_hidden_state}
+        outputs = {
+            "logits": logits,
+            "last_hidden_state": last_hidden_state,
+            "labels": labels
+        }
         return outputs
 
     def predict(self, sequence_or_inputs, **kwargs):
@@ -123,10 +133,12 @@ class OmniGenomeModelForSequenceRegression(OmniGenomeModel):
 
         predictions = []
         for i in range(logits.shape[0]):
-            predictions.append(logits[i].cpu().numpy())
+            predictions.append(logits[i].cpu())
 
         outputs = {
-            "predictions": predictions,
+            "predictions": torch.stack(predictions)
+            if predictions[0].shape
+            else torch.tensor(predictions),
             "logits": logits,
             "last_hidden_state": last_hidden_state,
         }
@@ -141,7 +153,7 @@ class OmniGenomeModelForSequenceRegression(OmniGenomeModel):
 
         predictions = []
         for i in range(logits.shape[0]):
-            predictions.append(logits[i].cpu().numpy())
+            predictions.append(logits[i].cpu())
 
         if not isinstance(sequence_or_inputs, list):
             outputs = {
@@ -180,15 +192,12 @@ class OmniGenomeModelForTokenRegressionWith2DStructure(
         super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.pooler = OmniGenomePooling(self.config)
-        self.cat_layer = torch.nn.Linear(
-            self.config.hidden_size * 2, self.config.hidden_size
-        )
         self.classifier = torch.nn.Linear(
             self.config.hidden_size, self.config.num_labels
         )
         self.model_info()
 
-    def forward(self, inputs):
+    def forward(self, inputs, labels=None):
         last_hidden_state = self.last_hidden_state_forward(inputs)
         last_hidden_state = self.dropout(last_hidden_state)
         last_hidden_state = self.activation(last_hidden_state)
@@ -196,6 +205,7 @@ class OmniGenomeModelForTokenRegressionWith2DStructure(
         outputs = {
             "logits": logits,
             "last_hidden_state": last_hidden_state,
+            "labels": labels
         }
         return outputs
 
@@ -207,17 +217,12 @@ class OmniGenomeModelForSequenceRegressionWith2DStructure(
         super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.pooler = OmniGenomePooling(self.config)
-        self.cat_layer = torch.nn.Linear(
-            self.config.hidden_size * 2, self.config.hidden_size
-        )
-
-        self.pooler = OmniGenomePooling(self.config)
         self.classifier = torch.nn.Linear(
             self.config.hidden_size, self.config.num_labels
         )
         self.model_info()
 
-    def forward(self, inputs):
+    def forward(self, inputs, labels=None):
         last_hidden_state = self.last_hidden_state_forward(inputs)
         last_hidden_state = self.dropout(last_hidden_state)
         last_hidden_state = self.activation(last_hidden_state)
@@ -226,5 +231,6 @@ class OmniGenomeModelForSequenceRegressionWith2DStructure(
         outputs = {
             "logits": logits,
             "last_hidden_state": last_hidden_state,
+            "labels": labels
         }
         return outputs

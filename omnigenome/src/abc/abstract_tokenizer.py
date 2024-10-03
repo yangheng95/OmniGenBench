@@ -35,9 +35,9 @@ class OmniGenomeTokenizer:
             tokenizer = wrapper.Tokenizer(
                 AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
             )
-        except ImportError or FileNotFoundError as e:
+        except Exception as e:
             warnings.warn(
-                f"Cannot find the tokenizer wrapper from {wrapper_path},"
+                f"Cannot find the tokenizer wrapper from {wrapper_path} due to Exception: {e},"
                 " using the default OmniGenomeTokenizer."
             )
             tokenizer = OmniGenomeTokenizer(

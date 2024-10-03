@@ -10,13 +10,12 @@ import os
 
 import autocuda
 import numpy as np
-import torch
+from torch.utils.data import DataLoader
 from tqdm import tqdm
-
 from ..misc.utils import env_meta_info, fprint, seed_everything
 
-import sklearn.metrics
-from hashlib import sha256
+import torch
+from torch.cuda.amp import GradScaler
 
 
 def _infer_optimization_direction(metrics, prev_metrics):
@@ -74,25 +73,35 @@ class Trainer:
     def __init__(
         self,
         model,
-        train_loader: torch.utils.data.DataLoader = None,
-        eval_loader: torch.utils.data.DataLoader = None,
-        test_loader: torch.utils.data.DataLoader = None,
+        train_dataset: torch.utils.data.Dataset = None,
+        eval_dataset: torch.utils.data.Dataset = None,
+        test_dataset: torch.utils.data.Dataset = None,
         epochs: int = 3,
+        batch_size: int = 8,
         patience: int = 3,
+        gradient_accumulation_steps: int = 1,
         optimizer: torch.optim.Optimizer = None,
         loss_fn: torch.nn.Module = None,
         compute_metrics: [list, str] = None,
         seed: int = 42,
         device: [torch.device, str] = None,
-        *args,
+        autocast: str = "float32",
         **kwargs,
     ):
         self.model = model
-        self.train_loader = train_loader
-        self.eval_loader = eval_loader
-        self.test_loader = test_loader
+        # DataLoaders
+        if kwargs.get("train_loader"):
+            self.train_loader = kwargs.get("train_loader", None)
+            self.eval_loader = kwargs.get("eval_loader", None)
+            self.test_loader = kwargs.get("test_loader", None)
+        else:
+            self.train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+            self.eval_loader = DataLoader(eval_dataset, batch_size=batch_size) if eval_dataset else None
+            self.test_loader = DataLoader(test_dataset, batch_size=batch_size) if test_dataset else None
+
         self.epochs = epochs
         self.patience = patience
+        self.gradient_accumulation_steps = gradient_accumulation_steps
         self.optimizer = optimizer
         self.loss_fn = loss_fn
         self.compute_metrics = (
@@ -100,8 +109,18 @@ class Trainer:
         )
         self.seed = seed
         self.device = device if device else autocuda.auto_cuda()
+        self.fast_dtype = {
+            "float32": torch.float32,
+            "fp32": torch.float32,
+            "float16": torch.float16,
+            "fp16": torch.float16,
+            "bfloat16": torch.bfloat16,
+            "bf16": torch.bfloat16,
+        }.get(autocast, torch.float16)
+        self.scaler = GradScaler()
         if self.loss_fn is not None:
             self.model.set_loss_fn(self.loss_fn)
+
         self.model.to(self.device)
 
         self.metadata = env_meta_info()
@@ -150,7 +169,7 @@ class Trainer:
 
         return False
 
-    def train(self, path_to_save=None, autocast=False, **kwargs):
+    def train(self, path_to_save=None, **kwargs):
         seed_everything(self.seed)
         patience = 0
 
@@ -168,19 +187,38 @@ class Trainer:
             train_it = tqdm(
                 self.train_loader, desc=f"Epoch {epoch + 1}/{self.epochs} Loss:"
             )
-            for batch in train_it:
-                batch.to(self.device)
-                if autocast:
-                    with torch.cuda.amp.autocast():
+
+            for step, batch in enumerate(train_it):
+                batch = batch.to(self.device)
+
+                if step % self.gradient_accumulation_steps == 0:
+                    self.optimizer.zero_grad()
+
+                if self.fast_dtype:
+                    with torch.autocast(device_type="cuda", dtype=self.fast_dtype):
                         loss = self.model(batch)["loss"]
                 else:
                     loss = self.model(batch)["loss"]
-                loss.backward()
-                self.optimizer.step()
-                self.optimizer.zero_grad()
-                train_loss.append(loss.item())
+
+                loss = loss / self.gradient_accumulation_steps
+
+                if self.fast_dtype:
+                    self.scaler.scale(loss).backward()
+                else:
+                    loss.backward()
+
+                if (step + 1) % self.gradient_accumulation_steps == 0 or (
+                    step + 1
+                ) == len(self.train_loader):
+                    if self.fast_dtype:
+                        self.scaler.step(self.optimizer)
+                        self.scaler.update()
+                    else:
+                        self.optimizer.step()
+
+                train_loss.append(loss.item() * self.gradient_accumulation_steps)
                 train_it.set_description(
-                    f"Epoch {epoch + 1}/{self.epochs} Loss: {np.average(train_loss):.4f}"
+                    f"Epoch {epoch + 1}/{self.epochs} Loss: {np.nanmean(train_loss):.4f}"
                 )
 
             if self.eval_loader is not None and len(self.eval_loader) > 0:
@@ -194,7 +232,7 @@ class Trainer:
             else:
                 patience += 1
                 if patience >= self.patience:
-                    fprint(f"Early stopping at epoch {epoch + 1}.")
+                    print(f"Early stopping at epoch {epoch + 1}.")
                     break
 
             if path_to_save:
@@ -232,9 +270,15 @@ class Trainer:
             it = tqdm(self.eval_loader, desc="Evaluating")
             for batch in it:
                 batch.to(self.device)
-                predictions = self.model.predict(batch)["predictions"]
-                val_truth.append(batch["labels"].detach().cpu().numpy())
-                val_preds.append(np.array(predictions))
+                labels = batch['labels']
+                batch.pop('labels')
+                if self.fast_dtype:
+                    with torch.autocast(device_type="cuda", dtype=self.fast_dtype):
+                        predictions = self.model.predict(batch)["predictions"]
+                else:
+                    predictions = self.model.predict(batch)["predictions"]
+                val_truth.append(labels.cpu().numpy(force=True))
+                val_preds.append(predictions.cpu().numpy(force=True))
 
             val_truth = np.concatenate(val_truth)
             val_preds = np.concatenate(val_preds)
@@ -251,9 +295,15 @@ class Trainer:
             it = tqdm(self.test_loader, desc="Testing")
             for batch in it:
                 batch.to(self.device)
-                predictions = self.model.predict(batch)["predictions"]
-                truth.append(batch["labels"].detach().cpu().numpy())
-                preds.append(predictions)
+                labels = batch['labels']
+                batch.pop('labels')
+                if self.fast_dtype:
+                    with torch.autocast(device_type="cuda", dtype=self.fast_dtype):
+                        predictions = self.model.predict(batch)["predictions"]
+                else:
+                    predictions = self.model.predict(batch)["predictions"]
+                truth.append(labels.cpu().numpy(force=True))
+                preds.append(predictions.cpu().numpy(force=True))
             preds = np.concatenate(preds)
             truth = np.concatenate(truth)
             for metric_func in self.compute_metrics:
@@ -282,6 +332,8 @@ class Trainer:
 
     def _save_state_dict(self):
         if not hasattr(self, "_model_state_dict_path"):
+            from hashlib import sha256
+
             self._model_state_dict_path = (
                 sha256(self.__repr__().encode()).hexdigest() + "_model_state_dict.pt"
             )
@@ -295,6 +347,8 @@ class Trainer:
 
     def _remove_state_dict(self):
         if not hasattr(self, "_model_state_dict_path"):
+            from hashlib import sha256
+
             self._model_state_dict_path = (
                 sha256(self.__repr__().encode()).hexdigest() + "_model_state_dict.pt"
             )

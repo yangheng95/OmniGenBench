@@ -141,7 +141,6 @@ class Pipeline:
             raise FileExistsError(
                 f"The path {path} already exists, please set overwrite=True to overwrite it."
             )
-
         if not os.path.exists(path):
             os.makedirs(path)
         device = self.model.model.device

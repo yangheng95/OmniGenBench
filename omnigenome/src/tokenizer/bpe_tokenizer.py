@@ -39,29 +39,30 @@ class OmniBPETokenizer(OmniGenomeTokenizer):
         if self.add_whitespace:
             sequence = " ".join(list(sequence))
 
-        sequences = self.tokenize(sequence)[
+        sequence_tokens = self.tokenize(sequence)[
             : min(self.max_length, kwargs.get("max_length", 512)) - 2
         ]
 
-        if not is_bpe_tokenization(sequences):
+        if not is_bpe_tokenization(sequence_tokens):
             raise ValueError("The tokenizer seems not to be a BPE tokenizer.")
         tokenized_inputs = dict()
         tokenized_inputs["input_ids"] = self.base_tokenizer.convert_tokens_to_ids(
-            sequences
+            sequence_tokens
         )
         tokenized_inputs["attention_mask"] = [1] * len(tokenized_inputs["input_ids"])
 
         tokenized_inputs = self.base_tokenizer.pad(
             tokenized_inputs,
-            padding=kwargs.get("padding", "max_length"),
-            max_length=min(self.max_length, kwargs.get("max_length", 512)),
-            return_attention_mask=kwargs.get("return_attention_mask", True),
+            padding="max_length",
+            max_length=len(sequence_tokens),
             return_tensors="pt",
         )
         return tokenized_inputs
 
     @staticmethod
     def from_pretrained(model_name_or_path, **kwargs):
+        from transformers import AutoTokenizer
+
         self = OmniBPETokenizer(
             AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
         )
