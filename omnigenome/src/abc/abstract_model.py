@@ -11,6 +11,8 @@ import os
 import shutil
 import warnings
 import inspect
+from importlib import import_module
+
 import findfile
 import torch
 from transformers import AutoModel, AutoConfig, AutoTokenizer, BatchEncoding
@@ -19,6 +21,7 @@ from ..misc.utils import RNA2StructureCache
 from ..misc.utils import fprint, env_meta_info
 from ...src.model.module_utils import InteractingAttention
 
+warnings.filterwarnings("once")
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -46,12 +49,35 @@ class OmniGenomeModel(torch.nn.Module):
                 label2id=label2id,
                 trust_remote_code=trust_remote_code,
             )
-            self.model = AutoModel.from_pretrained(
-                config_or_model_model,
-                config=config,
-                trust_remote_code=trust_remote_code,
-                ignore_mismatched_sizes=ignore_mismatched_sizes,
-            )
+            # Load the model from either `architectures` or `auto_map`
+
+            if hasattr(config, "auto_map") and config.auto_map:
+                architectures = list(set(config.auto_map.keys()) - set(["AutoConfig"]))
+                if architectures:
+                    model_cls_name = "AutoModel" if "AutoModel" in architectures else architectures[-1]
+                    model_cls = getattr(import_module(f"transformers"), model_cls_name)
+
+                    model = model_cls.from_pretrained(
+                        config_or_model_model,
+                        config=config,
+                        trust_remote_code=trust_remote_code,
+                        ignore_mismatched_sizes=ignore_mismatched_sizes,
+                    ).base_model
+                else:
+                    raise ValueError(f"The model cannot be instantiated from {config_or_model_model}. "
+                                     f"Please check the model configuration contains the architectures or auto_map.")
+            elif hasattr(config, "architectures") and config.architectures:
+                model_cls_name = AutoModel if "AutoModel" in config.architectures else config.architectures[-1]
+                model_cls = getattr(import_module(f"transformers"), model_cls_name)
+                model = model_cls.from_pretrained(
+                    config_or_model_model,
+                    config=config,
+                    trust_remote_code=trust_remote_code,
+                    ignore_mismatched_sizes=ignore_mismatched_sizes,
+                ).base_model
+            else:
+                raise ValueError("Neither `architectures` nor `auto_map` is defined in the config.")
+            self.model = model
             self.model.config = config
         elif isinstance(config_or_model_model, torch.nn.Module):
             self.model = config_or_model_model
@@ -145,22 +171,10 @@ class OmniGenomeModel(torch.nn.Module):
             if param in inputs:
                 input_mapping[param] = inputs[param]
 
-        try:
-            if "2DStructure" in self.metadata["model_name"]:
-                outputs = self._structure_hidden_state_forward(inputs)
-            else:
-                outputs = model(**input_mapping, output_hidden_states=True)
-        except Exception as e:
-            try:
-                outputs = model(input_ids=input_ids, output_hidden_states=True)
-            except Exception as e:
-                if 'x' in forward_params:
-                    try:
-                        outputs = model(x=input_ids)
-                    except Exception as e:
-                        raise RuntimeError(f"Failed to get the last hidden state from the model, got error: {e}")
-                else:
-                    raise ValueError("The model does not accept 'x' as input.")
+        if "2DStructure" in self.metadata["model_name"]:
+            outputs = self._structure_hidden_state_forward(inputs)
+        else:
+            outputs = model(**input_mapping, output_hidden_states=True)
 
         if not hasattr(outputs, "last_hidden_state"):
             warnings.warn(f"last_hidden_state not found in the outputs from the {model.__class__.__name__} model.")

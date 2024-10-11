@@ -10,6 +10,8 @@ import warnings
 
 from ..abc.abstract_tokenizer import OmniGenomeTokenizer
 
+warnings.filterwarnings("once")
+
 
 class OmniKmersTokenizer(OmniGenomeTokenizer):
     def __init__(self, base_tokenizer=None, k=3, overlap=0, max_length=512, **kwargs):

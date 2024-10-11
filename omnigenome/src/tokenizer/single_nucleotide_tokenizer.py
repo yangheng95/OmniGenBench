@@ -13,6 +13,7 @@ from transformers import AutoTokenizer
 
 from ..abc.abstract_tokenizer import OmniGenomeTokenizer
 
+warnings.filterwarnings("once")
 
 class OmniSingleNucleotideTokenizer(OmniGenomeTokenizer):
     def __init__(self, base_tokenizer=None, **kwargs):

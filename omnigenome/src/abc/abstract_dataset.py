@@ -103,48 +103,19 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                 except KeyError:
                     pass
                 self.tokenizer.max_length = self.max_length
-                prepared_input = self.prepare_input(example, **kwargs)
+
+                import inspect
+                new_args = {}
+                tokenization_args = inspect.getfullargspec(self.tokenizer.encode).args
+                for key in kwargs:
+                    if key in tokenization_args:
+                        new_args[key] = kwargs[key]
+                prepared_input = self.prepare_input(example, **new_args)
 
                 if self.drop_long_seq and len(prepared_input["input_ids"]) > self.max_length:
                     print(f"Dropping sequence {example['sequence']} due to length > {self.max_length}")
                 else:
                     self.data.append(prepared_input)
-
-            # prepared_inputs = []
-            # for example in tqdm.tqdm(self.examples):
-            #     try:
-            #         self.max_length = min(
-            #             self.max_length,
-            #             max(self.max_length, len(example["sequence"]) - 2),
-            #         )
-            #     except KeyError:
-            #         pass
-            #     self.tokenizer.max_length = self.max_length
-            # try:
-            #     # fprint("Paralleling the data preparation process...")
-            #     # from joblib import Parallel, delayed
-            #     # prepared_inputs = Parallel(n_jobs=os.cpu_count(), verbose=50)(
-            #     #     delayed(self.prepare_input)(example, **kwargs) for example in self.examples
-            #     # )
-            #     import time
-            #     time_start = time.time()
-            #     from pathos.multiprocessing import ProcessingPool as Pool
-            #     pool = Pool()
-            #     results = pool.map(self.prepare_input, self.examples)
-            #     pool.close()
-            #     pool.join()
-            #     time_end = time.time()
-            #     fprint(f"Time cost: {time_end - time_start}s")
-            # except:
-            #     fprint("pip install joblib to enable parallel data preparation.")
-            #     for example in tqdm.tqdm(self.examples):
-            #         prepared_inputs.append(self.prepare_input(example, **kwargs))
-            #
-            # for prepared_input in prepared_inputs:
-            #     if self.drop_long_seq and len(prepared_input["input_ids"]) > self.max_length:
-            #         fprint(f"Dropping sequence due to length > {self.max_length}")
-            #     else:
-            #         self.data.append(prepared_input)
 
             self._postprocessing()
 

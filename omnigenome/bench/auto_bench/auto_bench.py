@@ -21,7 +21,6 @@ from ...src.misc.utils import seed_everything, fprint, load_module_from_path
 from ...src.trainer.trainer import Trainer
 from ...utility.hub_utils import download_benchmark
 
-
 class AutoBench:
     def __init__(
             self, bench_root, model_name_or_path, tokenizer=None, use_hf_trainer=False, device=None, **kwargs
@@ -58,7 +57,7 @@ class AutoBench:
         self.mv = MetricVisualizer(f"{self.bench_root}-{self.model_name}")
         if os.path.exists(self.mv_path) and not self.overwrite:
             self.mv = MetricVisualizer.load(self.mv_path)
-            self.mv.summary()
+            self.mv.summary(round=4)
 
         self.bench_info()
 
@@ -306,9 +305,10 @@ class AutoBench:
 
                     for key, value in metrics["test"][-1].items():
                         self.mv.log(record_name, key, value)
-                    fprint(metrics)
                     self.mv.summary(round=4)
                     self.mv.dump(self.mv_path)
 
                     del model, trainer, optimizer
                     torch.cuda.empty_cache()
+
+                fprint(metrics)

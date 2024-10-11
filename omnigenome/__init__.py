@@ -8,7 +8,7 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 __name__ = "OmniGenome"
-__version__ = "0.1.1alpha"
+__version__ = "0.1.2alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "MIT"
@@ -43,7 +43,11 @@ from .src.model import (
     OmniGenomeModelForSequenceRegressionWith2DStructure,
     OmniGenomeModelForTokenRegressionWith2DStructure,
     OmniGenomeModelForMLM,
-    OmniGenomeEncoderModelForSeq2Seq,
+    OmniGenomeModelForSeq2Seq,
+    OmniGenomeModelForRNADesign,
+    OmniGenomeModelForEmbedding,
+    OmniGenomeModelForAugmentation,
+
 )
 from .src.tokenizer import OmniBPETokenizer
 from .src.tokenizer import OmniKmersTokenizer
@@ -91,7 +95,7 @@ __all__ = [
     "OmniGenomeModelForSequenceRegressionWith2DStructure",
     "OmniGenomeModelForTokenRegressionWith2DStructure",
     "OmniGenomeModelForMLM",
-    "OmniGenomeEncoderModelForSeq2Seq",
+    "OmniGenomeModelForSeq2Seq",
     "OmniGenomeDatasetForTokenClassification",
     "OmniGenomeDatasetForTokenRegression",
     "OmniGenomeDatasetForSequenceClassification",
@@ -132,28 +136,28 @@ LOGO1 = r"""
 """
 
 LOGO2 = r"""
-                                 ___                     _ 
-   **  +----------- **          / _ \  _ __ ___   _ __  (_)
-  @@                 @@        | | | || '_ ` _ \ | '_ \ | |
- @@* #============== *@@       | |_| || | | | | || | | || |
- @@*                 *@@        \___/ |_| |_| |_||_| |_||_|
- *@@  +------------ *@@       
+                                
+   **  +----------- **           ___                     _ 
+  @@                 @@         / _ \  _ __ ___   _ __  (_)
+ @@* #============== *@@       | | | || '_ ` _ \ | '_ \ | |
+ @@*                 *@@       | |_| || | | | | || | | || |
+ *@@  +------------ *@@         \___/ |_| |_| |_||_| |_||_|
   *@*               @@*       
    *@@  #========= @@*        
-    *@@*         *@@*            ____  
-      *@@  +---@@@*             / ___|  ___  _ __    ___   _ __ ___    ___ 
-        *@@*   **              | |  _  / _ \| '_ \  / _ \ | '_ ` _ \  / _ \ 
-          **@**                | |_| ||  __/| | | || (_) || | | | | ||  __/ 
-        *@@* *@@*               \____| \___||_| |_| \___/ |_| |_| |_| \___| 
-      *@@ ---+  @@*            
+    *@@*         *@@*          
+      *@@  +---@@@*              ____  
+        *@@*   **               / ___|  ___  _ __    ___   _ __ ___    ___ 
+          **@**                | |  _  / _ \| '_ \  / _ \ | '_ ` _ \  / _ \ 
+        *@@* *@@*              | |_| ||  __/| | | || (_) || | | | | ||  __/ 
+      *@@ ---+  @@*             \____| \___||_| |_| \___/ |_| |_| |_| \___| 
     *@@*         *@@*          
    *@@ =========#  @@*         
-  *@@               @@*         ____                      _   
- *@@ -------------+  @@*       | __ )   ___  _ __    ___ | |__  
- @@                   @@       |  _ \  / _ \| '_ \  / __|| '_ \ 
- @@ ===============#  @@       | |_) ||  __/| | | || (__ | | | |
-  @@                 @@        |____/  \___||_| |_| \___||_| |_|
-   ** -----------+  **       
+  *@@               @@*        
+ *@@ -------------+  @@*        ____                      _   
+ @@                   @@       | __ )   ___  _ __    ___ | |__ 
+ @@ ===============#  @@       |  _ \  / _ \| '_ \  / __|| '_ \ 
+  @@                 @@        | |_) ||  __/| | | || (__ | | | |
+   ** -----------+  **         |____/  \___||_| |_| \___||_| |_|
 """
 
 art_dna_color_map = {
