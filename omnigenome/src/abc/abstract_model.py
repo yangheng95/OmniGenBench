@@ -19,7 +19,6 @@ from transformers import AutoModel, AutoConfig, AutoTokenizer, BatchEncoding
 
 from ..misc.utils import RNA2StructureCache
 from ..misc.utils import fprint, env_meta_info
-from ...src.model.module_utils import InteractingAttention
 
 warnings.filterwarnings("once")
 
@@ -141,9 +140,11 @@ class OmniGenomeModel(torch.nn.Module):
         if isinstance(inputs, tuple):
             input_ids = inputs[0]
             attention_mask = inputs[1] if len(inputs) > 1 else None
+            inputs = {"input_ids": input_ids, "attention_mask": attention_mask}
         elif isinstance(inputs, BatchEncoding) or isinstance(inputs, dict):
             input_ids = inputs.get("input_ids", None)
             attention_mask = inputs.get("attention_mask", None)
+            inputs = {"input_ids": input_ids, "attention_mask": attention_mask}
         elif isinstance(inputs, torch.Tensor):
             shape = inputs.shape
             try:
@@ -162,6 +163,7 @@ class OmniGenomeModel(torch.nn.Module):
                         f"Failed to get the input_ids and attention_mask from the inputs, got shape {shape}.")
             except:
                 raise ValueError(f"Failed to get the input_ids and attention_mask from the inputs, got shape {shape}.")
+            inputs = {"input_ids": input_ids, "attention_mask": attention_mask}
         else:
             raise ValueError(
                 f"The inputs should be a tuple, BatchEncoding or a dictionary-like object, got {type(inputs)}.")

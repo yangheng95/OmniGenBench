@@ -15,7 +15,7 @@ import findfile
 import torch
 from metric_visualizer import MetricVisualizer
 
-from transformers import TrainingArguments, Trainer as HFTrainer
+from transformers import TrainingArguments, Trainer as HFTrainer, AutoTokenizer
 from ...src.abc.abstract_tokenizer import OmniGenomeTokenizer
 from ...src.misc.utils import seed_everything, fprint, load_module_from_path
 from ...src.trainer.trainer import Trainer

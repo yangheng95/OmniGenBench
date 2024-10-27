@@ -34,12 +34,11 @@ def seed_everything(seed=42):
 
 class RNA2StructureCache(dict):
     def __init__(self, cache_file=None, *args, **kwargs):
-        import RNA
 
         super().__init__(*args, **kwargs)
 
         if not cache_file:
-            self.cache_file = "__OMNIGENOME_DATA__/rna2stucture.cache.pkl"
+            self.cache_file = "__OMNIGENOME_DATA__/rna2structure.cache.pkl"
         else:
             self.cache_file = cache_file
 
@@ -115,7 +114,7 @@ class RNA2StructureCache(dict):
         if not os.path.exists(os.path.dirname(cache_file)):
             os.makedirs(os.path.dirname(cache_file))
 
-        print(f"Updating cache file {cache_file}...")
+        # print(f"Updating cache file {cache_file}...")
         with open(cache_file, "wb") as f:
             pickle.dump(self.cache, f)
 
