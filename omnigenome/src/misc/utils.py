@@ -63,14 +63,14 @@ class RNA2StructureCache(dict):
     def __repr__(self):
         return str(self.cache)
 
-    def fold(self, sequence, return_mfe=False, num_workers=None):
-        if num_workers is None or num_workers < 1:
-            num_workers = os.cpu_count()
-
+    def fold(self, sequence, return_mfe=False, num_workers=1):
         if not isinstance(sequence, list):
             sequences = [sequence]
         else:
             sequences = sequence
+
+        if os.name != "nt":  # multiprocessing is not working on Windows in my case
+            num_workers = min(os.cpu_count(), len(sequence))
 
         structures = []
 
@@ -78,6 +78,7 @@ class RNA2StructureCache(dict):
             if num_workers == 1:
                 for seq in sequences:
                     if seq not in self.cache:
+                        self.queue_num += 1
                         self.cache[seq] = RNA.fold(seq)
             else:
                 if num_workers is None:

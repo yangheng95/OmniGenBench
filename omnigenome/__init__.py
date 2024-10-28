@@ -8,7 +8,7 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 __name__ = "OmniGenome"
-__version__ = "0.1.3alpha"
+__version__ = "0.1.4alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "MIT"
