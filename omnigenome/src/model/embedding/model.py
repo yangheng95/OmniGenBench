@@ -35,9 +35,14 @@ class OmniGenomeModelForEmbedding(torch.nn.Module):
         embeddings = []
 
         for i in range(0, len(sequences), batch_size):
-            batch_sequences = sequences[i: i + batch_size]
-            inputs = self.tokenizer(batch_sequences, return_tensors='pt', padding=True, truncation=True,
-                                    max_length=max_length)
+            batch_sequences = sequences[i : i + batch_size]
+            inputs = self.tokenizer(
+                batch_sequences,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=max_length,
+            )
             inputs = {key: value.to(self.device) for key, value in inputs.items()}
 
             with torch.no_grad():
@@ -61,7 +66,13 @@ class OmniGenomeModelForEmbedding(torch.nn.Module):
         Returns:
             torch.Tensor: Embedding for the input sequence.
         """
-        inputs = self.tokenizer(sequence, return_tensors='pt', padding=True, truncation=True, max_length=max_length)
+        inputs = self.tokenizer(
+            sequence,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=max_length,
+        )
         inputs = {key: value.to(self.device) for key, value in inputs.items()}
 
         with torch.no_grad():
@@ -106,7 +117,9 @@ class OmniGenomeModelForEmbedding(torch.nn.Module):
         Returns:
             float: Cosine similarity score.
         """
-        similarity = torch.nn.functional.cosine_similarity(embedding1, embedding2, dim=0)
+        similarity = torch.nn.functional.cosine_similarity(
+            embedding1, embedding2, dim=0
+        )
         return similarity
 
     @property
@@ -132,5 +145,7 @@ if __name__ == "__main__":
     loaded_embeddings = embedding_model.load_embeddings("embeddings.pt")
 
     # Compute similarity between two embeddings
-    similarity = embedding_model.compute_similarity(loaded_embeddings[0], loaded_embeddings[1])
+    similarity = embedding_model.compute_similarity(
+        loaded_embeddings[0], loaded_embeddings[1]
+    )
     print(f"Cosine similarity: {similarity}")

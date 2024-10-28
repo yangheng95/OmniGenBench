@@ -17,13 +17,22 @@ from scipy.spatial.distance import hamming
 
 
 class OmniGenomeModelForRNADesign(torch.nn.Module):
-    def __init__(self, model_path="yangheng/OmniGenome-186M", device=None, parallel=False, *args, **kwargs):
+    def __init__(
+        self,
+        model_path="yangheng/OmniGenome-186M",
+        device=None,
+        parallel=False,
+        *args,
+        **kwargs,
+    ):
         """Initialize the model and tokenizer."""
         super().__init__(*args, **kwargs)
         self.device = autocuda.auto_cuda() if device is None else device
         self.parallel = parallel
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.model = AutoModelForMaskedLM.from_pretrained(model_path, trust_remote_code=True)
+        self.model = AutoModelForMaskedLM.from_pretrained(
+            model_path, trust_remote_code=True
+        )
         self.model.to(self.device).to(torch.float16)
 
     @staticmethod
@@ -37,9 +46,9 @@ class OmniGenomeModelForRNADesign(torch.nn.Module):
         stack = []
         max_span = 0
         for i, char in enumerate(structure):
-            if char == '(':
+            if char == "(":
                 stack.append(i)
-            elif char == ')' and stack:
+            elif char == ")" and stack:
                 left_index = stack.pop()
                 max_span = max(max_span, i - left_index)
         return max_span
@@ -61,7 +70,9 @@ class OmniGenomeModelForRNADesign(torch.nn.Module):
         population = []
         mlm_inputs = []
         for _ in range(num_population):
-            masked_sequence = "".join([random.choice(["G", "C", "<mask>"]) for _ in structure])
+            masked_sequence = "".join(
+                [random.choice(["G", "C", "<mask>"]) for _ in structure]
+            )
             mlm_inputs.append(f"{masked_sequence}<eos>{structure}")
 
         outputs = self.mlm_predict(mlm_inputs, structure)
@@ -79,6 +90,7 @@ class OmniGenomeModelForRNADesign(torch.nn.Module):
 
     def mlm_mutate(self, population, structure, mutation_ratio):
         """Apply mutation to the population using the masked language model (MLM)."""
+
         def mutate(sequence, mutation_rate):
             sequence = np.array(list(sequence))
             masked_indices = np.random.rand(len(sequence)) < mutation_rate
@@ -110,28 +122,48 @@ class OmniGenomeModelForRNADesign(torch.nn.Module):
         sequence_length = len(population[0][0])
 
         parent_indices = np.random.choice(population_size // 10, (population_size, 2))
-        crossover_points = np.sort(np.random.randint(1, sequence_length, size=(population_size, num_points)), axis=1)
+        crossover_points = np.sort(
+            np.random.randint(1, sequence_length, size=(population_size, num_points)),
+            axis=1,
+        )
 
         masks = np.zeros((population_size, sequence_length), dtype=bool)
         for i in range(population_size):
             last_point = 0
             for j in range(num_points):
-                masks[i, last_point:crossover_points[i, j]] = (j % 2 == 0)
+                masks[i, last_point : crossover_points[i, j]] = j % 2 == 0
                 last_point = crossover_points[i, j]
-            masks[i, last_point:] = (num_points % 2 == 0)
+            masks[i, last_point:] = num_points % 2 == 0
 
         population_array = np.array([list(seq[0]) for seq in population])
-        child1_array = np.where(masks, population_array[parent_indices[:, 0]], population_array[parent_indices[:, 1]])
-        child2_array = np.where(masks, population_array[parent_indices[:, 1]], population_array[parent_indices[:, 0]])
+        child1_array = np.where(
+            masks,
+            population_array[parent_indices[:, 0]],
+            population_array[parent_indices[:, 1]],
+        )
+        child2_array = np.where(
+            masks,
+            population_array[parent_indices[:, 1]],
+            population_array[parent_indices[:, 0]],
+        )
 
-        return [("".join(child), bp_span) for child, (_, bp_span) in zip(child1_array, population)] + \
-               [("".join(child), bp_span) for child, (_, bp_span) in zip(child2_array, population)]
+        return [
+            ("".join(child), bp_span)
+            for child, (_, bp_span) in zip(child1_array, population)
+        ] + [
+            ("".join(child), bp_span)
+            for child, (_, bp_span) in zip(child2_array, population)
+        ]
 
     def evaluate_structure_fitness(self, sequences, structure):
         """Evaluate the fitness of the RNA structure by comparing with the target structure."""
         if self.parallel:
             with ProcessPoolExecutor() as executor:
-                structures_mfe = list(executor.map(self.predict_structure_single, [seq for seq, _ in sequences]))
+                structures_mfe = list(
+                    executor.map(
+                        self.predict_structure_single, [seq for seq, _ in sequences]
+                    )
+                )
         else:
             structures_mfe = self.predict_structure([seq for seq, _ in sequences])
 
@@ -140,7 +172,9 @@ class OmniGenomeModelForRNADesign(torch.nn.Module):
             score = hamming(list(structure), list(ss))
             sorted_population.append((seq, bp_span, score, mfe))
 
-        fronts = self.non_dominated_sorting([x[2] for x in sorted_population], [x[3] for x in sorted_population])
+        fronts = self.non_dominated_sorting(
+            [x[2] for x in sorted_population], [x[3] for x in sorted_population]
+        )
         return self.select_next_generation(sorted_population, fronts)
 
     @staticmethod
@@ -152,9 +186,9 @@ class OmniGenomeModelForRNADesign(torch.nn.Module):
 
         for p in range(num_solutions):
             for q in range(num_solutions):
-                if (scores[p] < scores[q] and mfe_values[p] < mfe_values[q]):
+                if scores[p] < scores[q] and mfe_values[p] < mfe_values[q]:
                     dominated_solutions[p].append(q)
-                elif (scores[q] < scores[p] and mfe_values[q] < mfe_values[p]):
+                elif scores[q] < scores[p] and mfe_values[q] < mfe_values[p]:
                     domination_count[p] += 1
 
             if domination_count[p] == 0:
@@ -185,7 +219,7 @@ class OmniGenomeModelForRNADesign(torch.nn.Module):
             if len(sorted_population) >= len(next_generation):
                 break
 
-        return sorted_population[:len(next_generation)]
+        return sorted_population[: len(next_generation)]
 
     def mlm_predict(self, mlm_inputs, structure):
         """Predict sequences using the masked language model."""
@@ -194,28 +228,46 @@ class OmniGenomeModelForRNADesign(torch.nn.Module):
 
         with torch.no_grad():
             for i in range(0, len(mlm_inputs), batch_size):
-                inputs = self.tokenizer(mlm_inputs[i:i + batch_size], padding=False, max_length=1024, truncation=True, return_tensors="pt")
-                inputs = {key: value.to(self.model.device) for key, value in inputs.items()}
+                inputs = self.tokenizer(
+                    mlm_inputs[i : i + batch_size],
+                    padding=False,
+                    max_length=1024,
+                    truncation=True,
+                    return_tensors="pt",
+                )
+                inputs = {
+                    key: value.to(self.model.device) for key, value in inputs.items()
+                }
                 outputs = self.model(**inputs)[0].argmax(dim=-1)
                 all_outputs.append(outputs)
 
-        return torch.cat(all_outputs, dim=0)[:, 1: 1 + len(structure)]
+        return torch.cat(all_outputs, dim=0)[:, 1 : 1 + len(structure)]
 
-    def run_rna_design(self, structure, mutation_ratio=0.5, num_population=100, num_generation=100):
+    def run_rna_design(
+        self, structure, mutation_ratio=0.5, num_population=100, num_generation=100
+    ):
         """Run the genetic algorithm to design an RNA sequence."""
         population = self.init_population(structure, num_population)
         population = self.mlm_mutate(population, structure, mutation_ratio)
 
         for generation_id in range(num_generation):
             next_generation = self.crossover(population)
-            next_generation = self.mlm_mutate(next_generation, structure, mutation_ratio)
-            next_generation = self.evaluate_structure_fitness(next_generation, structure)[:num_population]
+            next_generation = self.mlm_mutate(
+                next_generation, structure, mutation_ratio
+            )
+            next_generation = self.evaluate_structure_fitness(
+                next_generation, structure
+            )[:num_population]
 
-            candidate_sequences = [seq for seq, bp_span, score, mfe in next_generation if score == 0]
+            candidate_sequences = [
+                seq for seq, bp_span, score, mfe in next_generation if score == 0
+            ]
             if candidate_sequences:
                 return candidate_sequences
 
-            population = [(seq, bp_span) for seq, bp_span, score, mfe in next_generation]
+            population = [
+                (seq, bp_span) for seq, bp_span, score, mfe in next_generation
+            ]
 
         return population[0][0]
 
@@ -223,5 +275,10 @@ class OmniGenomeModelForRNADesign(torch.nn.Module):
 # Example usage
 if __name__ == "__main__":
     model = OmniGenomeModelForRNADesign(model_path="anonymous8/OmniGenome-186M")
-    best_sequence = model.run_rna_design(structure="(((....)))", mutation_ratio=0.5, num_population=100, num_generation=100)
+    best_sequence = model.run_rna_design(
+        structure="(((....)))",
+        mutation_ratio=0.5,
+        num_population=100,
+        num_generation=100,
+    )
     print(f"Best RNA sequence: {best_sequence}")

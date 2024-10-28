@@ -15,8 +15,15 @@ import autocuda
 
 
 class OmniGenomeModelForAugmentation(torch.nn.Module):
-    def __init__(self, model_name_or_path=None, noise_ratio=0.15,
-                 max_length=1026, instance_num=1, *args, **kwargs):
+    def __init__(
+        self,
+        model_name_or_path=None,
+        noise_ratio=0.15,
+        max_length=1026,
+        instance_num=1,
+        *args,
+        **kwargs
+    ):
         """
         Initialize the model, tokenizer, and augmentation hyperparameters.
 
@@ -28,7 +35,9 @@ class OmniGenomeModelForAugmentation(torch.nn.Module):
         """
         super().__init__()
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
-        self.model = AutoModelForMaskedLM.from_pretrained(model_name_or_path, trust_remote_code=True)
+        self.model = AutoModelForMaskedLM.from_pretrained(
+            model_name_or_path, trust_remote_code=True
+        )
         self.device = autocuda.auto_cuda()
         self.model.to(self.device)
 
@@ -70,7 +79,8 @@ class OmniGenomeModelForAugmentation(torch.nn.Module):
         # Replace masked tokens with predicted tokens
         input_ids = tokenized_inputs["input_ids"][0].cpu()
         input_ids[input_ids == self.tokenizer.mask_token_id] = predicted_tokens[0][
-            input_ids == self.tokenizer.mask_token_id]
+            input_ids == self.tokenizer.mask_token_id
+        ]
 
         augmented_sequence = self.tokenizer.decode(input_ids, skip_special_tokens=True)
         return augmented_sequence
@@ -111,7 +121,7 @@ if __name__ == "__main__":
         model_name_or_path="anonymous8/OmniGenome-186M",
         noise_ratio=0.2,  # Example noise ratio
         max_length=1026,  # Maximum token length
-        instance_num=3  # Number of augmented instances per sequence
+        instance_num=3,  # Number of augmented instances per sequence
     )
     aug = model.augment_sequence("ATCTTGCATTGAAG")
     input_file = "toy_datasets/test.json"

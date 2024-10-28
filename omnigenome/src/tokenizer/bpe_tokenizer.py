@@ -13,6 +13,7 @@ from ..abc.abstract_tokenizer import OmniGenomeTokenizer
 
 warnings.filterwarnings("once")
 
+
 def is_bpe_tokenization(tokens, threshold=0.1):
     if not tokens:
         return False

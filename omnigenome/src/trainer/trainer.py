@@ -95,9 +95,19 @@ class Trainer:
             self.eval_loader = kwargs.get("eval_loader", None)
             self.test_loader = kwargs.get("test_loader", None)
         else:
-            self.train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-            self.eval_loader = DataLoader(eval_dataset, batch_size=batch_size) if eval_dataset else None
-            self.test_loader = DataLoader(test_dataset, batch_size=batch_size) if test_dataset else None
+            self.train_loader = DataLoader(
+                train_dataset, batch_size=batch_size, shuffle=True
+            )
+            self.eval_loader = (
+                DataLoader(eval_dataset, batch_size=batch_size)
+                if eval_dataset
+                else None
+            )
+            self.test_loader = (
+                DataLoader(test_dataset, batch_size=batch_size)
+                if test_dataset
+                else None
+            )
 
         self.epochs = epochs
         self.patience = patience
@@ -270,8 +280,8 @@ class Trainer:
             it = tqdm(self.eval_loader, desc="Evaluating")
             for batch in it:
                 batch.to(self.device)
-                labels = batch['labels']
-                batch.pop('labels')
+                labels = batch["labels"]
+                batch.pop("labels")
                 if self.fast_dtype:
                     with torch.autocast(device_type="cuda", dtype=self.fast_dtype):
                         predictions = self.model.predict(batch)["predictions"]
@@ -295,8 +305,8 @@ class Trainer:
             it = tqdm(self.test_loader, desc="Testing")
             for batch in it:
                 batch.to(self.device)
-                labels = batch['labels']
-                batch.pop('labels')
+                labels = batch["labels"]
+                batch.pop("labels")
                 if self.fast_dtype:
                     with torch.autocast(device_type="cuda", dtype=self.fast_dtype):
                         predictions = self.model.predict(batch)["predictions"]

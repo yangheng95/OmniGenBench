@@ -47,9 +47,11 @@ class OmniGenomeModelForTokenClassification(OmniGenomeModel):
             predictions.append(logits[i].argmax(dim=-1).detach().cpu())
 
         outputs = {
-            "predictions": torch.stack(predictions)
-            if predictions[0].shape
-            else torch.tensor(predictions),
+            "predictions": (
+                torch.stack(predictions)
+                if predictions[0].shape
+                else torch.tensor(predictions)
+            ),
             "logits": logits,
             "last_hidden_state": last_hidden_state,
         }
@@ -131,9 +133,11 @@ class OmniGenomeModelForSequenceClassification(OmniGenomeModel):
             predictions.append(logits[i].argmax(dim=-1))
 
         outputs = {
-            "predictions": torch.stack(predictions)
-            if predictions[0].shape
-            else torch.tensor(predictions),
+            "predictions": (
+                torch.stack(predictions)
+                if predictions[0].shape
+                else torch.tensor(predictions)
+            ),
             "logits": logits,
             "last_hidden_state": last_hidden_state,
         }
@@ -198,9 +202,11 @@ class OmniGenomeModelForMultiLabelSequenceClassification(
             predictions.append(prediction)
 
         outputs = {
-            "predictions": torch.stack(predictions)
-            if predictions[0].shape
-            else torch.tensor(predictions),
+            "predictions": (
+                torch.stack(predictions)
+                if predictions[0].shape
+                else torch.tensor(predictions)
+            ),
             "logits": logits,
             "last_hidden_state": last_hidden_state,
         }
@@ -285,9 +291,11 @@ class OmniGenomeModelForMultiLabelSequenceClassificationWith2DStructure(
             predictions.append(prediction)
 
         outputs = {
-            "predictions": torch.stack(predictions)
-            if predictions[0].shape
-            else torch.tensor(predictions),
+            "predictions": (
+                torch.stack(predictions)
+                if predictions[0].shape
+                else torch.tensor(predictions)
+            ),
             "logits": logits,
             "last_hidden_state": last_hidden_state,
         }

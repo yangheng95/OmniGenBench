@@ -14,4 +14,3 @@ from .seq2seq.model import *
 from .rna_design.model import *
 from .embedding.model import *
 from .augmentation.model import *
-

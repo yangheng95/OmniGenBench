@@ -59,9 +59,11 @@ class OmniGenomeModelForMLM(OmniGenomeModel):
             }
         else:
             outputs = {
-                "predictions": torch.stack(predictions)
-                if predictions[0].shape
-                else torch.tensor(predictions),
+                "predictions": (
+                    torch.stack(predictions)
+                    if predictions[0].shape
+                    else torch.tensor(predictions)
+                ),
                 "logits": logits,
                 "last_hidden_state": last_hidden_state,
             }

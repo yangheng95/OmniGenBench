@@ -17,10 +17,10 @@ import findfile
 import torch
 from transformers import AutoModel, AutoConfig, AutoTokenizer, BatchEncoding
 
-from ..misc.utils import RNA2StructureCache
 from ..misc.utils import fprint, env_meta_info
 
 warnings.filterwarnings("once")
+
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -49,11 +49,14 @@ class OmniGenomeModel(torch.nn.Module):
                 trust_remote_code=trust_remote_code,
             )
             # Load the model from either `architectures` or `auto_map`
-
             if hasattr(config, "auto_map") and config.auto_map:
                 architectures = list(set(config.auto_map.keys()) - set(["AutoConfig"]))
                 if architectures:
-                    model_cls_name = "AutoModel" if "AutoModel" in architectures else architectures[-1]
+                    model_cls_name = (
+                        "AutoModel"
+                        if "AutoModel" in architectures
+                        else architectures[-1]
+                    )
                     model_cls = getattr(import_module(f"transformers"), model_cls_name)
 
                     model = model_cls.from_pretrained(
@@ -63,10 +66,16 @@ class OmniGenomeModel(torch.nn.Module):
                         ignore_mismatched_sizes=ignore_mismatched_sizes,
                     ).base_model
                 else:
-                    raise ValueError(f"The model cannot be instantiated from {config_or_model_model}. "
-                                     f"Please check the model configuration contains the architectures or auto_map.")
+                    raise ValueError(
+                        f"The model cannot be instantiated from {config_or_model_model}. "
+                        f"Please check the model configuration contains the architectures or auto_map."
+                    )
             elif hasattr(config, "architectures") and config.architectures:
-                model_cls_name = AutoModel if "AutoModel" in config.architectures else config.architectures[-1]
+                model_cls_name = (
+                    AutoModel
+                    if "AutoModel" in config.architectures
+                    else config.architectures[-1]
+                )
                 model_cls = getattr(import_module(f"transformers"), model_cls_name)
                 model = model_cls.from_pretrained(
                     config_or_model_model,
@@ -75,7 +84,9 @@ class OmniGenomeModel(torch.nn.Module):
                     ignore_mismatched_sizes=ignore_mismatched_sizes,
                 ).base_model
             else:
-                raise ValueError("Neither `architectures` nor `auto_map` is defined in the config.")
+                raise ValueError(
+                    "Neither `architectures` nor `auto_map` is defined in the config."
+                )
             self.model = model
             self.model.config = config
         elif isinstance(config_or_model_model, torch.nn.Module):
@@ -161,22 +172,24 @@ class OmniGenomeModel(torch.nn.Module):
                     attention_mask = None
                 else:
                     raise ValueError(
-                        f"Failed to get the input_ids and attention_mask from the inputs, got shape {shape}.")
+                        f"Failed to get the input_ids and attention_mask from the inputs, got shape {shape}."
+                    )
             except:
-                raise ValueError(f"Failed to get the input_ids and attention_mask from the inputs, got shape {shape}.")
+                raise ValueError(
+                    f"Failed to get the input_ids and attention_mask from the inputs, got shape {shape}."
+                )
             inputs = {"input_ids": input_ids, "attention_mask": attention_mask}
         else:
             raise ValueError(
-                f"The inputs should be a tuple, BatchEncoding or a dictionary-like object, got {type(inputs)}.")
+                f"The inputs should be a tuple, BatchEncoding or a dictionary-like object, got {type(inputs)}."
+            )
 
-
-        if "2DStructure" in self.metadata["model_name"]:
-            outputs = self._structure_hidden_state_forward(inputs)
-        else:
-            outputs = model(**input_mapping, output_hidden_states=True)
+        outputs = model(**inputs, output_hidden_states=True)
 
         if not hasattr(outputs, "last_hidden_state"):
-            warnings.warn(f"last_hidden_state not found in the outputs from the {model.__class__.__name__} model.")
+            warnings.warn(
+                f"last_hidden_state not found in the outputs from the {model.__class__.__name__} model."
+            )
 
         if hasattr(outputs, "last_hidden_state"):
             last_hidden_state = outputs.last_hidden_state
@@ -185,109 +198,15 @@ class OmniGenomeModel(torch.nn.Module):
         elif hasattr(outputs, "hidden_states"):
             last_hidden_state = outputs.hidden_states[-1]
         elif isinstance(outputs, (list, tuple, torch.Tensor)):
-            last_hidden_state = outputs[-1] if len(outputs[-1].shape) == 3 else outputs[0]
+            last_hidden_state = (
+                outputs[-1] if len(outputs[-1].shape) == 3 else outputs[0]
+            )
         else:
             raise ValueError(
-                f"Cannot find the last hidden state in the outputs from the {model.__class__.__name__} model, please check the model architecture.")
+                f"Cannot find the last hidden state in the outputs from the {model.__class__.__name__} model, please check the model architecture."
+            )
 
         return last_hidden_state
-
-    # def last_hidden_state_forward(self, inputs):
-    #     """
-    #
-    #     :param inputs: The inputs to the model
-    #     :return: The last hidden state of the model and the secondary structure information if ss is not None
-    #     """
-    #     model = self.model
-    #     if isinstance(inputs, tuple):
-    #         input_ids = inputs[0]
-    #         attention_mask = inputs[1] if len(inputs) > 1 else None
-    #     elif isinstance(inputs, BatchEncoding) or isinstance(inputs, dict):
-    #         input_ids = inputs["input_ids"]
-    #         attention_mask = (
-    #             inputs["attention_mask"] if "attention_mask" in inputs else None
-    #         )
-    #     elif isinstance(inputs, torch.Tensor):
-    #         shape = inputs.shape
-    #         try:
-    #             if len(shape) == 3:
-    #                 # compatible with hf_trainer in AutoBenchmark
-    #                 if shape[1] == 2:
-    #                     input_ids = inputs[:, 0]
-    #                     attention_mask = inputs[:, 1]
-    #                 else:
-    #                     input_ids = inputs[0]
-    #                     attention_mask = inputs[1] if len(inputs) > 1 else None
-    #             elif len(shape) == 2:
-    #                 input_ids = inputs
-    #                 attention_mask = None
-    #             else:
-    #                 raise ValueError(
-    #                     f"Failed to get the input_ids and attention_mask from the inputs, got shape {shape}."
-    #                 )
-    #         except:
-    #             raise ValueError(
-    #                 f"Failed to get the input_ids and attention_mask from the inputs, got shape {shape}."
-    #             )
-    #     else:
-    #         raise ValueError(
-    #             f"The inputs should be a tuple, BatchEncoding or a dictionary-like object, got {type(inputs)}."
-    #         )
-    #
-    #     try:
-    #         if "2DStructure" in self.metadata["model_name"]:
-    #             outputs = self._structure_hidden_state_forward(inputs)
-    #
-    #         else:
-    #             outputs = model(
-    #                 input_ids,
-    #                 attention_mask=attention_mask,
-    #                 output_hidden_states=True,
-    #             )
-    #
-    #     except Exception as e:
-    #         try:
-    #             # For autoregressive models, the attention_mask is not required
-    #             outputs = model(
-    #                 input_ids,
-    #                 output_hidden_states=True,
-    #             )
-    #
-    #         except Exception as e:
-    #             try:
-    #                 outputs = model(x=input_ids)
-    #             except:
-    #                 raise RuntimeError(
-    #                     f"Failed to get the last hidden state from the model, got error: {e}"
-    #                 )
-    #
-    #     if not hasattr(outputs, "last_hidden_state"):
-    #         warnings.warn(
-    #             f"last_hidden_state not found in the outputs from the {model.__class__.__name__} model."
-    #         )
-    #
-    #     if hasattr(outputs, "last_hidden_state"):
-    #         last_hidden_state = outputs.last_hidden_state
-    #     elif isinstance(outputs, dict) and "last_hidden_state" in outputs:
-    #         last_hidden_state = outputs["last_hidden_state"]
-    #     elif hasattr(outputs, "hidden_states"):
-    #         last_hidden_state = outputs.hidden_states[-1]
-    #     elif (
-    #         isinstance(outputs, list)
-    #         or isinstance(outputs, tuple)
-    #         or isinstance(outputs, torch.Tensor)
-    #     ):
-    #         # For some models like DNABERT-2, the outputs is a list, tuple of tensors
-    #         last_hidden_state = (
-    #             outputs[-1] if len(outputs[-1].shape) == 3 else outputs[0]
-    #         )
-    #     else:
-    #         raise ValueError(
-    #             f"Cannot find the last hidden state in the outputs from the {model.__class__.__name__} \
-    #             model, please check the model architecture."
-    #         )
-    #
-    #     return last_hidden_state
 
     def loss_function(self, logits, labels):
         raise NotImplementedError(
@@ -306,68 +225,6 @@ class OmniGenomeModel(torch.nn.Module):
         # Please implement the predict() function for your model
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
         return raw_outputs
-
-    def _structure_hidden_state_forward(self, inputs):
-        model = self.model
-
-        seq_outputs = model(
-            inputs["input_ids"],
-            attention_mask=inputs["attention_mask"],
-            output_hidden_states=True,
-        )
-
-        if not hasattr(model, "rna2structure"):
-            model.rna2structure = RNA2StructureCache()
-
-        # if not hasattr(model, "layer_norm"):
-        #     model.layer_norm = torch.nn.LayerNorm(
-        #         seq_outputs.last_hidden_state.shape[1:]
-        #     )
-        #     model.layer_norm.to(seq_outputs.last_hidden_state.device)
-        if not hasattr(model, "attn_head"):
-            model.attn_head = torch.nn.Linear(
-                seq_outputs.last_hidden_state.shape[-2], 1
-            )
-            model.attn_head.to(seq_outputs.last_hidden_state.device)
-
-        tokenizer = AutoTokenizer.from_pretrained(self.config.name_or_path)
-        input_ids = inputs["input_ids"]
-        sequences = tokenizer.batch_decode(input_ids, skip_special_tokens=True)
-        sequences = [seq.replace(" ", "") for seq in sequences]
-        structures = model.rna2structure.fold([seq for seq in sequences])
-
-        # structures = [
-        #     f"{sequence}{tokenizer.eos_token}{structure}"
-        #     for (sequence, structure) in zip(sequences, structures)
-        # ]
-
-        tokenized_struct = tokenizer(
-            structures,
-            padding="max_length",
-            max_length=input_ids.shape[1],
-            truncation=True,
-            return_tensors="pt",
-            add_special_tokens=True,
-        )
-        tokenized_struct.to(input_ids.device)
-        str_outputs = model(
-            **tokenized_struct,
-            output_hidden_states=True,
-        )
-        last_hidden_state = seq_outputs.last_hidden_state
-        ss_last_hidden_state = str_outputs.last_hidden_state
-
-        # inter_hidden_state = torch.matmul(last_hidden_state, ss_last_hidden_state.transpose(-1, -2))
-        # attn_logits = model.attn_head(inter_hidden_state)
-        # mix_last_hidden_state = torch.mul(attn_logits, ss_last_hidden_state)
-        # mix_last_hidden_state = model.layer_norm(mix_last_hidden_state)
-        # mix_last_hidden_state = torch.matmul(inter_hidden_state, last_hidden_state)
-
-        mix_last_hidden_state = torch.mul(last_hidden_state, ss_last_hidden_state)
-        # last_hidden_state = inter_hidden_state + last_hidden_state
-
-        seq_outputs.last_hidden_state = mix_last_hidden_state
-        return seq_outputs
 
     def __call__(self, inputs, labels=None, *args, **kwargs):
         if isinstance(inputs, dict):

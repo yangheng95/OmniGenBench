@@ -31,7 +31,9 @@ class OmniGenomeTokenizer:
     def from_pretrained(model_name_or_path, **kwargs):
         wrapper_path = f"{model_name_or_path.rstrip('/')}/omnigenome_wrapper.py"
         try:
-            wrapper = load_module_from_path("OmniGenomeTokenizerWrapper", wrapper_path).Tokenizer
+            wrapper = load_module_from_path(
+                "OmniGenomeTokenizerWrapper", wrapper_path
+            ).Tokenizer
             tokenizer = wrapper(
                 AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
             )

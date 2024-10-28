@@ -8,7 +8,7 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 __name__ = "OmniGenome"
-__version__ = "0.1.4alpha"
+__version__ = "0.1.4alpha1"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "MIT"
@@ -46,7 +46,6 @@ from .src.model import (
     OmniGenomeModelForRNADesign,
     OmniGenomeModelForEmbedding,
     OmniGenomeModelForAugmentation,
-
 )
 from .src.tokenizer import OmniBPETokenizer
 from .src.tokenizer import OmniKmersTokenizer
@@ -113,6 +112,7 @@ __all__ = [
 
 
 from termcolor import colored
+
 LOGO1 = r"""                       
     **@@ #========= @@**            ___                     _ 
       **@@ +----- @@**             / _ \  _ __ ___   _ __  (_)
@@ -160,13 +160,14 @@ LOGO2 = r"""
 """
 
 art_dna_color_map = {
-    '*': 'blue',  # Bases represented by '*'
-    '@': 'white',  # Bases represented by '@'
-    '-': 'yellow',  # Hydrogen bonds, assuming '-' represents a bond
-    '=': 'light_cyan',  # Hydrogen bonds, assuming '=' represents a bond
-    '+': 'yellow',  # '+' symbols in cyan
-    ' ': 'black'  # Use red for undefined characters
+    "*": "blue",  # Bases represented by '*'
+    "@": "white",  # Bases represented by '@'
+    "-": "yellow",  # Hydrogen bonds, assuming '-' represents a bond
+    "=": "light_cyan",  # Hydrogen bonds, assuming '=' represents a bond
+    "+": "yellow",  # '+' symbols in cyan
+    " ": "black",  # Use red for undefined characters
 }
 import random
+
 LOGO = random.choice([LOGO1, LOGO2])
 print(LOGO)

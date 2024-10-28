@@ -15,6 +15,7 @@ from ..abc.abstract_tokenizer import OmniGenomeTokenizer
 
 warnings.filterwarnings("once")
 
+
 class OmniSingleNucleotideTokenizer(OmniGenomeTokenizer):
     def __init__(self, base_tokenizer=None, **kwargs):
         super(OmniSingleNucleotideTokenizer, self).__init__(base_tokenizer, **kwargs)

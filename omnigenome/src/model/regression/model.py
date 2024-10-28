@@ -33,7 +33,7 @@ class OmniGenomeModelForTokenRegression(OmniGenomeModel):
         outputs = {
             "logits": logits,
             "last_hidden_state": last_hidden_state,
-            "labels": labels
+            "labels": labels,
         }
         return outputs
 
@@ -48,9 +48,11 @@ class OmniGenomeModelForTokenRegression(OmniGenomeModel):
             predictions.append(logits[i].cpu())
 
         outputs = {
-            "predictions": torch.stack(predictions)
-            if predictions[0].shape
-            else torch.tensor(predictions),
+            "predictions": (
+                torch.stack(predictions)
+                if predictions[0].shape
+                else torch.tensor(predictions)
+            ),
             "logits": logits,
             "last_hidden_state": last_hidden_state,
         }
@@ -121,7 +123,7 @@ class OmniGenomeModelForSequenceRegression(OmniGenomeModel):
         outputs = {
             "logits": logits,
             "last_hidden_state": last_hidden_state,
-            "labels": labels
+            "labels": labels,
         }
         return outputs
 
@@ -136,9 +138,11 @@ class OmniGenomeModelForSequenceRegression(OmniGenomeModel):
             predictions.append(logits[i].cpu())
 
         outputs = {
-            "predictions": torch.stack(predictions)
-            if predictions[0].shape
-            else torch.tensor(predictions),
+            "predictions": (
+                torch.stack(predictions)
+                if predictions[0].shape
+                else torch.tensor(predictions)
+            ),
             "logits": logits,
             "last_hidden_state": last_hidden_state,
         }
@@ -205,7 +209,7 @@ class OmniGenomeModelForTokenRegressionWith2DStructure(
         outputs = {
             "logits": logits,
             "last_hidden_state": last_hidden_state,
-            "labels": labels
+            "labels": labels,
         }
         return outputs
 
@@ -231,6 +235,6 @@ class OmniGenomeModelForSequenceRegressionWith2DStructure(
         outputs = {
             "logits": logits,
             "last_hidden_state": last_hidden_state,
-            "labels": labels
+            "labels": labels,
         }
         return outputs

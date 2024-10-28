@@ -69,8 +69,10 @@ class RNA2StructureCache(dict):
         else:
             sequences = sequence
 
-        if os.name != "nt":  # multiprocessing is not working on Windows in my case
-            num_workers = min(os.cpu_count(), len(sequence))
+        if (
+            os.name != "nt" and len(sequences) > 1
+        ):  # multiprocessing is not working on Windows in my case
+            num_workers = min(os.cpu_count(), len(sequences))
 
         structures = []
 

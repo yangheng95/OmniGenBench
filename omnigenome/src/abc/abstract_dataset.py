@@ -105,6 +105,7 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                 self.tokenizer.max_length = self.max_length
 
                 import inspect
+
                 new_args = {}
                 tokenization_args = inspect.getfullargspec(self.tokenizer.encode).args
                 for key in kwargs:
@@ -112,8 +113,13 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                         new_args[key] = kwargs[key]
                 prepared_input = self.prepare_input(example, **new_args)
 
-                if self.drop_long_seq and len(prepared_input["input_ids"]) > self.max_length:
-                    print(f"Dropping sequence {example['sequence']} due to length > {self.max_length}")
+                if (
+                    self.drop_long_seq
+                    and len(prepared_input["input_ids"]) > self.max_length
+                ):
+                    print(
+                        f"Dropping sequence {example['sequence']} due to length > {self.max_length}"
+                    )
                 else:
                     self.data.append(prepared_input)
 
@@ -149,9 +155,11 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                 ),
                 max(
                     [
-                        data_item["labels"].shape[0]
-                        if data_item["labels"].shape
-                        else -1
+                        (
+                            data_item["labels"].shape[0]
+                            if data_item["labels"].shape
+                            else -1
+                        )
                         for data_item in self.data
                     ]
                 ),

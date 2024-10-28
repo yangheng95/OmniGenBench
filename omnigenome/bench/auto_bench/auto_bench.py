@@ -21,9 +21,16 @@ from ...src.misc.utils import seed_everything, fprint, load_module_from_path
 from ...src.trainer.trainer import Trainer
 from ...utility.hub_utils import download_benchmark
 
+
 class AutoBench:
     def __init__(
-            self, bench_root, model_name_or_path, tokenizer=None, use_hf_trainer=False, device=None, **kwargs
+        self,
+        bench_root,
+        model_name_or_path,
+        tokenizer=None,
+        use_hf_trainer=False,
+        device=None,
+        **kwargs,
     ):
         if not os.path.exists(bench_root):
             fprint(
@@ -129,7 +136,7 @@ class AutoBench:
                 record_name = f"{self.bench_root}-{self.model_name}-{bench}"
                 # check if the record exists
                 if record_name in self.mv.transpose() and len(
-                        list(self.mv.transpose()[record_name].values())[0]
+                    list(self.mv.transpose()[record_name].values())[0]
                 ) >= len(bench_config["seeds"]):
                     continue
 
@@ -149,11 +156,11 @@ class AutoBench:
 
                 if hasattr(model.config, "max_position_embeddings"):
                     max_length = (
-                            min(
-                                bench_config["max_length"],
-                                model.config.max_position_embeddings,
-                            )
-                            - 2
+                        min(
+                            bench_config["max_length"],
+                            model.config.max_position_embeddings,
+                        )
+                        - 2
                     )
                 else:
                     max_length = bench_config["max_length"]
@@ -199,31 +206,31 @@ class AutoBench:
                     for i in range(len(train_set)):
                         hf_train_dataset.append(
                             {
-                                "inputs": train_set[i]['input_ids'],
-                                "attention_mask": train_set[i]['attention_mask'],
-                                "label": train_set[i]['labels'],
-                                "labels": train_set[i]['labels'],
-                                "label_ids": train_set[i]['labels'],
+                                "inputs": train_set[i]["input_ids"],
+                                "attention_mask": train_set[i]["attention_mask"],
+                                "label": train_set[i]["labels"],
+                                "labels": train_set[i]["labels"],
+                                "label_ids": train_set[i]["labels"],
                             }
                         )
                     for i in range(len(valid_set)):
                         hf_valid_dataset.append(
                             {
-                                "inputs": valid_set[i]['input_ids'],
-                                "attention_mask": train_set[i]['attention_mask'],
-                                "label": valid_set[i]['labels'],
-                                "labels": valid_set[i]['labels'],
-                                "label_ids": valid_set[i]['labels'],
+                                "inputs": valid_set[i]["input_ids"],
+                                "attention_mask": train_set[i]["attention_mask"],
+                                "label": valid_set[i]["labels"],
+                                "labels": valid_set[i]["labels"],
+                                "label_ids": valid_set[i]["labels"],
                             }
                         )
                     for i in range(len(test_set)):
                         hf_test_dataset.append(
                             {
-                                "inputs": test_set[i]['input_ids'],
-                                "attention_mask": train_set[i]['attention_mask'],
-                                "label": test_set[i]['labels'],
-                                "labels": test_set[i]['labels'],
-                                "label_ids": test_set[i]['labels'],
+                                "inputs": test_set[i]["input_ids"],
+                                "attention_mask": train_set[i]["attention_mask"],
+                                "label": test_set[i]["labels"],
+                                "labels": test_set[i]["labels"],
+                                "label_ids": test_set[i]["labels"],
                             }
                         )
                     train_set = hf_train_dataset
@@ -256,9 +263,11 @@ class AutoBench:
                         args=training_args,
                         train_dataset=train_set,
                         eval_dataset=valid_set,
-                        compute_metrics=bench_config["compute_metrics"][0]
-                        if isinstance(bench_config["compute_metrics"], list)
-                        else bench_config["compute_metrics"]
+                        compute_metrics=(
+                            bench_config["compute_metrics"][0]
+                            if isinstance(bench_config["compute_metrics"], list)
+                            else bench_config["compute_metrics"]
+                        ),
                     )
 
                     # Train and evaluate
@@ -276,12 +285,16 @@ class AutoBench:
                 else:
                     optimizer = torch.optim.AdamW(
                         model.parameters(),
-                        lr=bench_config["learning_rate"]
-                        if "learning_rate" in bench_config
-                        else 2e-5,
-                        weight_decay=bench_config["weight_decay"]
-                        if "weight_decay" in bench_config
-                        else 0,
+                        lr=(
+                            bench_config["learning_rate"]
+                            if "learning_rate" in bench_config
+                            else 2e-5
+                        ),
+                        weight_decay=(
+                            bench_config["weight_decay"]
+                            if "weight_decay" in bench_config
+                            else 0
+                        ),
                     )
                     trainer = Trainer(
                         model=model,
@@ -289,11 +302,21 @@ class AutoBench:
                         eval_dataset=valid_set,
                         test_dataset=test_set,
                         batch_size=batch_size,
-                        patience=bench_config["patience"] if "patience" in bench_config else 3,
+                        patience=(
+                            bench_config["patience"]
+                            if "patience" in bench_config
+                            else 3
+                        ),
                         epochs=bench_config["epochs"],
-                        gradient_accumulation_steps=bench_config.get("gradient_accumulation_steps", 1),
+                        gradient_accumulation_steps=bench_config.get(
+                            "gradient_accumulation_steps", 1
+                        ),
                         optimizer=optimizer,
-                        loss_fn=bench_config["loss_fn"] if "loss_fn" in bench_config else None,
+                        loss_fn=(
+                            bench_config["loss_fn"]
+                            if "loss_fn" in bench_config
+                            else None
+                        ),
                         compute_metrics=bench_config["compute_metrics"],
                         seed=seed,
                         device=self.device,
