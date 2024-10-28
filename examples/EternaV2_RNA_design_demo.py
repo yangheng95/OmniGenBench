@@ -33,13 +33,14 @@ if __name__ == "__main__":
     pred_count = 0
     acc_count = 0
 
-    pool = multiprocessing.Pool(20)
+    pool = multiprocessing.Pool(10)
     for i, (seq, structure) in enumerate(zip(sequences, structures)):
-        cmd = (f'python easy_rna_design.py '
+        cmd = (f'python easy_rna_design_emoo.py '
+               f'--model benchmark/genomic_foundation_models/OmniGenomeV5-186M '
                f'--structure "{structure}" '
                f'--sequence "{seq}" '
-               f'--num_population 1000 '
-               f'--num_generation 1000 '
+               f'--num_population 10000 '
+               f'--num_generation 100 '
                f'--mutation_ratio 0.5 '
                )
         import time

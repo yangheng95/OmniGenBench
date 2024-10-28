@@ -16,42 +16,6 @@ from transformers import OmniGenomeForTokenClassification, AutoTokenizer
 
 from sklearn import metrics
 
-def zero_shot_rfam_batch_evaluation(model, tokenizer, test_data_path):
-    model.eval()
-    with open(test_data_path, "r") as f:
-        lines = f.readlines()
-        sequences = []
-        structures = []
-        for line in lines:
-            parts = json.loads(line)
-            if len(parts['seq']) <= 512:
-                sequences.append(parts['seq'])
-                structures.append(parts['label'])
-
-        batch = 8
-        all_predicted_structures = []
-        all_true_structures = []
-        num_all = 0
-
-        for i in range(0, len(sequences), batch):
-            batch_sequences = sequences[i:i+batch]
-            batch_structures = structures[i:i+batch]
-            inputs = tokenizer(
-                batch_sequences, return_tensors="pt", padding="max_length", max_length=512, truncation=True
-            ).to(model.device)
-            with torch.no_grad():
-                outputs = model(**inputs)
-            predictions = outputs.logits.argmax(dim=-1)[:, 1:-1]
-            predicted_structures = [
-                model.config.id2label[prediction.item()] for prediction in predictions[0]
-            ]
-            batch_structures = [list(structure) for structure in batch_structures]
-            all_predicted_structures.extend([pred[:len(true)] for pred, true in zip(predicted_structures, batch_structures)])
-            all_true_structures.extend(batch_structures)
-
-        f1 = metrics.f1_score(all_true_structures, all_predicted_structures)
-
-    return f1
 
 def zero_shot_secondary_structure_prediction(model, sequence):
     model.eval()
@@ -76,10 +40,6 @@ if __name__ == "__main__":
         "anonymous8/OmniGenome-186M"
     ).to(autocuda.auto_cuda())
     tokenizer = AutoTokenizer.from_pretrained("anonymous8/OmniGenome-186M")
-
-    # Batch evaluation on the test data
-    test_data_path = "benchmark/__OMNIGENOME_DATA__/benchmarks/RGB/RNA-SSP-Rfam/test.json"
-    f1 = zero_shot_rfam_batch_evaluation(ssp_model, tokenizer, test_data_path)
 
 
 

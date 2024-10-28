@@ -6,40 +6,32 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
-
-import argparse
 import random
 
 from omnigenome import AutoBench
-
 if __name__ == "__main__":
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("--gfm", type=str, default="genomic_foundation_models/OmniGenome-52M-1000")
+    parser.add_argument("--bench_root", type=str, default="RGB")
+    parser.add_argument("--batch_size", type=int, default=4)
+    parser.add_argument("--patience", type=int, default=5)
+    parser.add_argument("--epochs", type=int, default=20)
+    parser.add_argument("--seeds", type=int, default=random.randint(0, 1000))
+    args = parser.parse_args()
+
     gfms = [
-        # "yangheng/PlantRNA-FM",
-        # "genomic_foundation_models/OmniGenome-52M-1000",
-        # "kuleshov-group/caduceus-ph_seqlen-131k_d_model-256_n_layer-16",
-        "genomic_foundation_models/OmniGenomeV3-186M",
-
-        # "multimolecule/rnamsm",
-        # "multimolecule/rnafm",
-        # "multimolecule/rnabert",
-        # "facebook/esm2_t12_35M_UR50D",
-
+        # "genomic_foundation_models/MoEOmniGenome",
+        "genomic_foundation_models/MoEOmniGenomeV2",
         # "genomic_foundation_models/OmniGenomeV3-186M",
-
-        # "anonymous8/OmniGenome-52M",
-        # "genomic_foundation_models/OmniGenome-418M",
-
-        # "genomic_foundation_models/SpliceBERT-510nt",
-        # "genomic_foundation_models/DNABERT-2-117M",
-        # "genomic_foundation_models/3utrbert",
-        # "genomic_foundation_models/hyenadna-large-1m-seqlen-hf",
-        # "genomic_foundation_models/nucleotide-transformer-v2-100m-multi-species",
+        # "genomic_foundation_models/checkpoint-str_ids",
     ]
     bench_root = "RGB"
     batch_size = 4
-    max_length = 512
-    patience = 3
-    seeds = [3401, 3402]
+    patience = 5
+    epochs = 20
+    # max_seq_length = 440 if "rnabert" in gfms[0] else 512
+    seeds = random.randint(0, 1000)
     for gfm in gfms:
         if 'multimolecule' in gfm:
             from multimolecule import RnaTokenizer, AutoModelForTokenPrediction
@@ -48,7 +40,7 @@ if __name__ == "__main__":
         else:
             tokenizer = None
         bench = AutoBench(
-            autocast="fp32",
+            autocast="fp16",
             bench_root=bench_root,
             model_name_or_path=gfm,
             tokenizer=tokenizer,
@@ -57,7 +49,8 @@ if __name__ == "__main__":
         )
         bench.run(
             batch_size=batch_size,
-            max_length=max_length,
+            gradient_accumulation_steps=1,
             patience=patience,
-            seeds=seeds
+            seeds=seeds,
+            epochs=epochs,
         )

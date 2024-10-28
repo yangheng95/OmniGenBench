@@ -66,12 +66,11 @@ def predict_structure(sequences, bp_span=-1):
     return [predict_structure_single(sequence, bp_span) for sequence in sequences]
 
 def genetic_algorithm_for_rna_design(structure, **kwargs):
-    mutation_ratio = kwargs.get("mutation_ratio", 0.5)
+    mutation_ratio = kwargs.get("mutation_ratio", 0.1)
     num_population = kwargs.get("num_population", 100)
     num_generation = kwargs.get("num_generation", 50)
     # model = "anonymous8/OmniGenome-186M"
-    model = "benchmark/genomic_foundation_models/OmniGenome-186M"
-    # model = "benchmark/genomic_foundation_models/OmniGenomeV5-186M"
+    model = kwargs.get("model", "anonymous8/OmniGenome-186M")
     # model = "anonymous8/OmniGenome-52M"
     device = autocuda.auto_cuda()
     tokenizer = AutoTokenizer.from_pretrained(model)
@@ -79,7 +78,7 @@ def genetic_algorithm_for_rna_design(structure, **kwargs):
     model.to(device).to(torch.float16)
 
     import tqdm
-
+    histories = []
     population = init_population(
         structure,
         num_population,
@@ -106,13 +105,14 @@ def genetic_algorithm_for_rna_design(structure, **kwargs):
         )
         next_generation = evaluate_structure_fitness(next_generation, structure)[:num_population]
         candidate_sequences = [seq for seq, bp_span, score, mfe in next_generation if score == 0]
+        histories.append(next_generation)
         if candidate_sequences:
-            return candidate_sequences
+            return candidate_sequences, histories
 
         population = [(seq, bp_span) for seq, bp_span, score, mfe in next_generation]
         next_generation += population[:num_population//10]
 
-    return population[0][0]
+    return population[0][0], histories
 
 
 def init_population(structure, num_population, model, tokenizer):
@@ -343,6 +343,7 @@ if __name__ == "__main__":
     torch.multiprocessing.set_start_method("spawn")
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--model", default="anonymous8/OmniGenome-186M", type=str, help="The model name or path")
     parser.add_argument("--structure", default="(((((((..((((......)))).(((((.......)))))...((((..)))))))))))....", type=str, help="The target RNA structure")
     parser.add_argument("--sequence", default="GCUGUGUUAGUAUAAAGUAAUAUAUGUGAUUUCUAAUCAUGGGAUCCUUUAGGGACGUAGUACCA", type=str, help="Reference sequence")
     parser.add_argument("--mutation_ratio", type=float, default=0.5, help="The mutation ratio")
@@ -363,7 +364,7 @@ if __name__ == "__main__":
         solved_sequences = {}
 
     if not (structure in solved_sequences and isinstance(solved_sequences[structure]["best_sequence"], list)):
-        best_sequence = genetic_algorithm_for_rna_design(
+        best_sequence, histories = genetic_algorithm_for_rna_design(
             structure,
             mutation_ratio=mutation_ratio,
             num_population=num_population,
@@ -379,6 +380,7 @@ if __name__ == "__main__":
             "sequence": sequence,
             "structure": structure,
             "best_sequence": best_sequence,
+            "histories": histories,
         }
         json.dump(solved_sequences, open("solved_sequences.json", "w"))
     else:

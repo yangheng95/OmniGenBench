@@ -134,16 +134,17 @@ class OmniGenomeModel(torch.nn.Module):
         model = self.model
         input_mapping = {}
 
-        # Determine the input parameter names of the model's forward method
-        forward_params = inspect.signature(model.forward).parameters
-
-        if isinstance(inputs, tuple):
+        if isinstance(inputs, BatchEncoding) or isinstance(inputs, dict):
+            # Determine the input parameter names of the model's forward method
+            forward_params = inspect.signature(model.forward).parameters
+            # Map the inputs to the forward method parameters
+            for param in forward_params:
+                if param in inputs:
+                    input_mapping[param] = inputs[param]
+            inputs = input_mapping
+        elif isinstance(inputs, tuple):
             input_ids = inputs[0]
             attention_mask = inputs[1] if len(inputs) > 1 else None
-            inputs = {"input_ids": input_ids, "attention_mask": attention_mask}
-        elif isinstance(inputs, BatchEncoding) or isinstance(inputs, dict):
-            input_ids = inputs.get("input_ids", None)
-            attention_mask = inputs.get("attention_mask", None)
             inputs = {"input_ids": input_ids, "attention_mask": attention_mask}
         elif isinstance(inputs, torch.Tensor):
             shape = inputs.shape
@@ -168,10 +169,6 @@ class OmniGenomeModel(torch.nn.Module):
             raise ValueError(
                 f"The inputs should be a tuple, BatchEncoding or a dictionary-like object, got {type(inputs)}.")
 
-        # Map the inputs to the forward method parameters
-        for param in forward_params:
-            if param in inputs:
-                input_mapping[param] = inputs[param]
 
         if "2DStructure" in self.metadata["model_name"]:
             outputs = self._structure_hidden_state_forward(inputs)

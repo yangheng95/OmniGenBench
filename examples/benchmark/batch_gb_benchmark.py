@@ -15,10 +15,13 @@ from omnigenome import AutoBench
 if __name__ == "__main__":
     gfms = [
         # "genomic_foundation_models/OmniGenomeV3-186M",
-        "kuleshov-group/caduceus-ph_seqlen-131k_d_model-256_n_layer-16",
+        # "genomic_foundation_models/OmniGenomeV5-186M",
+        "genomic_foundation_models/OmniGenomeV6-186M",
+        # "kuleshov-group/caduceus-ph_seqlen-131k_d_model-256_n_layer-16",
         # "multimolecule/rnamsm",
         # "multimolecule/rnafm",
         # "multimolecule/rnabert",
+        # "InstaDeepAI/agro-nucleotide-transformer-1b",
         # "genomic_foundation_models/SpliceBERT-510nt",
         # "genomic_foundation_models/DNABERT-2-117M",
         # "genomic_foundation_models/3utrbert",
@@ -27,10 +30,11 @@ if __name__ == "__main__":
 
     ]
     bench_root = "GB"
-    batch_size = 64
-    max_length = 512
-    max_examples = 10000
-    patience = 3
+    batch_size = 8
+    max_length = 256
+    gradient_accumulation_steps = 8
+    max_examples = 100000
+    patience = 5
     seeds = [3401]
     for gfm in gfms:
         if 'multimolecule' in gfm:
@@ -44,12 +48,92 @@ if __name__ == "__main__":
             bench_root=bench_root,
             model_name_or_path=gfm,
             tokenizer=tokenizer,
-            overwrite=True
+            overwrite=False,
+            use_hf_trainer=False,
         )
         bench.run(
             batch_size=batch_size,
             max_length=max_length,
             max_examples=max_examples,
             patience=patience,
-            seeds=seeds
+            seeds=seeds,
+            gradient_accumulation_steps=gradient_accumulation_steps
         )
+
+DNA_STR = """
+ **                   ** 
+*@@                   @@ 
+ @@ *@@@@@@@@@@@@@@@@@@@ 
+ @@* *************** @@* 
+ *@@                *@@  
+  *@* @@@@@@@@@@@@@@@@*  
+   *@@             @@*   
+    *@@*  ********@@*    
+      *@@******@@@*      
+        *@@*   **        
+          **@**          
+        **   *@@*        
+      *@@@******@@*      
+    *@@********  *@@     
+   *@@             @@*   
+  *@@@@@@@@@@@@@@@* @@*  
+  @@ *************   @@  
+ @@*              ** *@* 
+ @@@@@@@@@@@@@@@@@@@* @@ 
+*@@                   @@ 
+ **                   ** 
+"""
+
+
+
+
+
+
+
+LOGO = """
+
+
+
+  ___                     _ 
+ / _ \  _ __ ___   _ __  (_)
+| | | || '_ ` _ \ | '_ \ | |
+| |_| || | | | | || | | || |
+ \___/ |_| |_| |_||_| |_||_|
+                                
+                                
+                                        
+  ____                                      
+ / ___|  ___  _ __    ___   _ __ ___    ___ 
+| |  _  / _ \| '_ \  / _ \ | '_ ` _ \  / _ \
+| |_| ||  __/| | | || (_) || | | | | ||  __/
+ \____| \___||_| |_| \___/ |_| |_| |_| \___|
+ 
+ 
+ 
+"""
+
+
+FINAL = """
+                                 ___                     _ 
+ **                   **        / _ \  _ __ ___   _ __  (_)
+*@@                   @@       | | | || '_ ` _ \ | '_ \ | |
+ @@ *@@@@@@@@@@@@@@@@@@@       | |_| || | | | | || | | || |
+ @@* *************** @@*        \___/ |_| |_| |_||_| |_||_|
+ *@@                *@@                                    
+  *@* @@@@@@@@@@@@@@@@*          ____                                      
+   *@@             @@*          / ___|  ___  _ __    ___   _ __ ___    ___ 
+    *@@*  ********@@*          | |  _  / _ \| '_ \  / _ \ | '_ ` _ \  / _ \
+      *@@******@@@*            | |_| ||  __/| | | || (_) || | | | | ||  __/
+        *@@*   **               \____| \___||_| |_| \___/ |_| |_| |_| \___|
+          **@**                                                          
+        **   *@@*               ____                      _     
+      *@@@******@@*            | __ )   ___  _ __    ___ | |__  
+    *@@********  *@@           |  _ \  / _ \| '_ \  / __|| '_ \ 
+   *@@             @@*         | |_) ||  __/| | | || (__ | | | |
+  *@@@@@@@@@@@@@@@* @@*        |____/  \___||_| |_| \___||_| |_|
+  @@ *************   @@        
+ @@*              ** *@*       
+ @@@@@@@@@@@@@@@@@@@* @@       
+*@@                   @@       
+ **                   **       
+"""
