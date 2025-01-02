@@ -246,12 +246,17 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
             elif data_source.endswith(".json"):
                 import json
 
-                with open(data_source, "r", encoding="utf8") as f:
-                    lines = f.readlines()
-                for i in range(len(lines)):
-                    lines[i] = json.loads(lines[i])
-                for line in lines:
-                    examples.append(line)
+                try:
+                    examples = json.load(
+                        open(data_source, "r")
+                    )  # Assume the data is a list of examples
+                except:
+                    with open(data_source, "r", encoding="utf8") as f:
+                        lines = f.readlines()
+                    for i in range(len(lines)):
+                        lines[i] = json.loads(lines[i])
+                    for line in lines:
+                        examples.append(line)
             elif data_source.endswith(".parquet"):
                 import pandas as pd
 

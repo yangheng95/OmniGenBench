@@ -200,63 +200,37 @@ class AutoBench:
                 )
 
                 if self.use_hf_trainer:
-                    hf_train_dataset = []
-                    hf_valid_dataset = []
-                    hf_test_dataset = []
-                    for i in range(len(train_set)):
-                        hf_train_dataset.append(
-                            {
-                                "inputs": train_set[i]["input_ids"],
-                                "attention_mask": train_set[i]["attention_mask"],
-                                "label": train_set[i]["labels"],
-                                "labels": train_set[i]["labels"],
-                                "label_ids": train_set[i]["labels"],
-                            }
-                        )
-                    for i in range(len(valid_set)):
-                        hf_valid_dataset.append(
-                            {
-                                "inputs": valid_set[i]["input_ids"],
-                                "attention_mask": train_set[i]["attention_mask"],
-                                "label": valid_set[i]["labels"],
-                                "labels": valid_set[i]["labels"],
-                                "label_ids": valid_set[i]["labels"],
-                            }
-                        )
-                    for i in range(len(test_set)):
-                        hf_test_dataset.append(
-                            {
-                                "inputs": test_set[i]["input_ids"],
-                                "attention_mask": train_set[i]["attention_mask"],
-                                "label": test_set[i]["labels"],
-                                "labels": test_set[i]["labels"],
-                                "label_ids": test_set[i]["labels"],
-                            }
-                        )
-                    train_set = hf_train_dataset
-                    valid_set = hf_valid_dataset
-                    test_set = hf_test_dataset
-
                     # Set up HuggingFace Trainer
+                    hf_kwargs = {
+                        k: v
+                        for k, v in kwargs.items()
+                        if hasattr(TrainingArguments, k) and k != "output_dir"
+                    }
                     training_args = TrainingArguments(
                         output_dir=f"./results/{self.model_name}-{bench}",
-                        num_train_epochs=bench_config["epochs"],
-                        per_device_train_batch_size=batch_size,
-                        per_device_eval_batch_size=batch_size,
-                        gradient_accumulation_steps=bench_config.get(
+                        num_train_epochs=hf_kwargs.get(
+                            "num_train_epochs", bench_config["epochs"]
+                        ),
+                        per_device_train_batch_size=hf_kwargs.get(
+                            "batch_size", batch_size
+                        ),
+                        per_device_eval_batch_size=hf_kwargs.get(
+                            "batch_size", batch_size
+                        ),
+                        gradient_accumulation_steps=hf_kwargs.get(
                             "gradient_accumulation_steps", 1
                         ),
-                        learning_rate=bench_config.get("learning_rate", 2e-5),
-                        weight_decay=bench_config.get("weight_decay", 0),
-                        eval_strategy="epoch",
-                        save_strategy="epoch",
-                        # eval_strategy="steps",
-                        # eval_steps=bench_config.get("eval_steps", 1000),
-                        # save_strategy="steps",
-                        # load_best_model_at_end=True,
-                        # metric_for_best_model=bench_config.get("metric_for_best_model", "f1_score"),
-                        fp16=self.autocast == "fp16",
+                        learning_rate=hf_kwargs.get("learning_rate", 2e-5),
+                        weight_decay=hf_kwargs.get("weight_decay", 0),
+                        eval_strategy=hf_kwargs.get("eval_strategy", "epoch"),
+                        save_strategy=hf_kwargs.get("save_strategy", "epoch"),
+                        fp16=hf_kwargs.get("fp16", True),
+                        remove_unused_columns=False,
+                        label_names=["labels"],
+                        **_kwargs,
                     )
+
+                    valid_set = valid_set if len(valid_set) else test_set
 
                     trainer = HFTrainer(
                         model=model,
@@ -268,14 +242,19 @@ class AutoBench:
                             if isinstance(bench_config["compute_metrics"], list)
                             else bench_config["compute_metrics"]
                         ),
+                        # data_collator=hf_data_collator
                     )
 
                     # Train and evaluate
-                    eval_result = trainer.evaluate()
+                    eval_result = trainer.evaluate(
+                        valid_set if len(valid_set) else test_set
+                    )
                     print(eval_result)
                     train_result = trainer.train()
                     eval_result = trainer.evaluate()
-                    test_result = trainer.evaluate(test_set)
+                    test_result = trainer.evaluate(
+                        test_set if len(test_set) else valid_set
+                    )
 
                     metrics = {
                         "train": train_result.metrics,

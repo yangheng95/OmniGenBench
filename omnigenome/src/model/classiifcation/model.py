@@ -24,8 +24,9 @@ class OmniGenomeModelForTokenClassification(OmniGenomeModel):
         self.loss_fn = torch.nn.CrossEntropyLoss()
         self.model_info()
 
-    def forward(self, inputs, labels=None):
-        last_hidden_state = self.last_hidden_state_forward(inputs)
+    def forward(self, **inputs):
+        labels = inputs.pop("labels", None)
+        last_hidden_state = self.last_hidden_state_forward(**inputs)
         last_hidden_state = self.dropout(last_hidden_state)
         last_hidden_state = self.activation(last_hidden_state)
         logits = self.classifier(last_hidden_state)
@@ -108,8 +109,9 @@ class OmniGenomeModelForSequenceClassification(OmniGenomeModel):
         self.loss_fn = torch.nn.CrossEntropyLoss()
         self.model_info()
 
-    def forward(self, inputs, labels=None):
-        last_hidden_state = self.last_hidden_state_forward(inputs)
+    def forward(self, **inputs):
+        labels = inputs.pop("labels", None)
+        last_hidden_state = self.last_hidden_state_forward(**inputs)
         last_hidden_state = self.dropout(last_hidden_state)
         last_hidden_state = self.activation(last_hidden_state)
         last_hidden_state = self.pooler(inputs, last_hidden_state)
@@ -226,8 +228,9 @@ class OmniGenomeModelForTokenClassificationWith2DStructure(
         self.pooler = OmniGenomePooling(self.config)
         self.model_info()
 
-    def forward(self, inputs, labels=None):
-        last_hidden_state = self.last_hidden_state_forward(inputs)
+    def forward(self, **inputs):
+        labels = inputs.pop("labels", None)
+        last_hidden_state = self.last_hidden_state_forward(**inputs)
         last_hidden_state = self.dropout(last_hidden_state)
         last_hidden_state = self.activation(last_hidden_state)
         logits = self.classifier(last_hidden_state)
@@ -249,8 +252,9 @@ class OmniGenomeModelForSequenceClassificationWith2DStructure(
         self.pooler = OmniGenomePooling(self.config)
         self.model_info()
 
-    def forward(self, inputs, labels=None):
-        last_hidden_state = self.last_hidden_state_forward(inputs)
+    def forward(self, **inputs):
+        labels = inputs.pop("labels", None)
+        last_hidden_state = self.last_hidden_state_forward(**inputs)
         last_hidden_state = self.dropout(last_hidden_state)
         last_hidden_state = self.activation(last_hidden_state)
         last_hidden_state = self.pooler(inputs, last_hidden_state)

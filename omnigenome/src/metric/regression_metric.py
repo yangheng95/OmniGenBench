@@ -17,6 +17,20 @@ import sklearn.metrics as metrics
 from ..abc.abstract_metric import OmniGenomeMetric
 
 
+def mcrmse(y_true, y_pred):
+    if y_true.shape != y_pred.shape:
+        raise ValueError("y_true and y_pred must have the same shape")
+    mask = y_true != -100
+    filtered_y_pred = y_pred[mask]
+    filtered_y_true = y_true[mask]
+    rmse_per_target = np.sqrt(np.mean((filtered_y_true - filtered_y_pred) ** 2, axis=0))
+    mcrmse_value = np.mean(rmse_per_target)
+    return mcrmse_value
+
+
+setattr(metrics, "mcrmse", mcrmse)
+
+
 class RegressionMetric(OmniGenomeMetric):
     """
     Classification metric class
@@ -25,10 +39,14 @@ class RegressionMetric(OmniGenomeMetric):
     def __init__(self, metric_func=None, ignore_y=-100, *args, **kwargs):
         super().__init__(metric_func, ignore_y, *args, **kwargs)
         self.kwargs = kwargs
+        self.metrics = {"mcrmse": mcrmse}
+        for key, value in metrics.__dict__.items():
+            setattr(self, key, value)
 
     def __getattribute__(self, name):
         # Get the metric function
         metric_func = getattr(metrics, name, None)
+
         if metric_func and isinstance(metric_func, types.FunctionType):
             setattr(self, "compute", metric_func)
             # If the metric function exists, return a wrapper function

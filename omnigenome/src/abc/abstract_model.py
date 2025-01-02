@@ -137,14 +137,13 @@ class OmniGenomeModel(torch.nn.Module):
         self.dropout = torch.nn.Dropout(kwargs.get("dropout", 0.0))
         self.activation = torch.nn.Tanh()
 
-    def last_hidden_state_forward(self, inputs):
+    def last_hidden_state_forward(self, **inputs):
         """
         :param inputs: The inputs to the model
         :return: The last hidden state of the model and the secondary structure information if ss is not None
         """
         model = self.model
         input_mapping = {}
-
         if isinstance(inputs, BatchEncoding) or isinstance(inputs, dict):
             # Determine the input parameter names of the model's forward method
             forward_params = inspect.signature(model.forward).parameters
@@ -226,7 +225,9 @@ class OmniGenomeModel(torch.nn.Module):
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
         return raw_outputs
 
-    def __call__(self, inputs, labels=None, *args, **kwargs):
+    def __call__(self, **kwargs):
+        inputs = kwargs.pop("inputs", None)
+        labels = kwargs.pop("labels", None)
         if isinstance(inputs, dict):
             labels = inputs.get("labels", None)
             label = inputs.get("label", None)
@@ -240,8 +241,9 @@ class OmniGenomeModel(torch.nn.Module):
             inputs = inputs[0]
         elif labels is not None:
             labels = labels
-
-        outputs = self.forward(inputs, labels=labels)
+        kwargs["inputs"] = inputs
+        kwargs["labels"] = labels
+        outputs = self.forward(**kwargs)
 
         if labels is not None:
             outputs["loss"] = self._calculate_loss(outputs, labels)
@@ -341,7 +343,7 @@ class OmniGenomeModel(torch.nn.Module):
             if inputs[col] is not None and inputs[col].dtype == torch.int64:
                 inputs[col] = inputs[col].to(torch.int32)
         with torch.no_grad():
-            raw_outputs = self(inputs)
+            raw_outputs = self(**{"inputs": inputs})
             raw_outputs["inputs"] = inputs
         return raw_outputs
 

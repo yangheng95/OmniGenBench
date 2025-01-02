@@ -168,6 +168,8 @@ class OmniGenomeDatasetForTokenRegression(OmniGenomeDataset):
             tokenized_inputs[col] = tokenized_inputs[col].squeeze()
 
         if labels is not None:
+            # Will be error if your misused data class,
+            # check if your are looking for a sequence classification task
             try:
                 _labels = json.loads(labels)
             except:

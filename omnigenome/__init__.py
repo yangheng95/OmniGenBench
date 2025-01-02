@@ -8,7 +8,7 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 __name__ = "OmniGenome"
-__version__ = "0.1.4alpha1"
+__version__ = "0.1.5alpha1"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "MIT"
@@ -24,6 +24,7 @@ from .src.abc.abstract_dataset import OmniGenomeDataset
 from .src.abc.abstract_metric import OmniGenomeMetric
 from .src.abc.abstract_model import OmniGenomeModel
 from .src.abc.abstract_tokenizer import OmniGenomeTokenizer
+from .src.abc.abstract_tokenizer import OmniGenomeTokenizer as AutoTokenizer
 from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForSequenceClassification
 from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForSequenceRegression
 from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForTokenClassification
@@ -68,6 +69,7 @@ __all__ = [
     "OmniGenomeDataset",
     "OmniGenomeModel",
     "OmniGenomeMetric",
+    "AutoTokenizer",
     "OmniGenomeTokenizer",
     "OmniKmersTokenizer",
     "OmniSingleNucleotideTokenizer",

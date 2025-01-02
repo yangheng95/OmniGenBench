@@ -25,7 +25,8 @@ class OmniGenomeModelForMLM(OmniGenomeModel):
 
         self.loss_fn = torch.nn.CrossEntropyLoss()
 
-    def forward(self, inputs):
+    def forward(self, **inputs):
+        inputs = inputs.pop("inputs")
         outputs = self.model(**inputs, output_hidden_states=True)
         last_hidden_state = (
             outputs["last_hidden_state"]
