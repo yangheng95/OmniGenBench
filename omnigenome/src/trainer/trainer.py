@@ -7,7 +7,9 @@
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
 import os
-
+import time
+import sys
+import io
 import autocuda
 import numpy as np
 from torch.utils.data import DataLoader
@@ -16,7 +18,6 @@ from ..misc.utils import env_meta_info, fprint, seed_everything
 
 import torch
 from torch.cuda.amp import GradScaler
-
 
 def _infer_optimization_direction(metrics, prev_metrics):
     larger_is_better_metrics = [
@@ -85,9 +86,12 @@ class Trainer:
         compute_metrics: [list, str] = None,
         seed: int = 42,
         device: [torch.device, str] = None,
-        autocast: str = "float32",
+        autocast: str = "float16",
         **kwargs,
     ):
+
+        # sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
         self.model = model
         # DataLoaders
         if kwargs.get("train_loader"):
@@ -149,11 +153,10 @@ class Trainer:
 
         prev_metrics = self.metrics.get(stage, None)
 
-        if not prev_metrics or len(prev_metrics) <= 1:
-            if stage not in self.metrics:
-                self.metrics.update({f"{stage}": [metrics]})
-            else:
-                self.metrics[f"{stage}"].append(metrics)
+        if stage not in self.metrics:
+            self.metrics.update({f"{stage}": [metrics]})
+        else:
+            self.metrics[f"{stage}"].append(metrics)
 
         if "best_valid" not in self.metrics:
             self.metrics.update({"best_valid": metrics})
@@ -195,9 +198,8 @@ class Trainer:
             self.model.train()
             train_loss = []
             train_it = tqdm(
-                self.train_loader, desc=f"Epoch {epoch + 1}/{self.epochs} Loss:"
+                self.train_loader, desc=f"Epoch {epoch + 1}/{self.epochs} Loss"
             )
-
             for step, batch in enumerate(train_it):
                 batch = batch.to(self.device)
 
@@ -206,9 +208,9 @@ class Trainer:
 
                 if self.fast_dtype:
                     with torch.autocast(device_type="cuda", dtype=self.fast_dtype):
-                        loss = self.model(batch)["loss"]
+                        loss = self.model(**batch)["loss"]
                 else:
-                    loss = self.model(batch)["loss"]
+                    loss = self.model(**batch)["loss"]
 
                 loss = loss / self.gradient_accumulation_steps
 
@@ -289,9 +291,8 @@ class Trainer:
                     predictions = self.model.predict(batch)["predictions"]
                 val_truth.append(labels.cpu().numpy(force=True))
                 val_preds.append(predictions.cpu().numpy(force=True))
-
-            val_truth = np.concatenate(val_truth)
-            val_preds = np.concatenate(val_preds)
+            val_truth = np.vstack(val_truth) if labels.ndim > 1 else np.hstack(val_truth)
+            val_preds = np.vstack(val_preds) if predictions.ndim > 1 else np.hstack(val_preds)
             for metric_func in self.compute_metrics:
                 valid_metrics.update(metric_func(val_truth, val_preds))
             return valid_metrics
@@ -314,8 +315,8 @@ class Trainer:
                     predictions = self.model.predict(batch)["predictions"]
                 truth.append(labels.cpu().numpy(force=True))
                 preds.append(predictions.cpu().numpy(force=True))
-            preds = np.concatenate(preds)
-            truth = np.concatenate(truth)
+            truth = np.vstack(truth) if labels.ndim > 1 else np.hstack(truth)
+            preds = np.vstack(preds) if predictions.ndim > 1 else np.hstack(preds)
             for metric_func in self.compute_metrics:
                 test_metrics.update(metric_func(truth, preds))
             return test_metrics
@@ -343,11 +344,12 @@ class Trainer:
     def _save_state_dict(self):
         if not hasattr(self, "_model_state_dict_path"):
             from hashlib import sha256
-
-            self._model_state_dict_path = (
-                sha256(self.__repr__().encode()).hexdigest() + "_model_state_dict.pt"
-            )
-
+            # Generate a time string safely formatted
+            time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+            # Generate a hash from the model's representation
+            hash_digest = sha256(self.__repr__().encode('utf-8')).hexdigest()
+            # Construct a more robust temporary checkpoint path
+            self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
         if os.path.exists(self._model_state_dict_path):
             os.remove(self._model_state_dict_path)
 
@@ -358,10 +360,12 @@ class Trainer:
     def _remove_state_dict(self):
         if not hasattr(self, "_model_state_dict_path"):
             from hashlib import sha256
-
-            self._model_state_dict_path = (
-                sha256(self.__repr__().encode()).hexdigest() + "_model_state_dict.pt"
-            )
+            # Generate a time string safely formatted
+            time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+            # Generate a hash from the model's representation
+            hash_digest = sha256(self.__repr__().encode('utf-8')).hexdigest()
+            # Construct a more robust temporary checkpoint path
+            self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
 
         if os.path.exists(self._model_state_dict_path):
             os.remove(self._model_state_dict_path)

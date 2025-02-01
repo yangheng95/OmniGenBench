@@ -225,10 +225,14 @@ class OmniGenomeModel(torch.nn.Module):
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
         return raw_outputs
 
-    def __call__(self, **kwargs):
-        inputs = kwargs.pop("inputs", None)
-        labels = kwargs.pop("labels", None)
+    def __call__(self, **inputs):
+        # For transformer trainer integration, we need to pop the "inputs" to be a tokenized inputs object.
+        # For native trainer, the inputs are already tokenized inputs object
+        labels = inputs.pop("labels", None)
+        inputs = inputs.pop("inputs", inputs)
+        inputs["labels"] = labels
         if isinstance(inputs, dict):
+
             labels = inputs.get("labels", None)
             label = inputs.get("label", None)
             labels = labels if labels is not None else label
@@ -241,9 +245,7 @@ class OmniGenomeModel(torch.nn.Module):
             inputs = inputs[0]
         elif labels is not None:
             labels = labels
-        kwargs["inputs"] = inputs
-        kwargs["labels"] = labels
-        outputs = self.forward(**kwargs)
+        outputs = self.forward(**inputs)
 
         if labels is not None:
             outputs["loss"] = self._calculate_loss(outputs, labels)
@@ -339,11 +341,8 @@ class OmniGenomeModel(torch.nn.Module):
         else:
             inputs = sequence_or_inputs
         inputs = inputs.to(self.model.device)
-        for col in inputs:
-            if inputs[col] is not None and inputs[col].dtype == torch.int64:
-                inputs[col] = inputs[col].to(torch.int32)
         with torch.no_grad():
-            raw_outputs = self(**{"inputs": inputs})
+            raw_outputs = self(**inputs)
             raw_outputs["inputs"] = inputs
         return raw_outputs
 

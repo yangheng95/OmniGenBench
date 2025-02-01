@@ -22,7 +22,6 @@ extras["dev"] = [
     "pytest",
 ]
 
-
 setup(
     name=__name__,
     version=__version__,
@@ -30,32 +29,39 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url=f"https://github.com/yangheng95/{__name__}",
-    # Author details
     author="Yang, Heng",
     author_email="hy345@exeter.ac.uk",
     python_requires=">=3.9",
+    platforms=["Windows", "Linux", "Mac OS-X"],
     packages=find_packages(),
     include_package_data=True,
     exclude_package_date={"": [".gitignore"]},
     license="MIT",
+    entry_points={
+        "console_scripts": [
+            # "omnigenome-bench=omnigenome:bench_command",
+            "autobench=omnigenome:run_bench",
+        ],
+    },
     install_requires=[
         "findfile>=2.0.0",
         "autocuda>=0.16",
         "metric-visualizer>=0.9.6",
-        "tqdm",
         "termcolor",
-        "gitpython",  # need git installed in your OS
-        "torch>=1.13.1",
-        "sentencepiece",
-        "protobuf<4.0.0",
+        "gitpython",
+        "torch>=2.0.0",
         "pandas",
         "viennarna",
         "scikit-learn",
         "accelerate",
-        "transformers",
-    ],
-    dependency_links=[
-        "git+https://github.com/yangheng95/transformers@add_omnigenome#egg=transformers"
+        "transformers>=4.45.0",
     ],
     extras_require=extras,
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 3.9",
+        "Topic :: Scientific/Engineering :: Bio-Informatics",
+    ],
 )

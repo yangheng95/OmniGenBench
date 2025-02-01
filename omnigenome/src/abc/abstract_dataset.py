@@ -93,16 +93,10 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
             self._preprocessing()
 
             for example in tqdm.tqdm(self.examples):
-                try:
-                    self.max_length = min(
-                        self.max_length,
-                        max(self.max_length, len(example["sequence"]) - 2),
-                    )
-                    if self.max_length % 8 != 0:
-                        self.max_length = self.max_length + 8 - self.max_length % 8
-                except KeyError:
-                    pass
-                self.tokenizer.max_length = self.max_length
+                if hasattr(self.tokenizer, "max_length"):
+                    self.tokenizer.max_length = self.max_length
+                else:
+                    self.tokenizer.base_tokenizer.max_length = self.max_length
 
                 import inspect
 
@@ -140,95 +134,193 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                     data_item[key] = value.to(device)
         return self
 
+    # def _pad_and_truncate(self, pad_value=0):
+    #     if hasattr(self.tokenizer, "pad_token_id"):
+    #         pad_token_id = self.tokenizer.pad_token_id
+    #     else:
+    #         pad_token_id = self.tokenizer.base_tokenizer.pad_token_id
+    #     max_length = min(
+    #         max(
+    #             max(
+    #                 [
+    #                     torch.sum(data_item["input_ids"] != pad_token_id)
+    #                     for data_item in self.data
+    #                 ]
+    #             ),
+    #             max(
+    #                 [
+    #                     (
+    #                         data_item["labels"].shape[0]
+    #                         if data_item["labels"].shape
+    #                         else -1
+    #                     )
+    #                     for data_item in self.data
+    #                 ]
+    #             ),
+    #         ),
+    #         self.max_length,
+    #     )
+    #     max_length = max_length + 8 - max_length % 8
+    #     if len(self.data[0]["labels"].shape) > 1 or len(self.data[0]["labels"]) == len(self.data[0]["input_ids"]):
+    #         label_padding_length = max(max_length, self._max_labels_length())
+    #         max_length = max(max_length, label_padding_length)
+    #     else:
+    #         label_padding_length = self._max_labels_length()
+    #     for data_item in self.data:
+    #         for key, value in data_item.items():
+    #             value = torch.tensor(np.array(value))
+    #             dtype = value.dtype
+    #             if "label" in key:
+    #                 if value.dim() == 0:
+    #                     padding_length = 0
+    #                 else:
+    #                     padding_length = label_padding_length - value.size(0)
+    #             else:
+    #                 padding_length = max_length - value.size(0)
+    #             if isinstance(value, torch.Tensor) and value.dim() == 2:
+    #                 if padding_length > 0:
+    #                     if key == "input_ids":
+    #                         if hasattr(self.tokenizer, "pad_token_id"):
+    #                             _pad_value = self.tokenizer.pad_token_id * torch.ones(
+    #                                 (padding_length, value.size(1))
+    #                             )
+    #                         else:
+    #                             _pad_value = (
+    #                                 self.tokenizer.base_tokenizer.pad_token_id
+    #                                 * torch.ones((padding_length, value.size(1)))
+    #                             )
+    #                     elif key == "attention_mask":
+    #                         _pad_value = torch.zeros((padding_length, value.size(1)))
+    #                     elif "label" in key:
+    #                         _pad_value = -100 * torch.ones(
+    #                             (label_padding_length, value.size(1))
+    #                         )
+    #                     else:
+    #                         _pad_value = pad_value * torch.ones(
+    #                             (padding_length, value.size(1))
+    #                         )
+    #                     data_item[key] = torch.cat([value, _pad_value], dim=0)
+    #                 elif padding_length < 0:
+    #                     data_item[key] = value[:max_length]
+    #                 data_item[key] = data_item[key].to(dtype)
+    #
+    #             elif isinstance(value, torch.Tensor) and len(value.shape) == 1:
+    #                 if padding_length > 0:
+    #                     if key == "input_ids":
+    #                         if hasattr(self.tokenizer, "pad_token_id"):
+    #                             _pad_value = self.tokenizer.pad_token_id * torch.ones(
+    #                                 (padding_length,)
+    #                             )
+    #                         else:
+    #                             _pad_value = (
+    #                                 self.tokenizer.base_tokenizer.pad_token_id
+    #                                 * torch.ones((padding_length,))
+    #                             )
+    #                     elif key == "attention_mask":
+    #                         _pad_value = torch.zeros((padding_length,))
+    #                     elif "label" in key:
+    #                         _pad_value = -100 * torch.ones((padding_length,))
+    #                     else:
+    #                         _pad_value = pad_value * torch.ones((padding_length,))
+    #                     data_item[key] = torch.cat([value, _pad_value], dim=0)
+    #                 elif padding_length < 0:
+    #                     data_item[key] = value[:max_length]
+    #
+    #                 data_item[key] = data_item[key].to(dtype)
+
     def _pad_and_truncate(self, pad_value=0):
         if hasattr(self.tokenizer, "pad_token_id"):
             pad_token_id = self.tokenizer.pad_token_id
         else:
             pad_token_id = self.tokenizer.base_tokenizer.pad_token_id
-        max_length = min(
-            max(
-                max(
-                    [
-                        torch.sum(data_item["input_ids"] != pad_token_id)
-                        for data_item in self.data
-                    ]
-                ),
-                max(
-                    [
-                        (
-                            data_item["labels"].shape[0]
-                            if data_item["labels"].shape
-                            else -1
-                        )
-                        for data_item in self.data
-                    ]
-                ),
-            ),
-            self.max_length,
+
+        # 计算输入和标签的最大长度
+        max_input_length = max(
+            [torch.sum(data_item["input_ids"] != pad_token_id).item() for data_item in self.data]
         )
-        label_padding_length = self._max_labels_length()
+        max_label_length = max(
+            [
+                (data_item["labels"].shape[0] if data_item["labels"].ndim >= 1 else 0)
+                for data_item in self.data
+            ]
+        )
+
+        # 确定初始max_length，不超过self.max_length
+        original_max_length = max(max_input_length, max_label_length)
+        original_max_length = min(original_max_length, self.max_length)
+
+        # 调整到不超过self.max_length的最大的8的倍数
+        remainder = original_max_length % 8
+        if remainder != 0:
+            adjusted_max_length = original_max_length + (8 - remainder)
+            adjusted_max_length = min(adjusted_max_length, self.max_length)
+        else:
+            adjusted_max_length = original_max_length
+        max_length = adjusted_max_length
+
+        # 处理标签的特殊情况（修复错误的关键部分）
+        first_labels = self.data[0]["labels"]
+        label_dim = first_labels.ndim  # 使用.ndim代替len(shape)
+
+        condition = (
+                (label_dim > 1) or  # 多维标签
+                (label_dim == 1 and len(first_labels) == len(self.data[0]["input_ids"]))  # 序列标注
+        ) if label_dim != 0 else False  # 排除标量情况
+
+        if condition:
+            label_padding_length = max(max_length, self._max_labels_length())
+            label_padding_length = min(label_padding_length, self.max_length)
+            max_length = max(max_length, label_padding_length)
+            max_length = min(max_length, self.max_length)
+        else:
+            label_padding_length = min(self._max_labels_length(), self.max_length)
+
+        fprint(f"Max sequence length updated -> Reset max_length={max_length},"
+               f" label_padding_length={label_padding_length}")
 
         for data_item in self.data:
             for key, value in data_item.items():
-                value = torch.tensor(np.array(value))
+                # 确保转换为Tensor
+                if not isinstance(value, torch.Tensor):
+                    value = torch.as_tensor(value)
                 dtype = value.dtype
+                if "label" in key and (value.dtype == torch.int16 or value.dtype == torch.int32):
+                    data_item[key] = value.long()
+                # 确定填充长度
                 if "label" in key:
-                    if value.dim() == 0:
+                    if value.ndim == 0:  # 处理标量标签
                         padding_length = 0
                     else:
                         padding_length = label_padding_length - value.size(0)
                 else:
                     padding_length = max_length - value.size(0)
-                if isinstance(value, torch.Tensor) and value.dim() == 2:
-                    if padding_length > 0:
-                        if key == "input_ids":
-                            if hasattr(self.tokenizer, "pad_token_id"):
-                                _pad_value = self.tokenizer.pad_token_id * torch.ones(
-                                    (padding_length, value.size(1))
-                                )
-                            else:
-                                _pad_value = (
-                                    self.tokenizer.base_tokenizer.pad_token_id
-                                    * torch.ones((padding_length, value.size(1)))
-                                )
-                        elif key == "attention_mask":
-                            _pad_value = torch.zeros((padding_length, value.size(1)))
-                        elif "label" in key:
-                            _pad_value = -100 * torch.ones(
-                                (label_padding_length, value.size(1))
-                            )
-                        else:
-                            _pad_value = pad_value * torch.ones(
-                                (padding_length, value.size(1))
-                            )
-                        data_item[key] = torch.cat([value, _pad_value], dim=0)
-                    elif padding_length < 0:
-                        data_item[key] = value[:max_length]
-                    data_item[key] = data_item[key].to(dtype)
 
-                elif isinstance(value, torch.Tensor) and len(value.shape) == 1:
-                    if padding_length > 0:
-                        if key == "input_ids":
-                            if hasattr(self.tokenizer, "pad_token_id"):
-                                _pad_value = self.tokenizer.pad_token_id * torch.ones(
-                                    (padding_length,)
-                                )
-                            else:
-                                _pad_value = (
-                                    self.tokenizer.base_tokenizer.pad_token_id
-                                    * torch.ones((padding_length,))
-                                )
-                        elif key == "attention_mask":
-                            _pad_value = torch.zeros((padding_length,))
-                        elif "label" in key:
-                            _pad_value = -100 * torch.ones((padding_length,))
-                        else:
-                            _pad_value = pad_value * torch.ones((padding_length,))
-                        data_item[key] = torch.cat([value, _pad_value], dim=0)
-                    elif padding_length < 0:
-                        data_item[key] = value[:max_length]
+                # 处理填充或截断
+                if padding_length > 0:
+                    # 确定填充值
+                    if key == "input_ids":
+                        _pad_value = pad_token_id
+                    elif key == "attention_mask":
+                        _pad_value = 0
+                    elif "label" in key:
+                        _pad_value = -100
+                    else:
+                        _pad_value = pad_value
 
-                    data_item[key] = data_item[key].to(dtype)
+                    # 构建填充张量
+                    if value.ndim == 2:
+                        pad_shape = (padding_length, value.size(1))
+                    else:
+                        pad_shape = (padding_length,)
+                    pad_tensor = torch.full(pad_shape, _pad_value, dtype=dtype)
+                    data_item[key] = torch.cat([value, pad_tensor], dim=0)
+                elif padding_length < 0:
+                    data_item[key] = value[:max_length]
+
+                # 确保数据类型正确
+                data_item[key] = data_item[key].to(dtype)
+
+        return self.data
 
     def load_data_source(self, data_source, **kwargs):
         examples = []

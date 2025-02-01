@@ -70,7 +70,13 @@ class OmniGenomeDatasetForTokenClassification(OmniGenomeDataset):
                 ]
                 + [-100]
             )
-            tokenized_inputs["labels"] = torch.tensor(tokenized_inputs["labels"])
+        # try:
+        #     tokenized_inputs["labels"] = [int(x) for x in tokenized_inputs["labels"]]
+        # except Exception as e:
+        #     # Will be error if your misused data class,
+        #     # check if your are looking for a token classification task
+        #     pass
+        tokenized_inputs["labels"] = torch.tensor(tokenized_inputs["labels"])
         return tokenized_inputs
 
 
@@ -120,6 +126,14 @@ class OmniGenomeDatasetForSequenceClassification(OmniGenomeDataset):
             tokenized_inputs["labels"] = (
                 self.label2id.get(str(labels), -100) if self.label2id else labels
             )
+            try:
+                tokenized_inputs["labels"] = int(tokenized_inputs["labels"])
+            except Exception as e:
+                # Will be error if your misused data class,
+                # check if your are looking for a token classification task
+                raise Exception(
+                    "The input instance must contain a 'label' or 'labels' key. And the label must be an integer."
+                )
             tokenized_inputs["labels"] = torch.tensor(tokenized_inputs["labels"])
         return tokenized_inputs
 

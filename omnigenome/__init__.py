@@ -8,7 +8,7 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 __name__ = "OmniGenome"
-__version__ = "0.1.5alpha1"
+__version__ = "0.2.0alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "MIT"
@@ -40,6 +40,8 @@ from .src.model import (
     OmniGenomeModelForTokenClassificationWith2DStructure,
     OmniGenomeModelForSequenceRegression,
     OmniGenomeModelForTokenRegression,
+    OmniGenomeModelForStructuralImputation,
+    OmniGenomeModelForMatrixRegression,
     OmniGenomeModelForSequenceRegressionWith2DStructure,
     OmniGenomeModelForTokenRegressionWith2DStructure,
     OmniGenomeModelForMLM,
@@ -53,6 +55,7 @@ from .src.tokenizer import OmniKmersTokenizer
 from .src.tokenizer import OmniSingleNucleotideTokenizer
 from .src.trainer.hf_trainer import HFTrainer
 from .src.trainer.trainer import Trainer
+from .src.trainer.accelerate_trainer import AccelerateTrainer
 
 from .utility.hub_utils import download_benchmark
 from .utility.hub_utils import download_model
@@ -64,6 +67,8 @@ from .utility.pipeline_hub.pipeline import Pipeline
 from .utility.pipeline_hub.pipeline_hub import PipelineHub
 
 from .src.model.module_utils import OmniGenomePooling
+
+from .bench.auto_bench.bench_cli import run_bench, bench_command
 
 __all__ = [
     "OmniGenomeDataset",
@@ -89,6 +94,8 @@ __all__ = [
     "OmniGenomeModelForTokenClassification",
     "OmniGenomeModelForSequenceRegression",
     "OmniGenomeModelForTokenRegression",
+    "OmniGenomeModelForStructuralImputation",
+    "OmniGenomeModelForMatrixRegression",
     "OmniGenomeModelForSequenceClassificationWith2DStructure",
     "OmniGenomeModelForMultiLabelSequenceClassificationWith2DStructure",
     "OmniGenomeModelForTokenClassificationWith2DStructure",
@@ -105,6 +112,7 @@ __all__ = [
     "RankingMetric",
     "Trainer",
     "HFTrainer",
+    "AccelerateTrainer",
     "AutoBenchConfig",
     "AutoBench",
     "download_benchmark",
@@ -112,8 +120,6 @@ __all__ = [
     "download_pipeline",
 ]
 
-
-from termcolor import colored
 
 LOGO1 = r"""                       
     **@@ #========= @@**            ___                     _ 

@@ -8,72 +8,80 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 import os
+import time
 import warnings
 
-import autocuda
 import findfile
 import torch
 from metric_visualizer import MetricVisualizer
 
-from transformers import TrainingArguments, Trainer as HFTrainer, AutoTokenizer
+from transformers import TrainingArguments, Trainer as HFTrainer
 from ...src.abc.abstract_tokenizer import OmniGenomeTokenizer
-from ...src.misc.utils import seed_everything, fprint, load_module_from_path
+from ...src.misc.utils import seed_everything, fprint, load_module_from_path, check_bench_version
 from ...src.trainer.trainer import Trainer
+from ...src.trainer.accelerate_trainer import AccelerateTrainer
 from ...utility.hub_utils import download_benchmark
+from ... import __version__ as omnigenome_version
 
 
 class AutoBench:
     def __init__(
         self,
-        bench_root,
+        benchmark,
         model_name_or_path,
         tokenizer=None,
         use_hf_trainer=False,
-        device=None,
         **kwargs,
     ):
-        if not os.path.exists(bench_root):
-            fprint(
-                "Benchmark:",
-                bench_root,
-                "does not exist. Search online for available benchmarks.",
-            )
-            bench_root = download_benchmark(bench_root)
-        self.bench_root = bench_root.rstrip("/")
+
+        self.benchmark = benchmark.rstrip("/")
+        self.autocast = kwargs.pop("autocast", "fp16")
+        self.overwrite = kwargs.pop("overwrite", False)
+        os.path.exists("./autobench_evaluations") or os.makedirs("./autobench_evaluations")
+        time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+        mv_name = f"{benchmark}-{model_name_or_path.split('/')[-1]}"
+        self.mv_path = f"./autobench_evaluations/{mv_name}_{time_str}.mv"
+
         self.model_name_or_path = model_name_or_path
         self.tokenizer = tokenizer
         self.use_hf_trainer = use_hf_trainer
         if isinstance(model_name_or_path, str):
             self.model_name_or_path = model_name_or_path.rstrip("/")
-            self.model_name = self.model_name_or_path
+            self.model_name = self.model_name_or_path.split("/")[-1]
         else:
             self.model_name = model_name_or_path.__class__.__name__
         if isinstance(tokenizer, str):
             self.tokenizer = tokenizer.rstrip("/")
-        self.device = device if device else autocuda.auto_cuda()
-        self.autocast = kwargs.pop("autocast", "fp16")
-        self.overwrite = kwargs.pop("overwrite", False)
+        mv_paths = findfile.find_files(
+            './autobench_evaluations',
+            [benchmark, model_name_or_path.split('/')[-1], '.mv']
+        )
+        if mv_paths and not self.overwrite:
+            self.mv = MetricVisualizer.load(mv_paths[-1])
+            self.mv.summary(round=4)
+        else:
+            self.mv = MetricVisualizer(mv_name)
+        if not os.path.exists(self.benchmark):
+            fprint(
+                "Benchmark:",
+                benchmark,
+                "does not exist. Search online for available benchmarks.",
+            )
+            self.benchmark = download_benchmark(self.benchmark)
+
         # Import benchmark list
         self.bench_metadata = load_module_from_path(
-            f"bench_metadata", f"{self.bench_root}/metadata.py"
+            f"bench_metadata", f"{self.benchmark}/metadata.py"
         )
+        check_bench_version(self.bench_metadata.__omnigenome_version__, omnigenome_version)
         fprint("Loaded benchmarks: ", self.bench_metadata.bench_list)
-
-        self.mv_path = f"{self.bench_root}-{self.model_name}.mv".replace("/", "-")
-
-        self.mv = MetricVisualizer(f"{self.bench_root}-{self.model_name}")
-        if os.path.exists(self.mv_path) and not self.overwrite:
-            self.mv = MetricVisualizer.load(self.mv_path)
-            self.mv.summary(round=4)
-
         self.bench_info()
 
     def bench_info(self):
-        info = f"Benchmark Root: {self.bench_root}\n"
+        info = f"Benchmark Root: {self.benchmark}\n"
         info += f"Benchmark List: {self.bench_metadata.bench_list}\n"
         info += f"Model Name or Path: {self.model_name}\n"
         info += f"Tokenizer: {self.tokenizer}\n"
-        info += f"Device: {self.device}\n"
         info += f"Metric Visualizer Path: {self.mv_path}\n"
         info += f"BenchConfig Details: {self.bench_metadata}\n"
         fprint(info)
@@ -85,12 +93,12 @@ class AutoBench:
         :param kwargs: parameters in kwargs will be used to override the default parameters in the benchmark config
         :return:
         """
-
+        bs_scale_factor = kwargs.pop("bs_scale_factor", 1)
         # Import benchmark config
         for bench in self.bench_metadata.bench_list:
             _kwargs = kwargs.copy()
             bench_config_path = findfile.find_file(
-                self.bench_root, f"{self.bench_root}.{bench}.config".split(".")
+                self.benchmark, f"{self.benchmark}.{bench}.config".split(".")
             )
             config = load_module_from_path("config", bench_config_path)
             bench_config = config.bench_config
@@ -131,9 +139,9 @@ class AutoBench:
             for seed in bench_config["seeds"]:
                 batch_size = (
                     bench_config["batch_size"] if "batch_size" in bench_config else 8
-                )
+                ) * bs_scale_factor
 
-                record_name = f"{self.bench_root}-{self.model_name}-{bench}"
+                record_name = f"{self.benchmark}-{self.model_name}-{bench}".split('/')[-1]
                 # check if the record exists
                 if record_name in self.mv.transpose() and len(
                     list(self.mv.transpose()[record_name].values())[0]
@@ -160,7 +168,6 @@ class AutoBench:
                             bench_config["max_length"],
                             model.config.max_position_embeddings,
                         )
-                        - 2
                     )
                 else:
                     max_length = bench_config["max_length"]
@@ -208,26 +215,26 @@ class AutoBench:
                     }
                     training_args = TrainingArguments(
                         output_dir=f"./results/{self.model_name}-{bench}",
-                        num_train_epochs=hf_kwargs.get(
+                        num_train_epochs=hf_kwargs.pop(
                             "num_train_epochs", bench_config["epochs"]
                         ),
-                        per_device_train_batch_size=hf_kwargs.get(
+                        per_device_train_batch_size=hf_kwargs.pop(
                             "batch_size", batch_size
                         ),
-                        per_device_eval_batch_size=hf_kwargs.get(
+                        per_device_eval_batch_size=hf_kwargs.pop(
                             "batch_size", batch_size
                         ),
-                        gradient_accumulation_steps=hf_kwargs.get(
+                        gradient_accumulation_steps=hf_kwargs.pop(
                             "gradient_accumulation_steps", 1
                         ),
-                        learning_rate=hf_kwargs.get("learning_rate", 2e-5),
-                        weight_decay=hf_kwargs.get("weight_decay", 0),
-                        eval_strategy=hf_kwargs.get("eval_strategy", "epoch"),
-                        save_strategy=hf_kwargs.get("save_strategy", "epoch"),
-                        fp16=hf_kwargs.get("fp16", True),
+                        learning_rate=hf_kwargs.pop("learning_rate", 2e-5),
+                        weight_decay=hf_kwargs.pop("weight_decay", 0),
+                        eval_strategy=hf_kwargs.pop("eval_strategy", "epoch"),
+                        save_strategy=hf_kwargs.pop("save_strategy", "epoch"),
+                        fp16=hf_kwargs.pop("fp16", True),
                         remove_unused_columns=False,
                         label_names=["labels"],
-                        **_kwargs,
+                        **hf_kwargs,
                     )
 
                     valid_set = valid_set if len(valid_set) else test_set
@@ -275,7 +282,8 @@ class AutoBench:
                             else 0
                         ),
                     )
-                    trainer = Trainer(
+                    trainer = AccelerateTrainer(
+                    # trainer = Trainer(
                         model=model,
                         train_dataset=train_set,
                         eval_dataset=valid_set,
@@ -298,17 +306,21 @@ class AutoBench:
                         ),
                         compute_metrics=bench_config["compute_metrics"],
                         seed=seed,
-                        device=self.device,
                         autocast=self.autocast,
                         **_kwargs,
                     )
-
                     metrics = trainer.train()
 
-                    for key, value in metrics["test"][-1].items():
-                        self.mv.log(record_name, key, value)
-                    self.mv.summary(round=4)
-                    self.mv.dump(self.mv_path)
+                    if metrics:
+                        for key, value in metrics['test'][-1].items():
+                            self.mv.log(f'{record_name}', f'test_{key}', value)
+                        for i, valid_metrics in enumerate(metrics["valid"]):
+                            for key, value in valid_metrics.items():
+                                self.mv.log(f'{record_name}', f'valid_epoch_{i}_{key}', value)
+
+                        self.mv.summary(round=4)
+                        self.mv.dump(self.mv_path)
+                        self.mv.to_txt(self.mv_path.replace(".mv", ".txt"))
 
                     del model, trainer, optimizer
                     torch.cuda.empty_cache()

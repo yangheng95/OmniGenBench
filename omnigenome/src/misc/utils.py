@@ -240,3 +240,24 @@ def load_module_from_path(module_name, file_path):
     except FileNotFoundError:
         raise ImportError(f"Cannot find the module {module_name} from {file_path}.")
     return module
+
+
+def check_bench_version(bench_version, omnigenome_version):
+    assert bench_version is not None, (
+        "Benchmark metadata does not contain a valid __omnigenome__ version."
+    )
+
+    if not isinstance(bench_version, (int, float, str)):
+        raise TypeError(
+            f"Invalid type for benchmark version. Expected int, float, or str but got {type(bench_version).__name__}."
+        )
+
+    assert omnigenome_version is not None, (
+        "AutoBench is missing a valid omnigenome version."
+    )
+
+    if bench_version > omnigenome_version:
+        raise ValueError(
+            f"AutoBench version {omnigenome_version} is not compatible with the benchmark version "
+            f"{bench_version}. Please update the benchmark or AutoBench."
+        )
