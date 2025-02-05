@@ -6,7 +6,6 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
-import os.path
 import random
 import warnings
 
@@ -111,7 +110,7 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                     self.drop_long_seq
                     and len(prepared_input["input_ids"]) > self.max_length
                 ):
-                    print(
+                    fprint(
                         f"Dropping sequence {example['sequence']} due to length > {self.max_length}"
                     )
                 else:
@@ -125,7 +124,7 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                 fprint(self.get_inputs_length())
                 fprint(f"Preview of the first two samples in the dataset:")
                 for sample in self.data[:2]:
-                    print(sample)
+                    fprint(sample)
 
     def to(self, device):
         for data_item in self.data:
@@ -236,7 +235,10 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
 
         # 计算输入和标签的最大长度
         max_input_length = max(
-            [torch.sum(data_item["input_ids"] != pad_token_id).item() for data_item in self.data]
+            [
+                torch.sum(data_item["input_ids"] != pad_token_id).item()
+                for data_item in self.data
+            ]
         )
         max_label_length = max(
             [
@@ -263,9 +265,16 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
         label_dim = first_labels.ndim  # 使用.ndim代替len(shape)
 
         condition = (
-                (label_dim > 1) or  # 多维标签
-                (label_dim == 1 and len(first_labels) == len(self.data[0]["input_ids"]))  # 序列标注
-        ) if label_dim != 0 else False  # 排除标量情况
+            (
+                (label_dim > 1)  # 多维标签
+                or (
+                    label_dim == 1
+                    and len(first_labels) == len(self.data[0]["input_ids"])
+                )  # 序列标注
+            )
+            if label_dim != 0
+            else False
+        )  # 排除标量情况
 
         if condition:
             label_padding_length = max(max_length, self._max_labels_length())
@@ -275,8 +284,10 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
         else:
             label_padding_length = min(self._max_labels_length(), self.max_length)
 
-        fprint(f"Max sequence length updated -> Reset max_length={max_length},"
-               f" label_padding_length={label_padding_length}")
+        fprint(
+            f"Max sequence length updated -> Reset max_length={max_length},"
+            f" label_padding_length={label_padding_length}"
+        )
 
         for data_item in self.data:
             for key, value in data_item.items():
@@ -284,7 +295,9 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                 if not isinstance(value, torch.Tensor):
                     value = torch.as_tensor(value)
                 dtype = value.dtype
-                if "label" in key and (value.dtype == torch.int16 or value.dtype == torch.int32):
+                if "label" in key and (
+                    value.dtype == torch.int16 or value.dtype == torch.int32
+                ):
                     data_item[key] = value.long()
                 # 确定填充长度
                 if "label" in key:
@@ -339,12 +352,11 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                 import json
 
                 try:
-                    examples = json.load(
-                        open(data_source, "r")
-                    )  # Assume the data is a list of examples
+                    with open(data_source, "r", encoding="utf8") as f:
+                        examples = json.load(f)
                 except:
                     with open(data_source, "r", encoding="utf8") as f:
-                        lines = f.readlines()
+                        lines = f.readlines()  # Assume the data is a list of examples
                     for i in range(len(lines)):
                         lines[i] = json.loads(lines[i])
                     for line in lines:

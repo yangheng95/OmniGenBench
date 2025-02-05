@@ -52,35 +52,59 @@ pip install -e .
 # Quick Start
 
 ## Auto-benchmark for genomic foundation models (a.k.a., pretrained models)
+The following command will download the model from the Hugging Face model hub and run the benchmark on the RGB benchmark:
+```bash
+autobench --model_name_or_path "yangheng/OmniGenome-186M" --benchmark "RGB" --trainer accelerate
+```
+or you can use the following python code to run the auto-benchmark:
 ```python3
 from omnigenome import AutoBench
 gfm = 'LongSafari/hyenadna-medium-160k-seqlen-hf'
-# bench_root could be "RGB", "GB", "PGB", "GUE", which will be downloaded from the Hugging Face model hub
-bench_root = "RGB"
+# benchmark could be "RGB", "GB", "PGB", "GUE", which will be downloaded from the Hugging Face model hub
+benchmark = "RGB"
 bench_size = 8
 seeds = [0, 1, 2, 3, 4]
-bench = AutoBench(bench_root=bench_root, model_name_or_path=gfm, overwrite=False)
+bench = AutoBench(benchmark=benchmark, model_name_or_path=gfm, overwrite=False)
 bench.run(autocast=False, batch_size=bench_size, seeds=seeds)
 ```
 
 ## RNA Design
+
 ```python3
 from omnigenome import OmniGenomeModelForRNADesign  # Assuming this is where the model class is defined
 
 # Initialize the model for RNA design
-model = OmniGenomeModelForRNADesign(model_path="anonymous8/OmniGenome-186M")
+model = OmniGenomeModelForRNADesign(model_path="yangheng/OmniGenome-186M")
 
 # Define the target RNA structure
 structure = "(((....)))"  # Example of a simple RNA hairpin structure
 
 # Run the genetic algorithm to design RNA sequences
-best_sequences = model.run_rna_design(structure=structure, mutation_ratio=0.5, num_population=100, num_generation=100)
+best_sequences = model.design(structure=structure, mutation_ratio=0.5, num_population=100, num_generation=100)
 
 # Print the best sequence(s)
 print("Best RNA sequences:", best_sequences)
 ```
 
 # Tutorials
+
+## RNA Design Demo
+RNA design is a fundamental problem in synthetic biology, 
+where the goal is to design RNA sequences that fold into a target structure. 
+In this demo, we show how to use OmniGenome to design RNA sequences that fold into a target structure using a pre-trained model.
+
+The tutorials of RNA Design Demo can be found in [RNA_Design_Tutorial.ipynb](examples/tutorials/RNA_Design_Tutorial.ipynb).
+![RNADesign-Demo.gif](asset/RNADesign-Demo.gif)
+
+
+## RNA Secondary Structure Prediction
+RNA secondary structure prediction is a fundamental problem in computational biology, 
+where the goal is to predict the secondary structure of an RNA sequence.
+In this demo, we show how to use OmniGenome to predict the secondary structure of RNA sequences using a pre-trained model.
+The tutorials of RNA Secondary Structure Prediction can be found in 
+[Secondary_Structure_Prediction_Tutorial.ipynb](examples/tutorials/Secondary_Structure_Prediction_Tutorial.ipynb).
+
+
 Please find more usage tutorials in [examples/tutorials](https://github.com/yangheng95/OmniGenomeBench/tree/master/examples/tutorials).
 
 

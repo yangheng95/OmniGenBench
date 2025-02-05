@@ -287,7 +287,7 @@ class OmniGenomeModelForMatrixRegression(OmniGenomeModel):
 
         # weight_mask = inputs['weight_mask']  # [bz,ori_max_len+2]
         # last_hidden_state = last_hidden_state * weight_mask.unsqueeze(2)
-        matrix = torch.einsum('ijk,ilk->ijlk', last_hidden_state, last_hidden_state)
+        matrix = torch.einsum("ijk,ilk->ijlk", last_hidden_state, last_hidden_state)
         matrix = matrix.permute(0, 3, 1, 2)  # L*L*2d
         logits = self.cnn(matrix)
         logits = logits.squeeze(-1)

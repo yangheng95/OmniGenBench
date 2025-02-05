@@ -111,9 +111,9 @@ if __name__ == "__main__":
     # base_tokenizer = AutoTokenizer.from_pretrained(base_tokenizer_name)
     # tokenizer = KmersTokenizer(base_tokenizer)
     # tokens = tokenizer.tokenize(RNA)
-    # print(tokens)
+    # fprint(tokens)
     # tokenized_inputs = tokenizer(RNA)
-    # print(tokenized_inputs)
+    # fprint(tokenized_inputs)
 
     RNA = "ACGUAGGUAUCGUAGA"
     # base_tokenizer_name = 'bert-base-cased'

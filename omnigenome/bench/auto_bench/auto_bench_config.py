@@ -136,9 +136,15 @@ class AutoBenchConfig(PretrainedConfig):
 
     def __repr__(self):
         """
-        Return the string representation of the parameter dict.
+        Return a detailed string representation of the configuration,
+        including all parameters and the frequency of their access.
         """
-        return repr(self.args)
+        param_list = []
+        for key, value in self.args.items():
+            count = self.args_call_count.get(key, 0)
+            param_list.append(f"{key}={value!r} (accessed {count} times)")
+        params_str = ", ".join(param_list)
+        return f"{self.__class__.__name__}({params_str})"
 
     def __len__(self):
         """

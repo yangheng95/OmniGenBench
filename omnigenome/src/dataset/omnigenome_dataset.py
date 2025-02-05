@@ -74,7 +74,7 @@ class OmniGenomeDatasetForTokenClassification(OmniGenomeDataset):
         #     tokenized_inputs["labels"] = [int(x) for x in tokenized_inputs["labels"]]
         # except Exception as e:
         #     # Will be error if your misused data class,
-        #     # check if your are looking for a token classification task
+        #     # check if you are looking for a token classification task
         #     pass
         tokenized_inputs["labels"] = torch.tensor(tokenized_inputs["labels"])
         return tokenized_inputs
@@ -130,7 +130,7 @@ class OmniGenomeDatasetForSequenceClassification(OmniGenomeDataset):
                 tokenized_inputs["labels"] = int(tokenized_inputs["labels"])
             except Exception as e:
                 # Will be error if your misused data class,
-                # check if your are looking for a token classification task
+                # check if you are looking for a token classification task
                 raise Exception(
                     "The input instance must contain a 'label' or 'labels' key. And the label must be an integer."
                 )
@@ -183,7 +183,7 @@ class OmniGenomeDatasetForTokenRegression(OmniGenomeDataset):
 
         if labels is not None:
             # Will be error if your misused data class,
-            # check if your are looking for a sequence classification task
+            # check if you are looking for a sequence classification task
             try:
                 _labels = json.loads(labels)
             except:

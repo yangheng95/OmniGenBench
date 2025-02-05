@@ -11,13 +11,21 @@ import os
 import time
 import warnings
 
+import accelerate
 import findfile
+import numpy as np
 import torch
 from metric_visualizer import MetricVisualizer
 
 from transformers import TrainingArguments, Trainer as HFTrainer
 from ...src.abc.abstract_tokenizer import OmniGenomeTokenizer
-from ...src.misc.utils import seed_everything, fprint, load_module_from_path, check_bench_version
+from ...src.misc.utils import (
+    seed_everything,
+    fprint,
+    load_module_from_path,
+    check_bench_version,
+    clean_temp_checkpoint,
+)
 from ...src.trainer.trainer import Trainer
 from ...src.trainer.accelerate_trainer import AccelerateTrainer
 from ...utility.hub_utils import download_benchmark
@@ -30,21 +38,19 @@ class AutoBench:
         benchmark,
         model_name_or_path,
         tokenizer=None,
-        use_hf_trainer=False,
         **kwargs,
     ):
-
         self.benchmark = benchmark.rstrip("/")
         self.autocast = kwargs.pop("autocast", "fp16")
         self.overwrite = kwargs.pop("overwrite", False)
-        os.path.exists("./autobench_evaluations") or os.makedirs("./autobench_evaluations")
+        self.trainer = kwargs.pop("trainer", "accelerate")
+        os.makedirs("./autobench_evaluations", exist_ok=True)
         time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
         mv_name = f"{benchmark}-{model_name_or_path.split('/')[-1]}"
         self.mv_path = f"./autobench_evaluations/{mv_name}_{time_str}.mv"
 
         self.model_name_or_path = model_name_or_path
         self.tokenizer = tokenizer
-        self.use_hf_trainer = use_hf_trainer
         if isinstance(model_name_or_path, str):
             self.model_name_or_path = model_name_or_path.rstrip("/")
             self.model_name = self.model_name_or_path.split("/")[-1]
@@ -53,8 +59,8 @@ class AutoBench:
         if isinstance(tokenizer, str):
             self.tokenizer = tokenizer.rstrip("/")
         mv_paths = findfile.find_files(
-            './autobench_evaluations',
-            [benchmark, model_name_or_path.split('/')[-1], '.mv']
+            "./autobench_evaluations",
+            [benchmark, model_name_or_path.split("/")[-1], ".mv"],
         )
         if mv_paths and not self.overwrite:
             self.mv = MetricVisualizer.load(mv_paths[-1])
@@ -73,7 +79,9 @@ class AutoBench:
         self.bench_metadata = load_module_from_path(
             f"bench_metadata", f"{self.benchmark}/metadata.py"
         )
-        check_bench_version(self.bench_metadata.__omnigenome_version__, omnigenome_version)
+        check_bench_version(
+            self.bench_metadata.__omnigenome_version__, omnigenome_version
+        )
         fprint("Loaded benchmarks: ", self.bench_metadata.bench_list)
         self.bench_info()
 
@@ -93,15 +101,27 @@ class AutoBench:
         :param kwargs: parameters in kwargs will be used to override the default parameters in the benchmark config
         :return:
         """
-        bs_scale_factor = kwargs.pop("bs_scale_factor", 1)
+        bs_scale = kwargs.pop("bs_scale", 1)
         # Import benchmark config
-        for bench in self.bench_metadata.bench_list:
+        for _, bench in enumerate(self.bench_metadata.bench_list):
+            clean_temp_checkpoint(1)  # clean temp checkpoint older than 1 day
+            fprint(
+                ">" * 80,
+                f"\nRunning evaluation for task: {bench}",
+                "Progress: ",
+                _ + 1,
+                "/",
+                len(self.bench_metadata.bench_list),
+                f"{(_ + 1) / len(self.bench_metadata.bench_list)}%",
+            )
             _kwargs = kwargs.copy()
             bench_config_path = findfile.find_file(
                 self.benchmark, f"{self.benchmark}.{bench}.config".split(".")
             )
             config = load_module_from_path("config", bench_config_path)
             bench_config = config.bench_config
+            fprint(f"Loaded config for {bench} from {bench_config_path}")
+            fprint(bench_config)
 
             for key, value in _kwargs.items():
                 if key in bench_config:
@@ -139,9 +159,11 @@ class AutoBench:
             for seed in bench_config["seeds"]:
                 batch_size = (
                     bench_config["batch_size"] if "batch_size" in bench_config else 8
-                ) * bs_scale_factor
+                ) * bs_scale
 
-                record_name = f"{self.benchmark}-{self.model_name}-{bench}".split('/')[-1]
+                record_name = f"{self.benchmark}-{bench}-{self.model_name}".split("/")[
+                    -1
+                ]
                 # check if the record exists
                 if record_name in self.mv.transpose() and len(
                     list(self.mv.transpose()[record_name].values())[0]
@@ -163,11 +185,9 @@ class AutoBench:
                 dataset_cls = bench_config["dataset_cls"]
 
                 if hasattr(model.config, "max_position_embeddings"):
-                    max_length = (
-                        min(
-                            bench_config["max_length"],
-                            model.config.max_position_embeddings,
-                        )
+                    max_length = min(
+                        bench_config["max_length"],
+                        model.config.max_position_embeddings,
                     )
                 else:
                     max_length = bench_config["max_length"]
@@ -206,7 +226,7 @@ class AutoBench:
                     **_kwargs,
                 )
 
-                if self.use_hf_trainer:
+                if self.trainer == "hf_trainer":
                     # Set up HuggingFace Trainer
                     hf_kwargs = {
                         k: v
@@ -214,7 +234,7 @@ class AutoBench:
                         if hasattr(TrainingArguments, k) and k != "output_dir"
                     }
                     training_args = TrainingArguments(
-                        output_dir=f"./results/{self.model_name}-{bench}",
+                        output_dir=f"./autobench_evaluations/{self.model_name}-{bench}",
                         num_train_epochs=hf_kwargs.pop(
                             "num_train_epochs", bench_config["epochs"]
                         ),
@@ -239,6 +259,10 @@ class AutoBench:
 
                     valid_set = valid_set if len(valid_set) else test_set
 
+                    if len(bench_config["compute_metrics"]) > 1:
+                        fprint(
+                            "Multiple metrics not supported by HFTrainer, using the first one metric only."
+                        )
                     trainer = HFTrainer(
                         model=model,
                         args=training_args,
@@ -249,7 +273,6 @@ class AutoBench:
                             if isinstance(bench_config["compute_metrics"], list)
                             else bench_config["compute_metrics"]
                         ),
-                        # data_collator=hf_data_collator
                     )
 
                     # Train and evaluate
@@ -282,8 +305,12 @@ class AutoBench:
                             else 0
                         ),
                     )
-                    trainer = AccelerateTrainer(
-                    # trainer = Trainer(
+                    if self.trainer == "accelerate":
+                        trainer_cls = AccelerateTrainer
+                    else:
+                        trainer_cls = Trainer
+                    fprint(f"Using Trainer: {trainer_cls}")
+                    trainer = trainer_cls(
                         model=model,
                         train_dataset=train_set,
                         eval_dataset=valid_set,
@@ -312,16 +339,21 @@ class AutoBench:
                     metrics = trainer.train()
 
                     if metrics:
-                        for key, value in metrics['test'][-1].items():
-                            self.mv.log(f'{record_name}', f'test_{key}', value)
-                        for i, valid_metrics in enumerate(metrics["valid"]):
-                            for key, value in valid_metrics.items():
-                                self.mv.log(f'{record_name}', f'valid_epoch_{i}_{key}', value)
+                        for key, value in metrics["test"][-1].items():
+                            try:
+                                value = float(value)
+                            except:
+                                pass  # ignore non-float values
+                            self.mv.log(f"{record_name}", f"{key}", value)
+                        # for key, value in metrics['test'][-1].items():
+                        #     self.mv.log(f'{record_name}', f'test_{key}', value)
+                        # for i, valid_metrics in enumerate(metrics["valid"]):
+                        #     for key, value in valid_metrics.items():
+                        #         self.mv.log(f'{record_name}', f'valid_epoch_{i}_{key}', value)
 
                         self.mv.summary(round=4)
                         self.mv.dump(self.mv_path)
-                        self.mv.to_txt(self.mv_path.replace(".mv", ".txt"))
-
+                        self.mv.to_csv(self.mv_path.replace(".mv", ".csv"))
                     del model, trainer, optimizer
                     torch.cuda.empty_cache()
 

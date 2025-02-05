@@ -70,7 +70,7 @@ class Pipeline:
             self.tokenizer = self.model.tokenizer
             self.metadata.update(self.model.metadata)
         except Exception as e:
-            print(f"Fail to load the model from the model hub, the error is: {e}")
+            fprint(f"Fail to load the model from the model hub, the error is: {e}")
 
             config = AutoConfig.from_pretrained(
                 model_name_or_path, trust_remote_code=trust_remote_code

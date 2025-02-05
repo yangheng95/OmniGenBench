@@ -238,7 +238,7 @@ class OmniGenomeModel(torch.nn.Module):
             labels = labels if labels is not None else label
             # if labels is None:
             #     warnings.warn(
-            #         "No labels are provided in the inputs, the model will not calculate the loss.",
+            #         "No labels are provided in the inputs, the model will not calculate the loss."
             #     )
         elif isinstance(inputs, tuple):
             labels = inputs[1]
@@ -295,7 +295,7 @@ class OmniGenomeModel(torch.nn.Module):
             json.dump(self.metadata, f)
         self.model.save_pretrained(
             f"{path}", safe_serialization=False
-        )  # do not remove this line, used to save customed model scripts
+        )  # do not remove this line, used to save customized model scripts
         with open(f"{path}/pytorch_model.bin", "wb") as f:
             torch.save(self.state_dict(), f)
 

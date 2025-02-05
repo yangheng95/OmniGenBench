@@ -19,6 +19,7 @@ from ..misc.utils import env_meta_info, fprint, seed_everything
 import torch
 from torch.cuda.amp import GradScaler
 
+
 def _infer_optimization_direction(metrics, prev_metrics):
     larger_is_better_metrics = [
         "accuracy",
@@ -244,7 +245,7 @@ class Trainer:
             else:
                 patience += 1
                 if patience >= self.patience:
-                    print(f"Early stopping at epoch {epoch + 1}.")
+                    fprint(f"Early stopping at epoch {epoch + 1}.")
                     break
 
             if path_to_save:
@@ -291,8 +292,12 @@ class Trainer:
                     predictions = self.model.predict(batch)["predictions"]
                 val_truth.append(labels.cpu().numpy(force=True))
                 val_preds.append(predictions.cpu().numpy(force=True))
-            val_truth = np.vstack(val_truth) if labels.ndim > 1 else np.hstack(val_truth)
-            val_preds = np.vstack(val_preds) if predictions.ndim > 1 else np.hstack(val_preds)
+            val_truth = (
+                np.vstack(val_truth) if labels.ndim > 1 else np.hstack(val_truth)
+            )
+            val_preds = (
+                np.vstack(val_preds) if predictions.ndim > 1 else np.hstack(val_preds)
+            )
             for metric_func in self.compute_metrics:
                 valid_metrics.update(metric_func(val_truth, val_preds))
             return valid_metrics
@@ -344,10 +349,11 @@ class Trainer:
     def _save_state_dict(self):
         if not hasattr(self, "_model_state_dict_path"):
             from hashlib import sha256
+
             # Generate a time string safely formatted
             time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
             # Generate a hash from the model's representation
-            hash_digest = sha256(self.__repr__().encode('utf-8')).hexdigest()
+            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()
             # Construct a more robust temporary checkpoint path
             self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
         if os.path.exists(self._model_state_dict_path):
@@ -360,10 +366,11 @@ class Trainer:
     def _remove_state_dict(self):
         if not hasattr(self, "_model_state_dict_path"):
             from hashlib import sha256
+
             # Generate a time string safely formatted
             time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
             # Generate a hash from the model's representation
-            hash_digest = sha256(self.__repr__().encode('utf-8')).hexdigest()
+            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()
             # Construct a more robust temporary checkpoint path
             self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
 

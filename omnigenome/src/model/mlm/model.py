@@ -63,7 +63,7 @@ class OmniGenomeModelForMLM(OmniGenomeModel):
                 "predictions": (
                     torch.stack(predictions)
                     if predictions[0].shape
-                    else torch.tensor(predictions)
+                    else torch.tensor(predictions).to(self.model.device)
                 ),
                 "logits": logits,
                 "last_hidden_state": last_hidden_state,

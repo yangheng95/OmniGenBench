@@ -19,6 +19,7 @@ import torch
 
 from ..misc.utils import env_meta_info, fprint, seed_everything
 
+
 def _infer_optimization_direction(metrics, prev_metrics):
     larger_is_better_metrics = [
         "accuracy",
@@ -46,15 +47,25 @@ def _infer_optimization_direction(metrics, prev_metrics):
         if metric in list(prev_metrics[0].keys())[0]:
             return "smaller_is_better"
 
-    fprint("Cannot determine the optimisation direction. Attempting inference from the metrics.")
-    is_prev_increasing = np.mean(list(prev_metrics[0].values())[0]) < np.mean(list(prev_metrics[-1].values())[0])
-    is_still_increasing = np.mean(list(prev_metrics[1].values())[0]) < np.mean(list(metrics.values())[0])
+    fprint(
+        "Cannot determine the optimisation direction. Attempting inference from the metrics."
+    )
+    is_prev_increasing = np.mean(list(prev_metrics[0].values())[0]) < np.mean(
+        list(prev_metrics[-1].values())[0]
+    )
+    is_still_increasing = np.mean(list(prev_metrics[1].values())[0]) < np.mean(
+        list(metrics.values())[0]
+    )
 
     if is_prev_increasing and is_still_increasing:
         return "larger_is_better"
 
-    is_prev_decreasing = np.mean(list(prev_metrics[0].values())[0]) > np.mean(list(prev_metrics[-1].values())[0])
-    is_still_decreasing = np.mean(list(prev_metrics[1].values())[0]) > np.mean(list(metrics.values()))
+    is_prev_decreasing = np.mean(list(prev_metrics[0].values())[0]) > np.mean(
+        list(prev_metrics[-1].values())[0]
+    )
+    is_still_decreasing = np.mean(list(prev_metrics[1].values())[0]) > np.mean(
+        list(metrics.values())
+    )
 
     if is_prev_decreasing and is_still_decreasing:
         return "smaller_is_better"
@@ -62,22 +73,21 @@ def _infer_optimization_direction(metrics, prev_metrics):
 
 class AccelerateTrainer:
     def __init__(
-            self,
-            model,
-            train_dataset: torch.utils.data.Dataset = None,
-            eval_dataset: torch.utils.data.Dataset = None,
-            test_dataset: torch.utils.data.Dataset = None,
-            epochs: int = 3,
-            batch_size: int = 8,
-            patience: int = 3,
-            gradient_accumulation_steps: int = 1,
-            optimizer: torch.optim.Optimizer = None,
-            loss_fn: torch.nn.Module = None,
-            compute_metrics: [list, str] = None,
-            seed: int = 42,
-            device: [torch.device, str] = None,  # Will be superseded by Accelerator
-            autocast: str = "float16",
-            **kwargs,
+        self,
+        model,
+        train_dataset: torch.utils.data.Dataset = None,
+        eval_dataset: torch.utils.data.Dataset = None,
+        test_dataset: torch.utils.data.Dataset = None,
+        epochs: int = 3,
+        batch_size: int = 8,
+        patience: int = 3,
+        gradient_accumulation_steps: int = 1,
+        optimizer: torch.optim.Optimizer = None,
+        loss_fn: torch.nn.Module = None,
+        compute_metrics: [list, str] = None,
+        seed: int = 42,
+        autocast: str = "float16",
+        **kwargs,
     ):
 
         # sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -90,17 +100,30 @@ class AccelerateTrainer:
             self.eval_loader = kwargs.get("eval_loader", None)
             self.test_loader = kwargs.get("test_loader", None)
         else:
-            self.train_loader = DataLoader(train_dataset, batch_size=batch_size,
-                                           shuffle=True) if train_dataset else None
-            self.eval_loader = DataLoader(eval_dataset, batch_size=batch_size) if eval_dataset else None
-            self.test_loader = DataLoader(test_dataset, batch_size=batch_size) if test_dataset else None
+            self.train_loader = (
+                DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+                if train_dataset
+                else None
+            )
+            self.eval_loader = (
+                DataLoader(eval_dataset, batch_size=batch_size)
+                if eval_dataset
+                else None
+            )
+            self.test_loader = (
+                DataLoader(test_dataset, batch_size=batch_size)
+                if test_dataset
+                else None
+            )
 
         self.epochs = epochs
         self.patience = patience
         self.gradient_accumulation_steps = gradient_accumulation_steps
         self.optimizer = optimizer
         self.loss_fn = loss_fn
-        self.compute_metrics = compute_metrics if isinstance(compute_metrics, list) else [compute_metrics]
+        self.compute_metrics = (
+            compute_metrics if isinstance(compute_metrics, list) else [compute_metrics]
+        )
         self.seed = seed
         self._optimization_direction = None
         self.trial_name = kwargs.get("trial_name", self.model.__class__.__name__)
@@ -116,10 +139,12 @@ class AccelerateTrainer:
         # Prepare Accelerator
         from accelerate import Accelerator
         from accelerate import DistributedDataParallelKwargs
+
         ddp_kwargs = DistributedDataParallelKwargs(find_unused_parameters=True)
 
-        self.accelerator = Accelerator(mixed_precision=mp_setting, kwargs_handlers=[ddp_kwargs])
-
+        self.accelerator = Accelerator(
+            mixed_precision=mp_setting, kwargs_handlers=[ddp_kwargs]
+        )
         if self.loss_fn is not None:
             self.model.set_loss_fn(self.loss_fn)
             # 创建 dataloaders
@@ -128,19 +153,21 @@ class AccelerateTrainer:
                 self.eval_loader = kwargs.get("eval_loader", None)
                 self.test_loader = kwargs.get("test_loader", None)
             else:
-                self.train_loader = DataLoader(
-                    train_dataset,
-                    batch_size=batch_size,
-                    shuffle=True
-                ) if train_dataset else None
-                self.eval_loader = DataLoader(
-                    eval_dataset,
-                    batch_size=batch_size
-                ) if eval_dataset else None
-                self.test_loader = DataLoader(
-                    test_dataset,
-                    batch_size=batch_size
-                ) if test_dataset else None
+                self.train_loader = (
+                    DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+                    if train_dataset
+                    else None
+                )
+                self.eval_loader = (
+                    DataLoader(eval_dataset, batch_size=batch_size)
+                    if eval_dataset
+                    else None
+                )
+                self.test_loader = (
+                    DataLoader(test_dataset, batch_size=batch_size)
+                    if test_dataset
+                    else None
+                )
 
         # 让 accelerate 处理模型和优化器的准备
         to_prepare = [self.model]
@@ -177,11 +204,15 @@ class AccelerateTrainer:
         all_preds = []
 
         # 禁用进度条在非主进程上显示
-        it = tqdm(self.eval_loader, desc="Evaluating", disable=not self.accelerator.is_main_process)
+        it = tqdm(
+            self.eval_loader,
+            desc="Evaluating",
+            disable=not self.accelerator.is_main_process,
+        )
 
         with torch.no_grad():
             for batch in it:
-                output = self.accelerator.unwrap_model(self.model).predict(batch)
+                output = self.unwrap_model(self.model).predict(batch)
                 predictions = output["predictions"]
                 labels = batch["labels"]
 
@@ -215,16 +246,29 @@ class AccelerateTrainer:
 
         return valid_metrics
 
+    def unwrap_model(self, model):
+        try:
+            return self.accelerator.unwrap_model(model)
+        except:
+            try:
+                return model.module
+            except:
+                return model
+
     def test(self):
         self.model.eval()
         all_truth = []
         all_preds = []
 
-        it = tqdm(self.test_loader, desc="Testing", disable=not self.accelerator.is_main_process)
+        it = tqdm(
+            self.test_loader,
+            desc="Testing",
+            disable=not self.accelerator.is_main_process,
+        )
 
         with torch.no_grad():
             for batch in it:
-                output = self.accelerator.unwrap_model(self.model).predict(batch)
+                output = self.unwrap_model(self.model).predict(batch)
                 predictions = output["predictions"]
                 labels = batch["labels"]
 
@@ -278,13 +322,18 @@ class AccelerateTrainer:
 
         # 使用 all_gather 同步早停标志
         gathered_flags = self.accelerator.gather(early_stop_flag)
-        early_stop_flag = gathered_flags if gathered_flags.ndim==0 else gathered_flags[0] # 使用主进程的值
+        early_stop_flag = (
+            gathered_flags if gathered_flags.ndim == 0 else gathered_flags[0]
+        )  # 使用主进程的值
 
         for epoch in range(self.epochs):
             self.model.train()
 
-            train_it = tqdm(self.train_loader, desc=f"Epoch {epoch + 1}/{self.epochs} Loss",
-                            disable=not self.accelerator.is_main_process)
+            train_it = tqdm(
+                self.train_loader,
+                desc=f"Epoch {epoch + 1}/{self.epochs} Loss",
+                disable=not self.accelerator.is_main_process,
+            )
 
             # 使用 accelerator.accumulate 控制梯度累积
             for step, batch in enumerate(train_it):
@@ -314,12 +363,14 @@ class AccelerateTrainer:
 
             # 使用 all_gather 同步早停标志
             gathered_flags = self.accelerator.gather(early_stop_flag)
-            early_stop_flag = gathered_flags if gathered_flags.ndim == 0 else gathered_flags[0]  # 使用主进程的值
+            early_stop_flag = (
+                gathered_flags if gathered_flags.ndim == 0 else gathered_flags[0]
+            )  # 使用主进程的值
 
             # 检查是否需要早停
             if early_stop_flag.item() > self.patience:
                 if self.accelerator.is_main_process:
-                    print(f"Early stopping at epoch {epoch + 1}.")
+                    fprint(f"Early stopping at epoch {epoch + 1}.")
                 break
 
             # 只在主进程中保存检查点
@@ -351,7 +402,15 @@ class AccelerateTrainer:
 
         self._remove_state_dict()
 
-        del self.accelerator, self.model, self.optimizer, self.train_loader, self.eval_loader, self.test_loader
+        self.accelerator.free_memory()
+        # trainer.accelerator.end_training()
+        del (
+            self.model,
+            self.optimizer,
+            self.train_loader,
+            self.eval_loader,
+            self.test_loader,
+        )
 
         return self.metrics
 
@@ -360,7 +419,10 @@ class AccelerateTrainer:
         if not self.accelerator.is_main_process:
             return False
 
-        assert stage in ["valid", "test"], "The metrics stage should be either 'valid' or 'test'."
+        assert stage in [
+            "valid",
+            "test",
+        ], "The metrics stage should be either 'valid' or 'test'."
 
         prev_metrics = self.metrics.get(stage, None)
         if stage not in self.metrics:
@@ -379,19 +441,22 @@ class AccelerateTrainer:
         )
 
         if self._optimization_direction == "larger_is_better":
-            if np.mean(list(metrics.values())[0]) > np.mean(list(self.metrics["best_valid"].values())[0]):
+            if np.mean(list(metrics.values())[0]) > np.mean(
+                list(self.metrics["best_valid"].values())[0]
+            ):
                 self.metrics.update({"best_valid": metrics})
                 return True
         elif self._optimization_direction == "smaller_is_better":
-            if np.mean(list(metrics.values())[0]) < np.mean(list(self.metrics["best_valid"].values())[0]):
+            if np.mean(list(metrics.values())[0]) < np.mean(
+                list(self.metrics["best_valid"].values())[0]
+            ):
                 self.metrics.update({"best_valid": metrics})
                 return True
 
         return False
 
-
     def predict(self, data_loader):
-        return self.accelerator.unwrap_model(self.model).predict(data_loader)
+        return self.unwrap_model(self.model).predict(data_loader)
 
     def get_model(self, **kwargs):
         return self.model
@@ -405,18 +470,21 @@ class AccelerateTrainer:
     def save_model(self, path, overwrite=False, **kwargs):
         # Make certain only one process saves, if you're in distributed mode
         if self.accelerator.is_main_process:
-            self.accelerator.unwrap_model(self.model).save(path, overwrite, **kwargs)
+            self.unwrap_model(self.model).save(path, overwrite, **kwargs)
 
     def _load_state_dict(self):
-        if hasattr(self, "_model_state_dict_path") and os.path.exists(self._model_state_dict_path):
+        if hasattr(self, "_model_state_dict_path") and os.path.exists(
+            self._model_state_dict_path
+        ):
             weights = torch.load(self._model_state_dict_path, map_location="cpu")
-            self.accelerator.unwrap_model(self.model).load_state_dict(weights)
+            self.unwrap_model(self.model).load_state_dict(weights)
 
     def _save_state_dict(self):
         if not hasattr(self, "_model_state_dict_path"):
             from hashlib import sha256
+
             time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-            hash_digest = sha256(self.__repr__().encode('utf-8')).hexdigest()
+            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()
             self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
 
         if os.path.exists(self._model_state_dict_path):
@@ -424,14 +492,20 @@ class AccelerateTrainer:
 
         # Use accelerator to gather model weights on one process
         if self.accelerator.is_main_process:
-            torch.save(self.accelerator.unwrap_model(self.model).state_dict(), self._model_state_dict_path)
+            torch.save(
+                self.unwrap_model(self.model).state_dict(), self._model_state_dict_path
+            )
 
     def _remove_state_dict(self):
         if not hasattr(self, "_model_state_dict_path"):
             from hashlib import sha256
+
             time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-            hash_digest = sha256(self.__repr__().encode('utf-8')).hexdigest()
+            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()
             self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
 
-        if os.path.exists(self._model_state_dict_path) and self.accelerator.is_main_process:
+        if (
+            os.path.exists(self._model_state_dict_path)
+            and self.accelerator.is_main_process
+        ):
             os.remove(self._model_state_dict_path)

@@ -39,7 +39,7 @@ class RankingMetric(OmniGenomeMetric):
                 """
 
                 # for huggingface trainers
-                if y_true.__class__.__name__ == 'EvalPrediction':
+                if y_true.__class__.__name__ == "EvalPrediction":
                     eval_prediction = y_true
                     if hasattr(eval_prediction, "label_ids"):
                         y_true = eval_prediction.label_ids
@@ -47,7 +47,9 @@ class RankingMetric(OmniGenomeMetric):
                         y_true = eval_prediction.labels
                     predictions = eval_prediction.predictions
                     for i in range(len(predictions)):
-                        if predictions[i].shape == y_true.shape and not np.all(predictions[i] == y_true):
+                        if predictions[i].shape == y_true.shape and not np.all(
+                            predictions[i] == y_true
+                        ):
                             y_score = predictions[i]
                             break
 

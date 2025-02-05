@@ -10,6 +10,8 @@
 import torch
 from transformers import AutoTokenizer, AutoModel
 
+from omnigenome.src.misc.utils import fprint
+
 
 class OmniGenomeModelForEmbedding(torch.nn.Module):
     def __init__(self, model_name_or_path, *args, **kwargs):
@@ -90,7 +92,7 @@ class OmniGenomeModelForEmbedding(torch.nn.Module):
             output_path (str): Path to save the embeddings.
         """
         torch.save(embeddings, output_path)
-        print(f"Embeddings saved to {output_path}")
+        fprint(f"Embeddings saved to {output_path}")
 
     def load_embeddings(self, embedding_path):
         """
@@ -103,7 +105,7 @@ class OmniGenomeModelForEmbedding(torch.nn.Module):
             torch.Tensor: The loaded embeddings.
         """
         embeddings = torch.load(embedding_path)
-        print(f"Loaded embeddings from {embedding_path}")
+        fprint(f"Loaded embeddings from {embedding_path}")
         return embeddings
 
     def compute_similarity(self, embedding1, embedding2):
@@ -138,7 +140,7 @@ if __name__ == "__main__":
     embedding = embedding_model.encode(sequences[0])
 
     embeddings = embedding_model.batch_encode(sequences)
-    print(f"Embeddings for sequences: {embeddings}")
+    fprint(f"Embeddings for sequences: {embeddings}")
 
     # Save and load embeddings
     embedding_model.save_embeddings(embeddings, "embeddings.pt")
@@ -148,4 +150,4 @@ if __name__ == "__main__":
     similarity = embedding_model.compute_similarity(
         loaded_embeddings[0], loaded_embeddings[1]
     )
-    print(f"Cosine similarity: {similarity}")
+    fprint(f"Cosine similarity: {similarity}")

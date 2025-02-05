@@ -40,6 +40,7 @@ setup(
     entry_points={
         "console_scripts": [
             # "omnigenome-bench=omnigenome:bench_command",
+            "og=omnigenome:omnigenome_cli",
             "autobench=omnigenome:run_bench",
         ],
     },
@@ -55,6 +56,7 @@ setup(
         "scikit-learn",
         "accelerate",
         "transformers>=4.45.0",
+        "packaging",
     ],
     extras_require=extras,
     classifiers=[
