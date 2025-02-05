@@ -103,7 +103,7 @@ where the goal is to predict the secondary structure of an RNA sequence.
 In this demo, we show how to use OmniGenome to predict the secondary structure of RNA sequences using a pre-trained model.
 The tutorials of RNA Secondary Structure Prediction can be found in 
 [Secondary_Structure_Prediction_Tutorial.ipynb](examples/tutorials/Secondary_Structure_Prediction_Tutorial.ipynb).
-
+![RNASSP-Demo.gif](asset/RNASSP-Demo.gif)
 
 Please find more usage tutorials in [examples/tutorials](https://github.com/yangheng95/OmniGenomeBench/tree/master/examples/tutorials).
 
