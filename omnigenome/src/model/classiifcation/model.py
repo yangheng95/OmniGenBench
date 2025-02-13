@@ -49,7 +49,7 @@ class OmniGenomeModelForTokenClassification(OmniGenomeModel):
 
         outputs = {
             "predictions": (
-                torch.stack(predictions).to(self.model.device)
+                torch.vstack(predictions).to(self.model.device)
                 if predictions[0].shape
                 else torch.tensor(predictions).to(self.model.device)
             ),
@@ -136,7 +136,7 @@ class OmniGenomeModelForSequenceClassification(OmniGenomeModel):
 
         outputs = {
             "predictions": (
-                torch.stack(predictions).to(self.model.device)
+                torch.vstack(predictions).to(self.model.device)
                 if predictions[0].shape
                 else torch.tensor(predictions).to(self.model.device)
             ),
@@ -205,7 +205,7 @@ class OmniGenomeModelForMultiLabelSequenceClassification(
 
         outputs = {
             "predictions": (
-                torch.stack(predictions).to(self.model.device)
+                torch.vstack(predictions).to(self.model.device)
                 if predictions[0].shape
                 else torch.tensor(predictions).to(self.model.device)
             ),
@@ -296,7 +296,7 @@ class OmniGenomeModelForMultiLabelSequenceClassificationWith2DStructure(
 
         outputs = {
             "predictions": (
-                torch.stack(predictions).to(self.model.device)
+                torch.vstack(predictions).to(self.model.device)
                 if predictions[0].shape
                 else torch.tensor(predictions).to(self.model.device)
             ),

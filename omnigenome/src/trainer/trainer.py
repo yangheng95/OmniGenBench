@@ -290,8 +290,8 @@ class Trainer:
                         predictions = self.model.predict(batch)["predictions"]
                 else:
                     predictions = self.model.predict(batch)["predictions"]
-                val_truth.append(labels.cpu().numpy(force=True))
-                val_preds.append(predictions.cpu().numpy(force=True))
+                val_truth.append(labels.float().cpu().numpy(force=True))
+                val_preds.append(predictions.float().cpu().numpy(force=True))
             val_truth = (
                 np.vstack(val_truth) if labels.ndim > 1 else np.hstack(val_truth)
             )
@@ -318,8 +318,8 @@ class Trainer:
                         predictions = self.model.predict(batch)["predictions"]
                 else:
                     predictions = self.model.predict(batch)["predictions"]
-                truth.append(labels.cpu().numpy(force=True))
-                preds.append(predictions.cpu().numpy(force=True))
+                truth.append(labels.float().cpu().numpy(force=True))
+                preds.append(predictions.float().cpu().numpy(force=True))
             truth = np.vstack(truth) if labels.ndim > 1 else np.hstack(truth)
             preds = np.vstack(preds) if predictions.ndim > 1 else np.hstack(preds)
             for metric_func in self.compute_metrics:

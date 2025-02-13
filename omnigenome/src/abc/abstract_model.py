@@ -89,6 +89,7 @@ class OmniGenomeModel(torch.nn.Module):
                 )
             self.model = model
             self.model.config = config
+            del model_cls
         elif isinstance(config_or_model_model, torch.nn.Module):
             self.model = config_or_model_model
             self.model.config.num_labels = num_labels

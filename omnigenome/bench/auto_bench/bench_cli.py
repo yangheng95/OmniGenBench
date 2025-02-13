@@ -108,7 +108,13 @@ def create_parser() -> argparse.ArgumentParser:
         "Use 'hf_trainer' for Hugging Face Trainer. \n"
         "Set to 'native' to use native PyTorch training loop.\n",
     )
-
+    parser.add_argument(
+        "--autocast",
+        type=str,
+        default="fp16",
+        choices=["fp16", "fp32", "bf16", "fp8", "no"],
+        help="Automatic mixed precision training mode.",
+    )
     return parser
 
 
@@ -127,7 +133,10 @@ def run_bench():
     time_str = time.strftime("%Y-%m-%d-%H-%M-%S")
     log_file = f"autobench_logs/AutoBench-{time_str}.log"
     from pathlib import Path
-
+    try:
+        mixed_precision = sys.argv[sys.argv.index("--autocast") + 1].lower()
+    except ValueError:
+        mixed_precision = "fp16"
     file_path = Path(__file__).resolve()
     if (
             "--trainer" in sys.argv
@@ -135,7 +144,7 @@ def run_bench():
     ):
         cmd_base = f'python "{file_path}" ' + " ".join(sys.argv[1:])
     else:
-        cmd_base = f'accelerate launch "{file_path}" ' + " ".join(sys.argv[1:])
+        cmd_base = f'accelerate launch --mixed_precision "{mixed_precision}" "{file_path}" ' + " ".join(sys.argv[1:])
 
     # Use platform-specific tee commands:
     if platform.system() == "Windows":

@@ -11,9 +11,7 @@ import os
 import time
 import warnings
 
-import accelerate
 import findfile
-import numpy as np
 import torch
 from metric_visualizer import MetricVisualizer
 
@@ -47,7 +45,7 @@ class AutoBench:
         os.makedirs("./autobench_evaluations", exist_ok=True)
         time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
         mv_name = f"{benchmark}-{model_name_or_path.split('/')[-1]}"
-        self.mv_path = f"./autobench_evaluations/{mv_name}_{time_str}.mv"
+        self.mv_path = f"./autobench_evaluations/{mv_name}-{time_str}.mv"
 
         self.model_name_or_path = model_name_or_path
         self.tokenizer = tokenizer
@@ -66,7 +64,7 @@ class AutoBench:
             self.mv = MetricVisualizer.load(mv_paths[-1])
             self.mv.summary(round=4)
         else:
-            self.mv = MetricVisualizer(mv_name)
+            self.mv = MetricVisualizer(self.mv_path)
         if not os.path.exists(self.benchmark):
             fprint(
                 "Benchmark:",
@@ -112,7 +110,7 @@ class AutoBench:
                 _ + 1,
                 "/",
                 len(self.bench_metadata.bench_list),
-                f"{(_ + 1) / len(self.bench_metadata.bench_list)}%",
+                f"{(_ + 1) * 100 / len(self.bench_metadata.bench_list)}%",
             )
             _kwargs = kwargs.copy()
             bench_config_path = findfile.find_file(
@@ -291,6 +289,7 @@ class AutoBench:
                         "eval": eval_result,
                         "test": test_result,
                     }
+                    fprint(metrics)
                 else:
                     optimizer = torch.optim.AdamW(
                         model.parameters(),
@@ -357,4 +356,3 @@ class AutoBench:
                     del model, trainer, optimizer
                     torch.cuda.empty_cache()
 
-                fprint(metrics)

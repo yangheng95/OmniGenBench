@@ -26,6 +26,16 @@
 
 # Tutorials
 
+## AutoBench for Genomic Foundation Models
+AutoBench is a tool for automating benchmarking of genomic foundation models (GFMs) on a wide range of genomic tasks.
+In this demo, we show how to use AutoBench to benchmark a pre-trained model on the RGB benchmark.
+```bash
+autobench --model "yangheng/OmniGenome-186M" --benchmark "RGB" --trainer accelerate
+```
+This command will download the model from the Hugging Face model hub and run the benchmark on the RGB benchmark,
+supporting multiple GPUs and distributed training for all pretrained models on Huggingface Hub.
+![AutoBench-GIF.gif](asset/AutoBench.gif)
+
 ## RNA Design Demo
 RNA design is a fundamental problem in synthetic biology, 
 where the goal is to design RNA sequences that fold into a target structure. 

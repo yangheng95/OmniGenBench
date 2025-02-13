@@ -71,6 +71,16 @@ def _infer_optimization_direction(metrics, prev_metrics):
         return "smaller_is_better"
 
 
+def setup(rank, world_size):
+    torch.distributed.init_process_group("nccl", rank=rank, world_size=world_size)
+    torch.cuda.set_device(rank)
+
+
+def broadcast_model(model, rank):
+    for param in model.parameters():
+        torch.distributed.broadcast(param.data, src=0)
+
+
 class AccelerateTrainer:
     def __init__(
         self,
@@ -141,7 +151,6 @@ class AccelerateTrainer:
         from accelerate import DistributedDataParallelKwargs
 
         ddp_kwargs = DistributedDataParallelKwargs(find_unused_parameters=True)
-
         self.accelerator = Accelerator(
             mixed_precision=mp_setting, kwargs_handlers=[ddp_kwargs]
         )
@@ -222,8 +231,8 @@ class AccelerateTrainer:
 
                 # 只在主进程中处理收集到的数据
                 if self.accelerator.is_main_process:
-                    gathered_predictions = gathered_predictions.cpu().numpy(force=True)
-                    gathered_labels = gathered_labels.cpu().numpy(force=True)
+                    gathered_predictions = gathered_predictions.float().cpu().numpy(force=True)
+                    gathered_labels = gathered_labels.float().cpu().numpy(force=True)
                     all_preds.append(gathered_predictions)
                     all_truth.append(gathered_labels)
 
@@ -276,8 +285,8 @@ class AccelerateTrainer:
                 gathered_labels = self.accelerator.gather(labels)
 
                 if self.accelerator.is_main_process:
-                    gathered_predictions = gathered_predictions.cpu().numpy(force=True)
-                    gathered_labels = gathered_labels.cpu().numpy(force=True)
+                    gathered_predictions = gathered_predictions.float().cpu().numpy(force=True)
+                    gathered_labels = gathered_labels.float().cpu().numpy(force=True)
                     all_preds.append(gathered_predictions)
                     all_truth.append(gathered_labels)
 
@@ -402,15 +411,14 @@ class AccelerateTrainer:
 
         self._remove_state_dict()
 
-        self.accelerator.free_memory()
-        # trainer.accelerator.end_training()
-        del (
+        self.accelerator.free_memory(
             self.model,
             self.optimizer,
             self.train_loader,
             self.eval_loader,
             self.test_loader,
         )
+        delattr(self, "accelerator")
 
         return self.metrics
 
