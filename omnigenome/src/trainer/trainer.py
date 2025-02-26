@@ -353,7 +353,7 @@ class Trainer:
             # Generate a time string safely formatted
             time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
             # Generate a hash from the model's representation
-            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()
+            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()[0:8]
             # Construct a more robust temporary checkpoint path
             self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
         if os.path.exists(self._model_state_dict_path):
@@ -370,7 +370,7 @@ class Trainer:
             # Generate a time string safely formatted
             time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
             # Generate a hash from the model's representation
-            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()
+            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()[0:8]
             # Construct a more robust temporary checkpoint path
             self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
 

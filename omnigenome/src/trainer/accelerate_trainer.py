@@ -8,8 +8,6 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 import os
-import sys
-import io
 import time
 import numpy as np
 from torch.utils.data import DataLoader
@@ -96,7 +94,7 @@ class AccelerateTrainer:
         loss_fn: torch.nn.Module = None,
         compute_metrics: [list, str] = None,
         seed: int = 42,
-        autocast: str = "float16",
+        autocast: str = "fp16",
         **kwargs,
     ):
 
@@ -337,7 +335,7 @@ class AccelerateTrainer:
 
         for epoch in range(self.epochs):
             self.model.train()
-
+            train_loss = []
             train_it = tqdm(
                 self.train_loader,
                 desc=f"Epoch {epoch + 1}/{self.epochs} Loss",
@@ -353,6 +351,11 @@ class AccelerateTrainer:
 
                     self.optimizer.step()
                     self.optimizer.zero_grad()
+
+                train_loss.append(loss.item())
+                train_it.set_description(
+                    f"Epoch {epoch + 1}/{self.epochs} Loss: {np.nanmean(train_loss):.4f}"
+                )
 
             # 同步所有进程后再进行评估
             self.accelerator.wait_for_everyone()
@@ -492,7 +495,7 @@ class AccelerateTrainer:
             from hashlib import sha256
 
             time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()
+            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()[0:8]
             self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
 
         if os.path.exists(self._model_state_dict_path):
@@ -509,7 +512,7 @@ class AccelerateTrainer:
             from hashlib import sha256
 
             time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()
+            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()[0:8]
             self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
 
         if (

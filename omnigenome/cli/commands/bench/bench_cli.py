@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# file: bench_cli.py
+# file: auto_bench_cli.py
 # time: 21:06 31/01/2025
 # author: YANG, HENG <hy345@exeter.ac.uk> (Yang Heng)
 # Homepage: https://yangheng95.github.io
@@ -13,9 +13,8 @@ import platform
 import sys
 import time
 from pathlib import Path
-from typing import Optional
 
-from ....bench.auto_bench.auto_bench import AutoBench
+from ....auto.auto_bench.auto_bench import AutoBench
 from ....src.misc.utils import fprint
 from ..base import BaseCommand
 

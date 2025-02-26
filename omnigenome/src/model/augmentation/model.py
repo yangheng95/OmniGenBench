@@ -44,7 +44,7 @@ class OmniGenomeModelForAugmentation(torch.nn.Module):
         # Hyperparameters for augmentation
         self.noise_ratio = noise_ratio
         self.max_length = max_length
-        self.instance_num = instance_num
+        self.k = instance_num
 
     def load_sequences_from_file(self, input_file):
         """Load sequences from a JSON file."""
@@ -85,10 +85,10 @@ class OmniGenomeModelForAugmentation(torch.nn.Module):
         augmented_sequence = self.tokenizer.decode(input_ids, skip_special_tokens=True)
         return augmented_sequence
 
-    def generate_multiple_instances(self, seq):
+    def augment(self, seq, k=None):
         """Generate multiple augmented instances for a single sequence."""
         augmented_sequences = []
-        for _ in range(self.instance_num):
+        for _ in range(self.k if k is None else k):
             noised_seq = self.apply_noise_to_sequence(seq)
             augmented_seq = self.augment_sequence(noised_seq)
             augmented_sequences.append(augmented_seq)
@@ -98,7 +98,7 @@ class OmniGenomeModelForAugmentation(torch.nn.Module):
         """Augment a list of sequences by applying noise and performing MLM-based predictions."""
         all_augmented_sequences = []
         for seq in tqdm.tqdm(sequences, desc="Augmenting Sequences"):
-            augmented_instances = self.generate_multiple_instances(seq)
+            augmented_instances = self.augment(seq)
             all_augmented_sequences.extend(augmented_instances)
         return all_augmented_sequences
 
