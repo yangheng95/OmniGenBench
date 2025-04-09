@@ -9,6 +9,7 @@
 # Copyright (C) 2019-2025. All Rights Reserved.
 from abc import ABC, abstractmethod
 
+
 class BaseCommand(ABC):
     @classmethod
     @abstractmethod

@@ -29,11 +29,11 @@ from ...src.trainer.trainer import Trainer
 
 class AutoTrain:
     def __init__(
-            self,
-            dataset,
-            model_name_or_path,
-            tokenizer=None,
-            **kwargs,
+        self,
+        dataset,
+        model_name_or_path,
+        tokenizer=None,
+        **kwargs,
     ):
         self.dataset = dataset.rstrip("/")
         self.autocast = kwargs.pop("autocast", "fp16")
@@ -41,7 +41,9 @@ class AutoTrain:
         self.trainer = kwargs.pop("trainer", "accelerate")
         os.makedirs("./autotrain_evaluations", exist_ok=True)
         time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-        mv_name = f"{os.path.basename(self.dataset)}-{model_name_or_path.split('/')[-1]}"
+        mv_name = (
+            f"{os.path.basename(self.dataset)}-{model_name_or_path.split('/')[-1]}"
+        )
         self.mv_path = f"./autotrain_evaluations/{mv_name}-{time_str}.mv"
 
         self.model_name_or_path = model_name_or_path
@@ -93,9 +95,7 @@ class AutoTrain:
 
         for key, value in _kwargs.items():
             if key in bench_config:
-                fprint(
-                    "Override", key, "with", value, "according to the input kwargs"
-                )
+                fprint("Override", key, "with", value, "according to the input kwargs")
                 bench_config.update({key: value})
 
             else:
@@ -129,12 +129,12 @@ class AutoTrain:
                 bench_config["batch_size"] if "batch_size" in bench_config else 8
             )
 
-            record_name = f"{os.path.basename(self.dataset)}-{self.model_name}".split("/")[
-                -1
-            ]
+            record_name = f"{os.path.basename(self.dataset)}-{self.model_name}".split(
+                "/"
+            )[-1]
             # check if the record exists
             if record_name in self.mv.transpose() and len(
-                    list(self.mv.transpose()[record_name].values())[0]
+                list(self.mv.transpose()[record_name].values())[0]
             ) >= len(bench_config["seeds"]):
                 continue
 
@@ -184,7 +184,7 @@ class AutoTrain:
                 max_length=max_length,
                 structure_in=bench_config.get("structure_in", False),
                 max_examples=bench_config.get("max_examples", None),
-                shuffle=bench_config.get("shuffle", True),
+                shuffle=False,
                 drop_long_seq=bench_config.get("drop_long_seq", False),
                 **_kwargs,
             )
@@ -195,7 +195,7 @@ class AutoTrain:
                 max_length=max_length,
                 structure_in=bench_config.get("structure_in", False),
                 max_examples=bench_config.get("max_examples", None),
-                shuffle=bench_config.get("shuffle", True),
+                shuffle=False,
                 drop_long_seq=bench_config.get("drop_long_seq", False),
                 **_kwargs,
             )
@@ -212,12 +212,8 @@ class AutoTrain:
                     num_train_epochs=hf_kwargs.pop(
                         "num_train_epochs", bench_config["epochs"]
                     ),
-                    per_device_train_batch_size=hf_kwargs.pop(
-                        "batch_size", batch_size
-                    ),
-                    per_device_eval_batch_size=hf_kwargs.pop(
-                        "batch_size", batch_size
-                    ),
+                    per_device_train_batch_size=hf_kwargs.pop("batch_size", batch_size),
+                    per_device_eval_batch_size=hf_kwargs.pop("batch_size", batch_size),
                     gradient_accumulation_steps=hf_kwargs.pop(
                         "gradient_accumulation_steps", 1
                     ),
@@ -256,9 +252,7 @@ class AutoTrain:
                 print(eval_result)
                 train_result = trainer.train()
                 eval_result = trainer.evaluate()
-                test_result = trainer.evaluate(
-                    test_set if len(test_set) else valid_set
-                )
+                test_result = trainer.evaluate(test_set if len(test_set) else valid_set)
 
                 metrics = {
                     "train": train_result.metrics,
@@ -292,9 +286,7 @@ class AutoTrain:
                     test_dataset=test_set,
                     batch_size=batch_size,
                     patience=(
-                        bench_config["patience"]
-                        if "patience" in bench_config
-                        else 3
+                        bench_config["patience"] if "patience" in bench_config else 3
                     ),
                     epochs=bench_config["epochs"],
                     gradient_accumulation_steps=bench_config.get(
@@ -302,9 +294,7 @@ class AutoTrain:
                     ),
                     optimizer=optimizer,
                     loss_fn=(
-                        bench_config["loss_fn"]
-                        if "loss_fn" in bench_config
-                        else None
+                        bench_config["loss_fn"] if "loss_fn" in bench_config else None
                     ),
                     compute_metrics=bench_config["compute_metrics"],
                     seed=seed,
@@ -312,6 +302,19 @@ class AutoTrain:
                     **_kwargs,
                 )
                 metrics = trainer.train()
+
+                predictions = trainer.predictions
+
+                if kwargs.get("save_predictions", True):
+                    os.makedirs(f"predictions/{bench}", exist_ok=True)
+                    import numpy as np
+
+                    for split in predictions.keys():
+                        with open(
+                            f"predictions/{bench}/{split}.npy",
+                            "wb",
+                        ) as f:
+                            np.save(f, predictions[split])
 
                 if metrics:
                     for key, value in metrics["test"][-1].items():

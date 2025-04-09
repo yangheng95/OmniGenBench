@@ -12,6 +12,7 @@ import numpy as np
 import torch
 
 from ..abc.abstract_dataset import OmniGenomeDataset
+from ..misc.utils import fprint
 from ... import __name__, __version__
 
 
@@ -20,7 +21,6 @@ class OmniGenomeDatasetForTokenClassification(OmniGenomeDataset):
         super(OmniGenomeDatasetForTokenClassification, self).__init__(
             data_source, tokenizer, max_length, **kwargs
         )
-
         self.metadata.update(
             {
                 "library_name": __name__,
@@ -33,7 +33,7 @@ class OmniGenomeDatasetForTokenClassification(OmniGenomeDataset):
             self.metadata[key] = value
 
     def prepare_input(self, instance, **kwargs):
-        labels = None
+        labels = -100
         if isinstance(instance, str):
             sequence = instance
         elif isinstance(instance, dict):
@@ -63,20 +63,21 @@ class OmniGenomeDatasetForTokenClassification(OmniGenomeDataset):
             tokenized_inputs[col] = tokenized_inputs[col].squeeze()
 
         if labels is not None:
-            tokenized_inputs["labels"] = (
+            if len(set(self.label2id.keys()) | set([str(l) for l in labels])) != len(
+                set(self.label2id.keys())
+            ):
+                fprint(
+                    f"Warning: The labels <{labels}> in the input instance do not match the label2id mapping."
+                )
+            labels = (
                 [-100]
                 + [self.label2id.get(str(l), -100) for l in labels][
                     : self.max_length - 2
                 ]
                 + [-100]
             )
-        # try:
-        #     tokenized_inputs["labels"] = [int(x) for x in tokenized_inputs["labels"]]
-        # except Exception as e:
-        #     # Will be error if your misused data class,
-        #     # check if you are looking for a token classification task
-        #     pass
-        tokenized_inputs["labels"] = torch.tensor(tokenized_inputs["labels"])
+
+        tokenized_inputs["labels"] = torch.tensor(labels)
         return tokenized_inputs
 
 
@@ -97,7 +98,7 @@ class OmniGenomeDatasetForSequenceClassification(OmniGenomeDataset):
             self.metadata[key] = value
 
     def prepare_input(self, instance, **kwargs):
-        labels = None
+        labels = -100
         if isinstance(instance, str):
             sequence = instance
         elif isinstance(instance, dict):
@@ -123,18 +124,22 @@ class OmniGenomeDatasetForSequenceClassification(OmniGenomeDataset):
             tokenized_inputs[col] = tokenized_inputs[col].squeeze()
 
         if labels is not None:
-            tokenized_inputs["labels"] = (
-                self.label2id.get(str(labels), -100) if self.label2id else labels
-            )
+            if len(set(self.label2id.keys()) | set([labels])) != len(
+                set(self.label2id.keys())
+            ):
+                fprint(
+                    f"Warning: The labels <{labels}> in the input instance do not match the label2id mapping."
+                )
+            labels = self.label2id.get(str(labels), -100) if self.label2id else labels
             try:
-                tokenized_inputs["labels"] = int(tokenized_inputs["labels"])
+                labels = int(labels)
             except Exception as e:
                 # Will be error if your misused data class,
                 # check if you are looking for a token classification task
                 raise Exception(
                     "The input instance must contain a 'label' or 'labels' key. And the label must be an integer."
                 )
-            tokenized_inputs["labels"] = torch.tensor(tokenized_inputs["labels"])
+        tokenized_inputs["labels"] = torch.tensor(labels)
         return tokenized_inputs
 
 
@@ -156,7 +161,7 @@ class OmniGenomeDatasetForTokenRegression(OmniGenomeDataset):
             self.metadata[key] = value
 
     def prepare_input(self, instance, **kwargs):
-        labels = None
+        labels = -100
         if isinstance(instance, str):
             sequence = instance
         elif isinstance(instance, dict):
@@ -196,19 +201,17 @@ class OmniGenomeDatasetForTokenRegression(OmniGenomeDataset):
             labels = np.array(labels, dtype=np.float32)[: self.max_length - 2]
             if labels.ndim == 1:
                 labels = labels.reshape(-1)
-                padded_labels = np.concatenate([[-100], labels, [-100]])
+                labels = np.concatenate([[-100], labels, [-100]])
             elif labels.ndim == 2:
                 labels = labels.reshape(1, -1)
-                padded_labels = np.zeros(
+                labels = np.zeros(
                     (labels.shape[0] + 2, labels.shape[1]), dtype=np.float32
                 )
                 for i, label in enumerate(labels):
-                    padded_labels[i] = np.concatenate(
+                    labels[i] = np.concatenate(
                         [[-100] * label.shape[1], label, [-100] * label.shape[1]]
                     )
-            tokenized_inputs["labels"] = torch.tensor(
-                padded_labels, dtype=torch.float32
-            )
+        tokenized_inputs["labels"] = torch.tensor(labels, dtype=torch.float32)
         return tokenized_inputs
 
 
@@ -230,7 +233,7 @@ class OmniGenomeDatasetForSequenceRegression(OmniGenomeDataset):
             self.metadata[key] = value
 
     def prepare_input(self, instance, **kwargs):
-        labels = None
+        labels = -100
         if isinstance(instance, str):
             sequence = instance
         elif isinstance(instance, dict):
@@ -261,6 +264,7 @@ class OmniGenomeDatasetForSequenceRegression(OmniGenomeDataset):
                 labels = labels.reshape(-1)
             elif labels.ndim == 2:
                 labels = labels.reshape(1, -1)
-            tokenized_inputs["labels"] = torch.tensor(labels, dtype=torch.float32)
+
+        tokenized_inputs["labels"] = torch.tensor(labels, dtype=torch.float32)
 
         return tokenized_inputs

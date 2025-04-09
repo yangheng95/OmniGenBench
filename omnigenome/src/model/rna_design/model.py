@@ -32,9 +32,7 @@ class OmniGenomeModelForRNADesign(torch.nn.Module):
         self.device = autocuda.auto_cuda() if device is None else device
         self.parallel = parallel
         self.tokenizer = AutoTokenizer.from_pretrained(model)
-        self.model = AutoModelForMaskedLM.from_pretrained(
-            model, trust_remote_code=True
-        )
+        self.model = AutoModelForMaskedLM.from_pretrained(model, trust_remote_code=True)
         self.model.to(self.device).to(torch.float16)
 
     @staticmethod

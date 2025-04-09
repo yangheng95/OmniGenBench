@@ -21,8 +21,8 @@ def config_check(args):
     try:
         if "use_amp" in args:
             assert args["use_amp"] in {True, False}
-        if "patience" in args:
-            assert args["patience"] > 0
+        # if "patience" in args:
+        #     assert args["patience"] > 0
 
     except AssertionError as e:
         raise RuntimeError(

@@ -8,7 +8,7 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 __name__ = "OmniGenome"
-__version__ = "0.2.3alpha"
+__version__ = "0.2.4alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "MIT"
@@ -39,15 +39,11 @@ from .src.model import (
     OmniGenomeModelForSequenceClassification,
     OmniGenomeModelForMultiLabelSequenceClassification,
     OmniGenomeModelForTokenClassification,
-    OmniGenomeModelForSequenceClassificationWith2DStructure,
-    OmniGenomeModelForMultiLabelSequenceClassificationWith2DStructure,
-    OmniGenomeModelForTokenClassificationWith2DStructure,
     OmniGenomeModelForSequenceRegression,
     OmniGenomeModelForTokenRegression,
     OmniGenomeModelForStructuralImputation,
     OmniGenomeModelForMatrixRegression,
-    OmniGenomeModelForSequenceRegressionWith2DStructure,
-    OmniGenomeModelForTokenRegressionWith2DStructure,
+    OmniGenomeModelForMatrixClassification,
     OmniGenomeModelForMLM,
     OmniGenomeModelForSeq2Seq,
     OmniGenomeModelForRNADesign,
@@ -99,11 +95,7 @@ __all__ = [
     "OmniGenomeModelForTokenRegression",
     "OmniGenomeModelForStructuralImputation",
     "OmniGenomeModelForMatrixRegression",
-    "OmniGenomeModelForSequenceClassificationWith2DStructure",
-    "OmniGenomeModelForMultiLabelSequenceClassificationWith2DStructure",
-    "OmniGenomeModelForTokenClassificationWith2DStructure",
-    "OmniGenomeModelForSequenceRegressionWith2DStructure",
-    "OmniGenomeModelForTokenRegressionWith2DStructure",
+    "OmniGenomeModelForMatrixClassification",
     "OmniGenomeModelForMLM",
     "OmniGenomeModelForSeq2Seq",
     "OmniGenomeDatasetForTokenClassification",

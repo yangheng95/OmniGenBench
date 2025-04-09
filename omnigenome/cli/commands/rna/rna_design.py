@@ -26,35 +26,33 @@ class RNADesignCommand(BaseCommand):
         parser.add_argument(
             "--structure",
             required=True,
-            help="The target RNA structure in dot-bracket notation (e.g., '(((...)))')"
+            help="The target RNA structure in dot-bracket notation (e.g., '(((...)))')",
         )
         parser.add_argument(
             "--model-path",
             default="yangheng/OmniGenome-186M",
-            help="Model path to the pre-trained model (default: yangheng/OmniGenome-186M)"
+            help="Model path to the pre-trained model (default: yangheng/OmniGenome-186M)",
         )
         parser.add_argument(
             "--mutation-ratio",
             type=float,
             default=0.5,
-            help="Mutation ratio for genetic algorithm (0.0-1.0, default: 0.5)"
+            help="Mutation ratio for genetic algorithm (0.0-1.0, default: 0.5)",
         )
         parser.add_argument(
             "--num-population",
             type=int,
             default=100,
-            help="Number of individuals in population (default: 100)"
+            help="Number of individuals in population (default: 100)",
         )
         parser.add_argument(
             "--num-generation",
             type=int,
             default=100,
-            help="Number of generations to evolve (default: 100)"
+            help="Number of generations to evolve (default: 100)",
         )
         parser.add_argument(
-            "--output",
-            type=Path,
-            help="Output JSON file to save results"
+            "--output", type=Path, help="Output JSON file to save results"
         )
         cls.add_common_arguments(parser)
         parser.set_defaults(func=cls.execute)
@@ -72,7 +70,7 @@ class RNADesignCommand(BaseCommand):
             structure=args.structure,
             mutation_ratio=args.mutation_ratio,
             num_population=args.num_population,
-            num_generation=args.num_generation
+            num_generation=args.num_generation,
         )
 
         # 结果输出
@@ -84,11 +82,15 @@ class RNADesignCommand(BaseCommand):
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             with open(args.output, "w") as f:
-                json.dump({
-                    "structure": args.structure,
-                    "parameters": vars(args),
-                    "best_sequences": best_sequences
-                }, f, indent=2)
+                json.dump(
+                    {
+                        "structure": args.structure,
+                        "parameters": vars(args),
+                        "best_sequences": best_sequences,
+                    },
+                    f,
+                    indent=2,
+                )
             print(f"\nResults saved to {args.output}")
 
 

@@ -12,6 +12,7 @@ import time
 import warnings
 
 import findfile
+import numpy as np
 import torch
 from metric_visualizer import MetricVisualizer
 
@@ -42,23 +43,24 @@ class AutoBench:
         self.autocast = kwargs.pop("autocast", "fp16")
         self.overwrite = kwargs.pop("overwrite", False)
         self.trainer = kwargs.pop("trainer", "accelerate")
-        os.makedirs("./autobench_evaluations", exist_ok=True)
-        time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-        mv_name = f"{benchmark}-{model_name_or_path.split('/')[-1]}"
-        self.mv_path = f"./autobench_evaluations/{mv_name}-{time_str}.mv"
 
         self.model_name_or_path = model_name_or_path
         self.tokenizer = tokenizer
-        if isinstance(model_name_or_path, str):
-            self.model_name_or_path = model_name_or_path.rstrip("/")
+        if isinstance(self.model_name_or_path, str):
+            self.model_name_or_path = self.model_name_or_path.rstrip("/")
             self.model_name = self.model_name_or_path.split("/")[-1]
         else:
-            self.model_name = model_name_or_path.__class__.__name__
+            self.model_name = self.model_name_or_path.__class__.__name__
         if isinstance(tokenizer, str):
             self.tokenizer = tokenizer.rstrip("/")
+        os.makedirs("./autobench_evaluations", exist_ok=True)
+        time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+        mv_name = f"{benchmark}-{self.model_name}"
+        self.mv_path = f"./autobench_evaluations/{mv_name}-{time_str}.mv"
+
         mv_paths = findfile.find_files(
             "./autobench_evaluations",
-            [benchmark, model_name_or_path.split("/")[-1], ".mv"],
+            [benchmark, self.model_name, ".mv"],
         )
         if mv_paths and not self.overwrite:
             self.mv = MetricVisualizer.load(mv_paths[-1])
@@ -146,7 +148,9 @@ class AutoBench:
             # Init Tokenizer and Model
             if not self.tokenizer:
                 tokenizer = OmniGenomeTokenizer.from_pretrained(
-                    self.model_name_or_path, trust_remote_code=True
+                    self.model_name_or_path,
+                    trust_remote_code=bench_config.get("trust_remote_code", True),
+                    **bench_config,
                 )
             else:
                 tokenizer = self.tokenizer
@@ -208,7 +212,7 @@ class AutoBench:
                     max_length=max_length,
                     structure_in=bench_config.get("structure_in", False),
                     max_examples=bench_config.get("max_examples", None),
-                    shuffle=bench_config.get("shuffle", True),
+                    shuffle=False,
                     drop_long_seq=bench_config.get("drop_long_seq", False),
                     **_kwargs,
                 )
@@ -219,7 +223,7 @@ class AutoBench:
                     max_length=max_length,
                     structure_in=bench_config.get("structure_in", False),
                     max_examples=bench_config.get("max_examples", None),
-                    shuffle=bench_config.get("shuffle", True),
+                    shuffle=False,
                     drop_long_seq=bench_config.get("drop_long_seq", False),
                     **_kwargs,
                 )
@@ -337,6 +341,19 @@ class AutoBench:
                     )
                     metrics = trainer.train()
 
+                    predictions = trainer.predictions
+
+                    if bench_config.get("save_predictions", True):
+                        os.makedirs(f"predictions/{bench}", exist_ok=True)
+                        import numpy as np
+
+                        for split in predictions.keys():
+                            with open(
+                                f"predictions/{bench}/{split}.npy",
+                                "wb",
+                            ) as f:
+                                np.save(f, predictions[split])
+
                     if metrics:
                         for key, value in metrics["test"][-1].items():
                             try:
@@ -355,4 +372,3 @@ class AutoBench:
                         self.mv.to_csv(self.mv_path.replace(".mv", ".csv"))
                     del model, trainer, optimizer
                     torch.cuda.empty_cache()
-

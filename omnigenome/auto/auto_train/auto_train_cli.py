@@ -131,18 +131,22 @@ def run_train():
     time_str = time.strftime("%Y-%m-%d-%H-%M-%S")
     log_file = f"autobench_logs/AutoBench-{time_str}.log"
     from pathlib import Path
+
     try:
         mixed_precision = sys.argv[sys.argv.index("--autocast") + 1].lower()
     except ValueError:
         mixed_precision = "fp16"
     file_path = Path(__file__).resolve()
     if (
-            "--trainer" in sys.argv
-            and sys.argv[sys.argv.index("--trainer") + 1].lower() == "native"
+        "--trainer" in sys.argv
+        and sys.argv[sys.argv.index("--trainer") + 1].lower() == "native"
     ):
         cmd_base = f'python "{file_path}" ' + " ".join(sys.argv[1:])
     else:
-        cmd_base = f'accelerate launch --mixed_precision "{mixed_precision}" "{file_path}" ' + " ".join(sys.argv[1:])
+        cmd_base = (
+            f'accelerate launch --mixed_precision "{mixed_precision}" "{file_path}" '
+            + " ".join(sys.argv[1:])
+        )
 
     # Use platform-specific tee commands:
     if platform.system() == "Windows":
@@ -156,7 +160,7 @@ def run_train():
         #         "If commands not allowed in PowerShell, "
         #         "please run 'Set-ExecutionPolicy RemoteSigned' in PowerShell with Admin."
         #     )
-            cmd = f"{cmd_base} 2>&1"
+        cmd = f"{cmd_base} 2>&1"
     else:
         # On Unix-like systems, use the standard tee command.
         cmd = f"{cmd_base} 2>&1 | tee '{log_file}'"

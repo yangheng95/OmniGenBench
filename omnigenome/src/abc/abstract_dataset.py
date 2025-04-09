@@ -73,8 +73,8 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
             )
             self.max_length = max_length
         elif (
-                hasattr(self.tokenizer, "max_length")
-                and self.tokenizer.max_length is not None
+            hasattr(self.tokenizer, "max_length")
+            and self.tokenizer.max_length is not None
         ):
             fprint(
                 f"Detected max_length={self.tokenizer.max_length} from the tokenizer."
@@ -108,8 +108,8 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                 prepared_input = self.prepare_input(example, **new_args)
 
                 if (
-                        self.drop_long_seq
-                        and len(prepared_input["input_ids"]) > self.max_length
+                    self.drop_long_seq
+                    and len(prepared_input["input_ids"]) > self.max_length
                 ):
                     fprint(
                         f"Dropping sequence {example['sequence']} due to length > {self.max_length}"
@@ -133,11 +133,14 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
         This is useful for classification tasks where each sample has a single label.
         """
         # Check if we have scalar labels
-        if self.data and 'labels' in self.data[0]:
-            first_label = self.data[0]['labels']
+        if self.data and "labels" in self.data[0]:
+            first_label = self.data[0]["labels"]
+            if isinstance(first_label.item(), float):
+                return
+
             if not isinstance(first_label, torch.Tensor) or first_label.ndim == 0:
                 # Convert labels to list of integers
-                labels = [int(d['labels']) for d in self.data]
+                labels = [int(d["labels"]) for d in self.data]
 
                 # Count frequency of each label
                 label_counts = Counter(labels)
@@ -153,13 +156,19 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
 
                 for label, count in sorted_counts:
                     percentage = (count / total_samples) * 100
-                    label_name = self.id2label[label] if hasattr(self, 'id2label') else str(label)
+                    label_name = (
+                        self.id2label[label]
+                        if hasattr(self, "id2label")
+                        else str(label)
+                    )
                     fprint(f"{label_name:<10}\t\t{count:<10}\t\t{percentage:.2f}%")
 
                 fprint("-" * 40)
                 fprint(f"Total samples: {total_samples}")
             else:
-                fprint("Warning: This method is only for scalar (0-dimensional) labels.")
+                fprint(
+                    "Warning: This method is only for scalar (0-dimensional) labels."
+                )
         else:
             fprint("No labels found in the dataset.")
 
@@ -205,27 +214,14 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
 
         # 处理标签的特殊情况（修复错误的关键部分）
         first_labels = self.data[0]["labels"]
-        label_dim = first_labels.ndim  # 使用.ndim代替len(shape)
 
-        condition = (
-            (
-                    (label_dim > 1)  # 多维标签
-                    or (
-                            label_dim == 1
-                            and len(first_labels) == len(self.data[0]["input_ids"])
-                    )  # 序列标注
-            )
-            if label_dim != 0
-            else False
-        )  # 排除标量情况
-
-        if condition:
-            label_padding_length = max(max_length, self._max_labels_length())
-            label_padding_length = min(label_padding_length, self.max_length)
+        label_shape = first_labels.shape
+        if len(label_shape) >= 1:
+            label_padding_length = max(max_length, self.data[0]["labels"].shape[0])
+            label_padding_length = min(label_padding_length, max_length)
             max_length = max(max_length, label_padding_length)
-            max_length = min(max_length, self.max_length)
         else:
-            label_padding_length = min(self._max_labels_length(), self.max_length)
+            label_padding_length = 0
 
         fprint(
             f"Max sequence length updated -> Reset max_length={max_length},"
@@ -239,7 +235,7 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                     value = torch.as_tensor(value)
                 dtype = value.dtype
                 if "label" in key and (
-                        value.dtype == torch.int16 or value.dtype == torch.int32
+                    value.dtype == torch.int16 or value.dtype == torch.int32
                 ):
                     data_item[key] = value.long()
                 # 确定填充长度
@@ -258,8 +254,12 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                         _pad_value = pad_token_id
                     elif key == "attention_mask":
                         _pad_value = 0
+                    elif "ids" in key:
+                        _pad_value = 0
                     elif "label" in key:
                         _pad_value = -100
+                    elif "ids" in key:
+                        _pad_value = pad_token_id
                     else:
                         _pad_value = pad_value
 
@@ -339,12 +339,12 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
     def _preprocessing(self):
         for idx, ex in enumerate(self.examples):
             if (
-                    "seq" in self.examples[idx]
+                "seq" in self.examples[idx]
             ):  # For the RNA or DNA stored in the "seq" field
                 self.examples[idx]["sequence"] = self.examples[idx]["seq"]
                 del self.examples[idx]["seq"]
             if (
-                    "text" in self.examples[idx]
+                "text" in self.examples[idx]
             ):  # For the RNA or DNA stored in the "text" field
                 self.examples[idx]["sequence"] = self.examples[idx]["text"]
                 del self.examples[idx]["text"]
@@ -364,12 +364,15 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
         for idx, ex in enumerate(self.data):
             if "label" in self.data[idx]:
                 self.data[idx]["labels"] = self.data[idx]["label"]
-                del self.data[idx]["label"]
-            assert (
-                    "labels" in self.data[idx]
-            ), "The 'labels' field is required in the tokenized dataset."
+                # del self.data[idx]["label"]
+            # assert (
+            #         "labels" in self.data[idx]
+            # ), "The 'labels' field is required in the tokenized dataset."
 
-        if self.data[0]['labels'].dim() == 0:
+            if "labels" not in self.data[idx].data or self.data[idx]["labels"] is None:
+                self.data[idx]["labels"] = torch.tensor([-100])
+
+        if self.data[0]["labels"].dim() == 0:
             self.print_label_distribution()
 
     def __len__(self):

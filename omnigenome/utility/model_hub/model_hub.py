@@ -35,7 +35,12 @@ class ModelHub:
         fprint(f"The model and tokenizer has been loaded from {model_name_or_path}.")
         model.to(fast_type=fast_dtype)
         if device is None:
+            fprint(
+                "No device is specified, the model will be loaded to the default device."
+            )
             model.to(autocuda.auto_cuda())
+        else:
+            model.to(device)
         return model, model.tokenizer
 
     @staticmethod
@@ -87,6 +92,9 @@ class ModelHub:
             )
         model.to(fast_dtype)
         if device is None:
+            fprint(
+                "No device is specified, the model will be loaded to the default device."
+            )
             model.to(autocuda.auto_cuda())
         else:
             model.to(device)
