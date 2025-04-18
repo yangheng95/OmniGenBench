@@ -89,6 +89,7 @@ class OmniGenomeModel(torch.nn.Module):
                 )
             self.model = model
             self.model.config = config
+            del model_cls
         elif isinstance(config_or_model_model, torch.nn.Module):
             self.model = config_or_model_model
             self.model.config.num_labels = num_labels
@@ -281,8 +282,8 @@ class OmniGenomeModel(torch.nn.Module):
 
         for file in findfile.find_files(
             self.config.name_or_path,
-            and_key=[],
-            exclude_key=["pytorch_model", "model", "safetensors"],
+            or_key=["bin", "json", "txt", "py"],
+            exclude_key=["pytorch_model.bin", "model.safetensors"],
         ):
             shutil.copyfile(file, f"{path}/{os.path.basename(file)}")
 
@@ -291,11 +292,20 @@ class OmniGenomeModel(torch.nn.Module):
         self.model.to(dtype).to("cpu")
         self.tokenizer.save_pretrained(path)
 
+        # Save metadata including information about the loss function
+        metadata = self.metadata.copy()
+        if self.loss_fn is not None:
+            metadata["loss_fn_class"] = self.loss_fn.__class__.__name__
+            metadata["loss_fn_module"] = self.loss_fn.__class__.__module__
+
         with open(f"{path}/metadata.json", "w", encoding="utf8") as f:
-            json.dump(self.metadata, f)
+            json.dump(metadata, f)
+
         self.model.save_pretrained(
             f"{path}", safe_serialization=False
         )  # do not remove this line, used to save customized model scripts
+
+        # Save complete state dict including all components
         with open(f"{path}/pytorch_model.bin", "wb") as f:
             torch.save(self.state_dict(), f)
 
@@ -320,10 +330,35 @@ class OmniGenomeModel(torch.nn.Module):
                     f"but the current value is {self.config.__dict__.get(key, None)}."
                 )
 
+        # Attempt to restore any saved loss function
+        if "loss_fn_class" in metadata and "loss_fn_module" in metadata:
+            try:
+                loss_module = import_module(metadata["loss_fn_module"])
+                loss_class = getattr(loss_module, metadata["loss_fn_class"])
+                # Initialize loss function if possible (parameters will be loaded with state dict)
+                self.loss_fn = loss_class()
+                fprint(
+                    f"Restored loss function: {metadata['loss_fn_class']} from {metadata['loss_fn_module']}"
+                )
+            except (ImportError, AttributeError) as e:
+                warnings.warn(f"Could not restore loss function: {e}")
+
         with open(f"{path}/pytorch_model.bin", "rb") as f:
-            self.load_state_dict(
-                torch.load(f, map_location=kwargs.get("device", "cpu")), strict=True
-            )
+            loaded_state_dict = torch.load(f, map_location=kwargs.get("device", "cpu"))
+
+            # Check if keys match between current and loaded state dict
+            current_keys = set(self.state_dict().keys())
+            loaded_keys = set(loaded_state_dict.keys())
+            missing_keys = current_keys - loaded_keys
+            unexpected_keys = loaded_keys - current_keys
+
+            if missing_keys:
+                warnings.warn(f"Missing keys in loaded weights: {missing_keys}")
+            if unexpected_keys:
+                warnings.warn(f"Unexpected keys in loaded weights: {unexpected_keys}")
+
+            self.load_state_dict(loaded_state_dict, strict=False)
+
         return self
 
     def _forward_from_raw_input(self, sequence_or_inputs, **kwargs):

@@ -8,8 +8,6 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 import os
 import time
-import sys
-import io
 import autocuda
 import numpy as np
 from torch.utils.data import DataLoader
@@ -41,10 +39,10 @@ def _infer_optimization_direction(metrics, prev_metrics):
         # ...
     ]
     for metric in larger_is_better_metrics:
-        if metric in list(prev_metrics[0].keys())[0]:
+        if prev_metrics and metric in list(prev_metrics[0].keys())[0]:
             return "larger_is_better"
     for metric in smaller_is_better_metrics:
-        if metric in list(prev_metrics[0].keys())[0]:
+        if prev_metrics and metric in list(prev_metrics[0].keys())[0]:
             return "smaller_is_better"
 
     fprint(
@@ -80,7 +78,7 @@ class Trainer:
         test_dataset: torch.utils.data.Dataset = None,
         epochs: int = 3,
         batch_size: int = 8,
-        patience: int = 3,
+        patience: int = -1,
         gradient_accumulation_steps: int = 1,
         optimizer: torch.optim.Optimizer = None,
         loss_fn: torch.nn.Module = None,
@@ -115,7 +113,7 @@ class Trainer:
             )
 
         self.epochs = epochs
-        self.patience = patience
+        self.patience = patience if patience > 0 else epochs
         self.gradient_accumulation_steps = gradient_accumulation_steps
         self.optimizer = optimizer
         self.loss_fn = loss_fn
@@ -144,6 +142,8 @@ class Trainer:
         self._optimization_direction = None
         self.trial_name = kwargs.get("trial_name", self.model.__class__.__name__)
 
+        self.predictions = {}
+
     def _is_metric_better(self, metrics, stage="valid"):
         assert stage in [
             "valid",
@@ -162,6 +162,10 @@ class Trainer:
         if "best_valid" not in self.metrics:
             self.metrics.update({"best_valid": metrics})
             return True
+
+        if prev_metrics is None:
+            return False
+
         self._optimization_direction = (
             _infer_optimization_direction(metrics, prev_metrics)
             if self._optimization_direction is None
@@ -275,7 +279,6 @@ class Trainer:
         return self.metrics
 
     def evaluate(self):
-        valid_metrics = {}
         with torch.no_grad():
             self.model.eval()
             val_truth = []
@@ -290,20 +293,28 @@ class Trainer:
                         predictions = self.model.predict(batch)["predictions"]
                 else:
                     predictions = self.model.predict(batch)["predictions"]
-                val_truth.append(labels.cpu().numpy(force=True))
-                val_preds.append(predictions.cpu().numpy(force=True))
+                val_truth.append(labels.float().cpu().numpy(force=True))
+                val_preds.append(predictions.float().cpu().numpy(force=True))
             val_truth = (
                 np.vstack(val_truth) if labels.ndim > 1 else np.hstack(val_truth)
             )
             val_preds = (
                 np.vstack(val_preds) if predictions.ndim > 1 else np.hstack(val_preds)
             )
-            for metric_func in self.compute_metrics:
-                valid_metrics.update(metric_func(val_truth, val_preds))
-            return valid_metrics
+            if not np.all(val_truth == -100):
+                valid_metrics = {}
+                for metric_func in self.compute_metrics:
+                    valid_metrics.update(metric_func(val_truth, val_preds))
+            else:
+                valid_metrics = {
+                    "Validation set labels may be NaN. No metrics calculated.": 0
+                }
+
+        self.predictions.update({"valid": {"pred": val_preds, "true": val_truth}})
+
+        return valid_metrics
 
     def test(self):
-        test_metrics = {}
         with torch.no_grad():
             self.model.eval()
             preds = []
@@ -318,13 +329,20 @@ class Trainer:
                         predictions = self.model.predict(batch)["predictions"]
                 else:
                     predictions = self.model.predict(batch)["predictions"]
-                truth.append(labels.cpu().numpy(force=True))
-                preds.append(predictions.cpu().numpy(force=True))
+                truth.append(labels.float().cpu().numpy(force=True))
+                preds.append(predictions.float().cpu().numpy(force=True))
             truth = np.vstack(truth) if labels.ndim > 1 else np.hstack(truth)
             preds = np.vstack(preds) if predictions.ndim > 1 else np.hstack(preds)
-            for metric_func in self.compute_metrics:
-                test_metrics.update(metric_func(truth, preds))
-            return test_metrics
+            if not np.all(truth == -100):
+                test_metrics = {}
+                for metric_func in self.compute_metrics:
+                    test_metrics.update(metric_func(truth, preds))
+            else:
+                test_metrics = {"Test set labels may be NaN. No metrics calculated.": 0}
+
+        self.predictions.update({"test": {"pred": preds, "true": truth}})
+
+        return test_metrics
 
     def predict(self, data_loader):
         return self.model.predict(data_loader)
@@ -338,12 +356,23 @@ class Trainer:
             " It should return a dictionary of metrics."
         )
 
+    def unwrap_model(self, model=None):
+        if model is None:
+            model = self.model
+        try:
+            return self.accelerator.unwrap_model(model)
+        except:
+            try:
+                return model.module
+            except:
+                return model
+
     def save_model(self, path, overwrite=False, **kwargs):
-        self.model.save(path, overwrite, **kwargs)
+        self.unwrap_model().save(path, overwrite, **kwargs)
 
     def _load_state_dict(self):
         if os.path.exists(self._model_state_dict_path):
-            self.model.load_state_dict(torch.load(self._model_state_dict_path))
+            self.unwrap_model().load_state_dict(torch.load(self._model_state_dict_path))
         self.model.to(self.device)
 
     def _save_state_dict(self):
@@ -353,11 +382,17 @@ class Trainer:
             # Generate a time string safely formatted
             time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
             # Generate a hash from the model's representation
-            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()
+            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()[0:8]
             # Construct a more robust temporary checkpoint path
             self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
-        if os.path.exists(self._model_state_dict_path):
-            os.remove(self._model_state_dict_path)
+
+        try:
+            if os.path.exists(self._model_state_dict_path):
+                os.remove(self._model_state_dict_path)
+        except Exception as e:
+            fprint(
+                f"Failed to remove the temporary checkpoint file {self._model_state_dict_path}: {e}"
+            )
 
         self.model.to("cpu")
         torch.save(self.model.state_dict(), self._model_state_dict_path)
@@ -370,9 +405,14 @@ class Trainer:
             # Generate a time string safely formatted
             time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
             # Generate a hash from the model's representation
-            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()
+            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()[0:8]
             # Construct a more robust temporary checkpoint path
             self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
 
-        if os.path.exists(self._model_state_dict_path):
-            os.remove(self._model_state_dict_path)
+        try:
+            if os.path.exists(self._model_state_dict_path):
+                os.remove(self._model_state_dict_path)
+        except Exception as e:
+            fprint(
+                f"Failed to remove the temporary checkpoint file {self._model_state_dict_path}: {e}"
+            )

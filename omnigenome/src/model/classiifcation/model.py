@@ -49,7 +49,7 @@ class OmniGenomeModelForTokenClassification(OmniGenomeModel):
 
         outputs = {
             "predictions": (
-                torch.stack(predictions).to(self.model.device)
+                torch.vstack(predictions).to(self.model.device)
                 if predictions[0].shape
                 else torch.tensor(predictions).to(self.model.device)
             ),
@@ -81,12 +81,14 @@ class OmniGenomeModelForTokenClassification(OmniGenomeModel):
             outputs = {
                 "predictions": predictions[0],
                 "logits": logits[0],
+                "confidence": torch.max(logits[0]),
                 "last_hidden_state": last_hidden_state[0],
             }
         else:
             outputs = {
                 "predictions": predictions,
                 "logits": logits,
+                "confidence": torch.max(logits, dim=-1)[0],
                 "last_hidden_state": last_hidden_state,
             }
 
@@ -136,7 +138,7 @@ class OmniGenomeModelForSequenceClassification(OmniGenomeModel):
 
         outputs = {
             "predictions": (
-                torch.stack(predictions).to(self.model.device)
+                torch.vstack(predictions).to(self.model.device)
                 if predictions[0].shape
                 else torch.tensor(predictions).to(self.model.device)
             ),
@@ -162,12 +164,14 @@ class OmniGenomeModelForSequenceClassification(OmniGenomeModel):
             outputs = {
                 "predictions": predictions[0],
                 "logits": logits[0],
+                "confidence": torch.max(logits[0]),
                 "last_hidden_state": last_hidden_state[0],
             }
         else:
             outputs = {
                 "predictions": predictions,
                 "logits": logits,
+                "confidence": torch.max(logits, dim=-1)[0],
                 "last_hidden_state": last_hidden_state,
             }
 
@@ -205,7 +209,7 @@ class OmniGenomeModelForMultiLabelSequenceClassification(
 
         outputs = {
             "predictions": (
-                torch.stack(predictions).to(self.model.device)
+                torch.vstack(predictions).to(self.model.device)
                 if predictions[0].shape
                 else torch.tensor(predictions).to(self.model.device)
             ),
@@ -296,7 +300,7 @@ class OmniGenomeModelForMultiLabelSequenceClassificationWith2DStructure(
 
         outputs = {
             "predictions": (
-                torch.stack(predictions).to(self.model.device)
+                torch.vstack(predictions).to(self.model.device)
                 if predictions[0].shape
                 else torch.tensor(predictions).to(self.model.device)
             ),

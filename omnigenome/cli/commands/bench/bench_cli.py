@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# file: bench_cli.py
+# file: auto_bench_cli.py
 # time: 21:06 31/01/2025
 # author: YANG, HENG <hy345@exeter.ac.uk> (Yang Heng)
 # Homepage: https://yangheng95.github.io
@@ -13,9 +13,8 @@ import platform
 import sys
 import time
 from pathlib import Path
-from typing import Optional
 
-from ....bench.auto_bench.auto_bench import AutoBench
+from ....auto.auto_bench.auto_bench import AutoBench
 from ....src.misc.utils import fprint
 from ..base import BaseCommand
 
@@ -72,10 +71,10 @@ class BenchCommand(BaseCommand):
             default="accelerate",
             choices=["native", "accelerate", "hf_trainer"],
             help="Trainer to use for training. \n"
-                 "Use 'accelerate' for distributed training. Set to false to disable. "
-                 "You can use 'accelerate config' to customize behavior.\n"
-                 "Use 'hf_trainer' for Hugging Face Trainer. \n"
-                 "Set to 'native' to use native PyTorch training loop.\n",
+            "Use 'accelerate' for distributed training. Set to false to disable. "
+            "You can use 'accelerate config' to customize behavior.\n"
+            "Use 'hf_trainer' for Hugging Face Trainer. \n"
+            "Set to 'native' to use native PyTorch training loop.\n",
         )
 
         cls.add_common_arguments(parser)
@@ -92,10 +91,13 @@ class BenchCommand(BaseCommand):
         fprint(
             "If you want to alter accelerate's behavior, please refer to 'accelerate config' command."
         )
-        fprint("If you encounter any issues, please report them on the GitHub repository.")
+        fprint(
+            "If you encounter any issues, please report them on the GitHub repository."
+        )
         # 特殊模型处理
         if "multimolecule" in args.model:
             from multimolecule import RnaTokenizer, AutoModelForTokenPrediction
+
             tokenizer = RnaTokenizer.from_pretrained(args.model)
             model = AutoModelForTokenPrediction.from_pretrained(
                 args.model, trust_remote_code=True

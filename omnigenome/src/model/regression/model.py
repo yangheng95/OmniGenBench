@@ -48,7 +48,7 @@ class OmniGenomeModelForTokenRegression(OmniGenomeModel):
 
         outputs = {
             "predictions": (
-                torch.stack(predictions).to(self.model.device)
+                torch.vstack(predictions).to(self.model.device)
                 if predictions[0].shape
                 else torch.tensor(predictions).to(self.model.device)
             ),
@@ -139,7 +139,7 @@ class OmniGenomeModelForSequenceRegression(OmniGenomeModel):
 
         outputs = {
             "predictions": (
-                torch.stack(predictions).to(self.model.device)
+                torch.vstack(predictions).to(self.model.device)
                 if predictions[0].shape
                 else torch.tensor(predictions).to(self.model.device)
             ),
@@ -311,7 +311,7 @@ class OmniGenomeModelForMatrixRegression(OmniGenomeModel):
 
         outputs = {
             "predictions": (
-                torch.stack(predictions).to(self.model.device)
+                torch.vstack(predictions).to(self.model.device)
                 if predictions[0].shape
                 else torch.tensor(predictions).to(self.model.device)
             ),
@@ -361,5 +361,108 @@ class OmniGenomeModelForMatrixRegression(OmniGenomeModel):
         filtered_logits = logits[mask]
         filtered_targets = labels[mask]
 
+        loss = self.loss_fn(filtered_logits, filtered_targets)
+        return loss
+
+
+class OmniGenomeModelForMatrixClassification(OmniGenomeModel):
+    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+        self.metadata["model_name"] = self.__class__.__name__
+        # For binary classification, output size is 1
+        self.classifier = torch.nn.Linear(self.config.hidden_size, 1)
+        self.sigmoid = torch.nn.Sigmoid()
+        # Change to BCEWithLogitsLoss for binary classification
+        self.loss_fn = torch.nn.BCEWithLogitsLoss()
+        self.cnn = resnet_b16(channels=self.config.hidden_size, bbn=16)
+        self.model_info()
+
+    def forward(self, **inputs):
+        labels = inputs.pop("labels", None)
+        last_hidden_state = self.last_hidden_state_forward(**inputs)
+        last_hidden_state = self.dropout(last_hidden_state)
+        last_hidden_state = self.activation(last_hidden_state)
+        # weight_mask = inputs['weight_mask']  # [bz,ori_max_len+2]
+        # last_hidden_state = last_hidden_state * weight_mask.unsqueeze(2)
+        matrix = torch.einsum("ijk,ilk->ijlk", last_hidden_state, last_hidden_state)
+        matrix = matrix.permute(0, 3, 1, 2)  # L*L*2d
+        logits = self.cnn(matrix)
+        logits = self.sigmoid(logits)
+        logits = logits.squeeze(-1)
+        outputs = {
+            "logits": logits,
+            "last_hidden_state": last_hidden_state,
+            "labels": labels,
+        }
+        return outputs
+
+    def predict(self, sequence_or_inputs, **kwargs):
+        raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
+        logits = raw_outputs["logits"]
+        last_hidden_state = raw_outputs["last_hidden_state"]
+        predictions = []
+        for i in range(logits.shape[0]):
+            # Apply sigmoid for binary classification
+            pred_class = (logits[i] > 0.5).float()
+            predictions.append(pred_class.cpu())
+        outputs = {
+            "predictions": (
+                torch.vstack(predictions).to(self.model.device)
+                if predictions[0].shape
+                else torch.tensor(predictions).to(self.model.device)
+            ),
+            "logits": logits,
+            "last_hidden_state": last_hidden_state,
+        }
+        return outputs
+
+    def inference(self, sequence_or_inputs, **kwargs):
+        raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
+        inputs = raw_outputs["inputs"]
+        logits = raw_outputs["logits"]
+        last_hidden_state = raw_outputs["last_hidden_state"]
+        predictions = []
+        probabilities = []
+        for i in range(logits.shape[0]):
+            i_logit = logits[i][inputs["input_ids"][i].ne(self.config.pad_token_id)][
+                1:-1
+            ]
+            probs = i_logit
+            # For binary classification, threshold at 0.5
+            pred_class = (probs > 0.5).float()
+            predictions.append(pred_class.detach().cpu())
+            probabilities.append(probs.detach().cpu())
+
+        if not isinstance(sequence_or_inputs, list):
+            outputs = {
+                "predictions": predictions[0],
+                "logits": logits[0],
+                "last_hidden_state": last_hidden_state[0],
+            }
+        else:
+            outputs = {
+                "predictions": predictions,
+                "logits": logits,
+                "last_hidden_state": last_hidden_state,
+            }
+        return outputs
+
+    def loss_function(self, logits, labels):
+        padding_value = (
+            self.config.ignore_y if hasattr(self.config, "ignore_y") else -100
+        )
+        mask = labels != padding_value
+
+        # Filter out padding
+        filtered_logits = logits[mask]
+        filtered_targets = labels[mask]
+
+        # Reshape for binary classification
+        filtered_logits = filtered_logits.view(-1)
+        filtered_targets = filtered_targets.view(
+            -1
+        ).float()  # Convert to float for BCEWithLogitsLoss
+
+        # Apply BCEWithLogitsLoss
         loss = self.loss_fn(filtered_logits, filtered_targets)
         return loss

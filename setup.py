@@ -40,8 +40,8 @@ setup(
     entry_points={
         "console_scripts": [
             # "omnigenome-bench=omnigenome:bench_command",
-            "og=omnigenome:omnigenome_cli",
             "autobench=omnigenome:run_bench",
+            "autotrain=omnigenome:run_train",
         ],
     },
     install_requires=[

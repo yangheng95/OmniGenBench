@@ -8,14 +8,18 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 __name__ = "OmniGenome"
-__version__ = "0.2.0alpha"
+__version__ = "0.2.4alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "MIT"
 
-from .bench.auto_bench.auto_bench import AutoBench
-from .bench.auto_bench.auto_bench_config import AutoBenchConfig
-from .bench.bench_hub.bench_hub import BenchHub
+from .auto.auto_bench.auto_bench import AutoBench
+from .auto.auto_bench.auto_bench_config import AutoBenchConfig
+from .auto.bench_hub.bench_hub import BenchHub
+from .auto.auto_train.auto_train import AutoTrain
+from .auto.auto_bench.auto_bench_cli import run_bench, bench_command
+from .auto.auto_train.auto_train_cli import run_train, train_command
+
 from .src import dataset as dataset
 from .src import metric as metric
 from .src import model as model
@@ -35,15 +39,11 @@ from .src.model import (
     OmniGenomeModelForSequenceClassification,
     OmniGenomeModelForMultiLabelSequenceClassification,
     OmniGenomeModelForTokenClassification,
-    OmniGenomeModelForSequenceClassificationWith2DStructure,
-    OmniGenomeModelForMultiLabelSequenceClassificationWith2DStructure,
-    OmniGenomeModelForTokenClassificationWith2DStructure,
     OmniGenomeModelForSequenceRegression,
     OmniGenomeModelForTokenRegression,
     OmniGenomeModelForStructuralImputation,
     OmniGenomeModelForMatrixRegression,
-    OmniGenomeModelForSequenceRegressionWith2DStructure,
-    OmniGenomeModelForTokenRegressionWith2DStructure,
+    OmniGenomeModelForMatrixClassification,
     OmniGenomeModelForMLM,
     OmniGenomeModelForSeq2Seq,
     OmniGenomeModelForRNADesign,
@@ -68,7 +68,6 @@ from .utility.pipeline_hub.pipeline_hub import PipelineHub
 
 from .src.model.module_utils import OmniGenomePooling
 
-from .bench.auto_bench.bench_cli import run_bench, bench_command
 
 __all__ = [
     "OmniGenomeDataset",
@@ -96,11 +95,7 @@ __all__ = [
     "OmniGenomeModelForTokenRegression",
     "OmniGenomeModelForStructuralImputation",
     "OmniGenomeModelForMatrixRegression",
-    "OmniGenomeModelForSequenceClassificationWith2DStructure",
-    "OmniGenomeModelForMultiLabelSequenceClassificationWith2DStructure",
-    "OmniGenomeModelForTokenClassificationWith2DStructure",
-    "OmniGenomeModelForSequenceRegressionWith2DStructure",
-    "OmniGenomeModelForTokenRegressionWith2DStructure",
+    "OmniGenomeModelForMatrixClassification",
     "OmniGenomeModelForMLM",
     "OmniGenomeModelForSeq2Seq",
     "OmniGenomeDatasetForTokenClassification",
