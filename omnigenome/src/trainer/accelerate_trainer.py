@@ -49,19 +49,19 @@ class AccelerateTrainer(Trainer):
     ):
 
         super().__init__(
-            model,
-            train_dataset,
-            eval_dataset,
-            test_dataset,
-            epochs,
-            batch_size,
-            patience,
-            gradient_accumulation_steps,
-            optimizer,
-            loss_fn,
-            compute_metrics,
-            seed,
-            autocast,
+            model=model,
+            train_dataset=train_dataset,
+            eval_dataset=eval_dataset,
+            test_dataset=test_dataset,
+            epochs=epochs,
+            batch_size=batch_size,
+            patience=patience,
+            gradient_accumulation_steps=gradient_accumulation_steps,
+            optimizer=optimizer,
+            loss_fn=loss_fn,
+            compute_metrics=compute_metrics,
+            seed=seed,
+            autocast=autocast,
             **kwargs,
         )
         self.model = model
