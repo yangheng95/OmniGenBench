@@ -25,20 +25,33 @@ class ModelHub:
 
     @staticmethod
     def load_model_and_tokenizer(
-            model_name_or_path,
-            local_only=False,
-            device=None,
-            fast_dtype=torch.float16,
-            **kwargs):
+        model_name_or_path,
+        local_only=False,
+        device=None,
+        fast_dtype=torch.float16,
+        **kwargs,
+    ):
         model = ModelHub.load(model_name_or_path, local_only=local_only, **kwargs)
         fprint(f"The model and tokenizer has been loaded from {model_name_or_path}.")
         model.to(fast_type=fast_dtype)
         if device is None:
-            model.to(autocuda.auto_cuda())
+            device = autocuda.auto_cuda()
+            fprint(
+                f"No device is specified, the model will be loaded to the default device: {device}"
+            )
+            model.to(device)
+        else:
+            model.to(device)
         return model, model.tokenizer
 
     @staticmethod
-    def load(model_name_or_path, local_only=False, device=None, fast_dtype=torch.float16, **kwargs):
+    def load(
+        model_name_or_path,
+        local_only=False,
+        device=None,
+        fast_dtype=torch.float16,
+        **kwargs,
+    ):
         if isinstance(model_name_or_path, str) and os.path.exists(model_name_or_path):
             path = model_name_or_path
         elif isinstance(model_name_or_path, str) and not os.path.exists(
@@ -67,14 +80,24 @@ class ModelHub:
         else:
             tokenizer = AutoTokenizer.from_pretrained(path, **kwargs)
 
-        model = model_cls(base_model, tokenizer, label2id=config.label2id, num_labels=config.num_labels, **kwargs)
+        model = model_cls(
+            base_model,
+            tokenizer,
+            label2id=config.label2id,
+            num_labels=config.num_labels,
+            **kwargs,
+        )
         with open(f"{path}/pytorch_model.bin", "rb") as f:
             model.load_state_dict(
                 torch.load(f, map_location=kwargs.get("device", "cpu")), strict=False
             )
         model.to(fast_dtype)
         if device is None:
-            model.to(autocuda.auto_cuda())
+            device = autocuda.auto_cuda()
+            fprint(
+                f"No device is specified, the model will be loaded to the default device: {device}"
+            )
+            model.to(device)
         else:
             model.to(device)
         return model

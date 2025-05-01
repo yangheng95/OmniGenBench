@@ -9,12 +9,12 @@
 
 import json
 import os
-from distutils.version import StrictVersion
 from typing import Union, Dict, Any
 
 import findfile
 import requests
 import tqdm
+from packaging.version import Version
 from termcolor import colored
 
 from omnigenome import __version__ as current_version
@@ -335,7 +335,7 @@ def check_version(repo: str = None) -> None:
         response = requests.get(repo + "version.json")
         version_info = response.json()
         latest_version = version_info["version"]
-        if StrictVersion(current_version) < StrictVersion(latest_version):
+        if Version(current_version) < Version(latest_version):
             fprint(
                 colored(
                     f"An updated version of the package is available. Please upgrade to version {latest_version}.",

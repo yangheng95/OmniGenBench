@@ -13,6 +13,7 @@ import sys
 import time
 
 import ViennaRNA as RNA
+import findfile
 
 default_omnigenome_repo = (
     "https://huggingface.co/spaces/yangheng/OmniGenomeLeaderboard/"
@@ -34,19 +35,18 @@ def seed_everything(seed=42):
 
 class RNA2StructureCache(dict):
     def __init__(self, cache_file=None, *args, **kwargs):
-        import RNA
 
         super().__init__(*args, **kwargs)
 
         if not cache_file:
-            self.cache_file = "__OMNIGENOME_DATA__/rna2stucture.cache.pkl"
+            self.cache_file = "__OMNIGENOME_DATA__/rna2structure.cache.pkl"
         else:
             self.cache_file = cache_file
 
         if self.cache_file is None or not os.path.exists(self.cache_file):
             self.cache = {}
         else:
-            print(f"Initialize sequence to structure cache from {self.cache_file}...")
+            fprint(f"Initialize sequence to structure cache from {self.cache_file}...")
             with open(self.cache_file, "rb") as f:
                 self.cache = pickle.load(f)
 
@@ -64,14 +64,16 @@ class RNA2StructureCache(dict):
     def __repr__(self):
         return str(self.cache)
 
-    def fold(self, sequence, return_mfe=False, num_workers=None):
-        if num_workers is None or num_workers < 1:
-            num_workers = os.cpu_count()
-
+    def fold(self, sequence, return_mfe=False, num_workers=1):
         if not isinstance(sequence, list):
             sequences = [sequence]
         else:
             sequences = sequence
+
+        if (
+            os.name != "nt" and len(sequences) > 1
+        ):  # multiprocessing is not working on Windows in my case
+            num_workers = min(os.cpu_count(), len(sequences))
 
         structures = []
 
@@ -79,6 +81,7 @@ class RNA2StructureCache(dict):
             if num_workers == 1:
                 for seq in sequences:
                     if seq not in self.cache:
+                        self.queue_num += 1
                         self.cache[seq] = RNA.fold(seq)
             else:
                 if num_workers is None:
@@ -115,7 +118,7 @@ class RNA2StructureCache(dict):
         if not os.path.exists(os.path.dirname(cache_file)):
             os.makedirs(os.path.dirname(cache_file))
 
-        print(f"Updating cache file {cache_file}...")
+        # print(f"Updating cache file {cache_file}...")
         with open(cache_file, "wb") as f:
             pickle.dump(self.cache, f)
 
@@ -214,10 +217,11 @@ def fprint(*objects, sep=" ", end="\n", file=sys.stdout, flush=False):
         flush (bool, optional): Whether to flush output buffer after printing. Defaults to False.
     """
     from omnigenome import __version__
+    from omnigenome import __name__
 
     print(
         time.strftime(
-            "[%Y-%m-%d %H:%M:%S] ({})".format(__version__),
+            "[%Y-%m-%d %H:%M:%S] [{} {}] ".format(__name__, __version__),
             time.localtime(time.time()),
         ),
         *objects,
@@ -226,6 +230,36 @@ def fprint(*objects, sep=" ", end="\n", file=sys.stdout, flush=False):
         file=file,
         flush=flush,
     )
+
+
+def clean_temp_checkpoint(days_threshold=7):
+    """
+    删除超过指定时间的 checkpoint 文件。
+
+    参数：
+    - directory (str): 文件所在的目录路径。
+    - file_extension (str): checkpoint 文件的扩展名，默认是 ".ckpt"。
+    - days_threshold (int): 超过多少天的文件将被删除，默认是 7 天。
+    """
+    # 获取当前时间
+    import os
+    from datetime import datetime, timedelta
+
+    current_time = datetime.now()
+    ckpt_files = findfile.find_cwd_files(["tmp_ckpt", ".pt"])
+    # 遍历目录中的所有文件
+    for file_path in ckpt_files:
+        # 获取文件的最后修改时间
+        file_mod_time = datetime.fromtimestamp(os.path.getmtime(file_path))
+
+        # 计算文件是否超过指定的时间阈值
+        if current_time - file_mod_time > timedelta(days=days_threshold):
+            try:
+                # 删除文件
+                os.remove(file_path)
+                print(f"Deleted: {file_path}")
+            except Exception as e:
+                print(f"Error deleting {file_path}: {e}")
 
 
 def load_module_from_path(module_name, file_path):
@@ -238,3 +272,24 @@ def load_module_from_path(module_name, file_path):
     except FileNotFoundError:
         raise ImportError(f"Cannot find the module {module_name} from {file_path}.")
     return module
+
+
+def check_bench_version(bench_version, omnigenome_version):
+    assert (
+        bench_version is not None
+    ), "Benchmark metadata does not contain a valid __omnigenome__ version."
+
+    if not isinstance(bench_version, (int, float, str)):
+        raise TypeError(
+            f"Invalid type for benchmark version. Expected int, float, or str but got {type(bench_version).__name__}."
+        )
+
+    assert (
+        omnigenome_version is not None
+    ), "AutoBench is missing a valid omnigenome version."
+
+    if bench_version > omnigenome_version:
+        raise ValueError(
+            f"AutoBench version {omnigenome_version} is not compatible with the benchmark version "
+            f"{bench_version}. Please update the benchmark or AutoBench."
+        )

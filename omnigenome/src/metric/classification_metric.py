@@ -43,24 +43,19 @@ class ClassificationMetric(OmniGenomeMetric):
 
                 # This is an ugly method to handle the case when the predictions are in the form of a tuple
                 # for huggingface trainers
-                if y_true is not None and y_pred is None:
-                    if hasattr(y_true, "predictions"):
-                        y_pred = y_true.predictions
-                    if hasattr(y_true, "label_ids"):
-                        y_true = y_true.label_ids
-                    if hasattr(y_true, "labels"):
-                        y_true = y_true.labels
-                    if len(y_pred[0][1]) == np.max(y_true) + 1:
-                        y_pred = y_pred[0]
-                    else:
-                        y_pred = y_pred[1]
-                    y_pred = np.argmax(y_pred, axis=1)
-                elif y_true is not None and y_pred is not None:
-                    pass  # y_true and y_pred are provided
-                else:
-                    raise ValueError(
-                        "Please provide the true and predicted values or a dictionary with 'y_true' and 'y_pred'."
-                    )
+                if y_true.__class__.__name__ == "EvalPrediction":
+                    eval_prediction = y_true
+                    if hasattr(eval_prediction, "label_ids"):
+                        y_true = eval_prediction.label_ids
+                    if hasattr(eval_prediction, "labels"):
+                        y_true = eval_prediction.labels
+                    predictions = eval_prediction.predictions
+                    for i in range(len(predictions)):
+                        if predictions[i].shape == y_true.shape and not np.all(
+                            predictions[i] == y_true
+                        ):
+                            y_score = predictions[i]
+                            break
 
                 y_true, y_pred = ClassificationMetric.flatten(y_true, y_pred)
                 y_true_mask_idx = np.where(y_true != self.ignore_y)

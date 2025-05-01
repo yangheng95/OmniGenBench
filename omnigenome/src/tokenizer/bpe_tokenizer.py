@@ -7,9 +7,11 @@
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
 import numpy as np
-from transformers import AutoTokenizer
+import warnings
 
 from ..abc.abstract_tokenizer import OmniGenomeTokenizer
+
+warnings.filterwarnings("once")
 
 
 def is_bpe_tokenization(tokens, threshold=0.1):

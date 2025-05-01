@@ -31,18 +31,19 @@ class OmniGenomeTokenizer:
     def from_pretrained(model_name_or_path, **kwargs):
         wrapper_path = f"{model_name_or_path.rstrip('/')}/omnigenome_wrapper.py"
         try:
-            wrapper = load_module_from_path("omnigenome_wrapper", wrapper_path)
-            tokenizer = wrapper.Tokenizer(
-                AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
+            tokenizer_cls = load_module_from_path(
+                "OmniGenomeTokenizerWrapper", wrapper_path
+            ).Tokenizer
+            tokenizer = tokenizer_cls(
+                AutoTokenizer.from_pretrained(model_name_or_path, **kwargs), **kwargs
             )
         except Exception as e:
             warnings.warn(
-                f"Cannot find the tokenizer wrapper from {wrapper_path} due to Exception: {e},"
-                " using the default OmniGenomeTokenizer."
+                f"No tokenizer wrapper found in {wrapper_path} -> Exception: {e}"
             )
-            tokenizer = OmniGenomeTokenizer(
-                AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
-            )
+
+            tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
+
         return tokenizer
 
     def save_pretrained(self, save_directory):
