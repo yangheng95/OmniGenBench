@@ -34,7 +34,13 @@ class OmniGenomeModelForAugmentation(torch.nn.Module):
         - instance_num (int): Number of augmented instances to generate per sequence.
         """
         super().__init__()
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+        try:
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+        except Exception as e:
+            if 'RnaTokenizer' in str(e):
+                from multimolecule import RnaTokenizer
+                self.tokenizer = RnaTokenizer.from_pretrained(model_name_or_path)
+
         self.model = AutoModelForMaskedLM.from_pretrained(
             model_name_or_path, trust_remote_code=True
         )
@@ -56,9 +62,9 @@ class OmniGenomeModelForAugmentation(torch.nn.Module):
 
     def apply_noise_to_sequence(self, seq):
         """Apply noise to a single sequence by randomly masking tokens."""
-        seq_list = list(seq)
-        for _ in range(int(len(seq) * self.noise_ratio)):
-            random_idx = random.randint(0, len(seq) - 1)
+        seq_list = self.tokenizer.tokenize(seq)
+        for _ in range(int(len(seq_list) * self.noise_ratio)):
+            random_idx = random.randint(0, len(seq_list) - 1)
             seq_list[random_idx] = self.tokenizer.mask_token
         return "".join(seq_list)
 
