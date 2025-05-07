@@ -8,7 +8,7 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 __name__ = "OmniGenome"
-__version__ = "0.2.4alpha3"
+__version__ = "0.2.4alpha4"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "MIT"
@@ -35,6 +35,7 @@ from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForTokenClassificat
 from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForTokenRegression
 from .src.metric import ClassificationMetric, RegressionMetric, RankingMetric
 from .src.misc import utils as utils
+from .src.misc.utils import clean_temp_dir_pt_files
 from .src.model import (
     OmniGenomeModelForSequenceClassification,
     OmniGenomeModelForMultiLabelSequenceClassification,
@@ -174,3 +175,5 @@ import random
 
 LOGO = random.choice([LOGO1, LOGO2])
 print(LOGO)
+
+clean_temp_dir_pt_files()

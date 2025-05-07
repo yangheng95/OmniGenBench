@@ -7,11 +7,14 @@
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
 import os
+import tempfile
 import time
 import autocuda
 import numpy as np
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from typing_extensions import Optional, Union
+
 from ..misc.utils import env_meta_info, fprint, seed_everything
 
 import torch
@@ -68,6 +71,8 @@ def _infer_optimization_direction(metrics, prev_metrics):
     if is_prev_decreasing and is_still_decreasing:
         return "smaller_is_better"
 
+    return 'larger_is_better' if is_prev_increasing else 'smaller_is_better'
+
 
 class Trainer:
     def __init__(
@@ -82,9 +87,9 @@ class Trainer:
         gradient_accumulation_steps: int = 1,
         optimizer: torch.optim.Optimizer = None,
         loss_fn: torch.nn.Module = None,
-        compute_metrics: [list, str] = None,
+        compute_metrics: Union[list, str] = None,
         seed: int = 42,
-        device: [torch.device, str] = None,
+        device: Optional[torch.device, str] = None,
         autocast: str = "float16",
         **kwargs,
     ):
@@ -373,46 +378,26 @@ class Trainer:
     def _load_state_dict(self):
         if os.path.exists(self._model_state_dict_path):
             self.unwrap_model().load_state_dict(torch.load(self._model_state_dict_path))
-        self.model.to(self.device)
 
     def _save_state_dict(self):
         if not hasattr(self, "_model_state_dict_path"):
-            from hashlib import sha256
-
-            # Generate a time string safely formatted
-            time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-            # Generate a hash from the model's representation
-            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()[0:8]
-            # Construct a more robust temporary checkpoint path
-            self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
+            # 创建临时文件，并关闭以便写入
+            tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pt")
+            self._model_state_dict_path = tmp_file.name
+            tmp_file.close()
 
         try:
             if os.path.exists(self._model_state_dict_path):
                 os.remove(self._model_state_dict_path)
         except Exception as e:
-            fprint(
-                f"Failed to remove the temporary checkpoint file {self._model_state_dict_path}: {e}"
-            )
+            fprint(f"Failed to remove the temporary checkpoint file {self._model_state_dict_path}: {e}")
 
-        self.model.to("cpu")
-        torch.save(self.model.state_dict(), self._model_state_dict_path)
-        self.model.to(self.device)
+        torch.save(self.unwrap_model().state_dict(), self._model_state_dict_path)
 
     def _remove_state_dict(self):
-        if not hasattr(self, "_model_state_dict_path"):
-            from hashlib import sha256
-
-            # Generate a time string safely formatted
-            time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-            # Generate a hash from the model's representation
-            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()[0:8]
-            # Construct a more robust temporary checkpoint path
-            self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
-
-        try:
-            if os.path.exists(self._model_state_dict_path):
-                os.remove(self._model_state_dict_path)
-        except Exception as e:
-            fprint(
-                f"Failed to remove the temporary checkpoint file {self._model_state_dict_path}: {e}"
-            )
+        if hasattr(self, "_model_state_dict_path"):
+            try:
+                if os.path.exists(self._model_state_dict_path):
+                    os.remove(self._model_state_dict_path)
+            except Exception as e:
+                fprint(f"Failed to remove the temporary checkpoint file {self._model_state_dict_path}: {e}")

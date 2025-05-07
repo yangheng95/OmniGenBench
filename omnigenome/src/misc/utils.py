@@ -10,6 +10,7 @@ import multiprocessing
 import os
 import pickle
 import sys
+import tempfile
 import time
 
 import ViennaRNA as RNA
@@ -293,3 +294,16 @@ def check_bench_version(bench_version, omnigenome_version):
             f"AutoBench version {omnigenome_version} is not compatible with the benchmark version "
             f"{bench_version}. Please update the benchmark or AutoBench."
         )
+
+
+
+def clean_temp_dir_pt_files():
+    tmp_dir = tempfile.gettempdir()
+    for f in os.listdir(tmp_dir):
+        if f.endswith(".pt") and f.startswith("tmp_ckpt"):
+            path = os.path.join(tmp_dir, f)
+            try:
+                os.remove(path)
+                print(f"Removed: {path}")
+            except Exception as e:
+                print(f"Failed to remove {path}: {e}")
