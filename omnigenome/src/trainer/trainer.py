@@ -47,13 +47,16 @@ def _infer_optimization_direction(metrics, prev_metrics):
             return "smaller_is_better"
 
     fprint(
-        "Cannot determine the optimization direction. Trying to infer from the metrics."
+        "Cannot determine the optimisation direction. Attempting inference from the metrics."
     )
     is_prev_increasing = np.mean(list(prev_metrics[0].values())[0]) < np.mean(
         list(prev_metrics[-1].values())[0]
     )
     is_still_increasing = np.mean(list(prev_metrics[1].values())[0]) < np.mean(
         list(metrics.values())[0]
+    )
+    fprint(
+        "Cannot determine the optimisation direction. Attempting inference from the metrics."
     )
 
     if is_prev_increasing and is_still_increasing:
@@ -153,10 +156,7 @@ class Trainer:
             "test",
         ], "The metrics stage should be either 'valid' or 'test'."
 
-        fprint(metrics)
-
         prev_metrics = self.metrics.get(stage, None)
-
         if stage not in self.metrics:
             self.metrics.update({f"{stage}": [metrics]})
         else:

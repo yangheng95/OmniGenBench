@@ -39,10 +39,10 @@ def _infer_optimization_direction(metrics, prev_metrics):
         # ...
     ]
     for metric in larger_is_better_metrics:
-        if metric in list(prev_metrics[0].keys())[0]:
+        if prev_metrics and metric in list(prev_metrics[0].keys())[0]:
             return "larger_is_better"
     for metric in smaller_is_better_metrics:
-        if metric in list(prev_metrics[0].keys())[0]:
+        if prev_metrics and metric in list(prev_metrics[0].keys())[0]:
             return "smaller_is_better"
 
     fprint(
@@ -81,7 +81,7 @@ class AccelerateTrainer:
         test_dataset: torch.utils.data.Dataset = None,
         epochs: int = 3,
         batch_size: int = 8,
-        patience: int = 3,
+        patience: int = -1,
         gradient_accumulation_steps: int = 1,
         optimizer: torch.optim.Optimizer = None,
         loss_fn: torch.nn.Module = None,
@@ -245,8 +245,10 @@ class AccelerateTrainer:
 
                 # 只在主进程中处理收集到的数据
                 if self.accelerator.is_main_process:
-                    gathered_predictions = gathered_predictions.cpu().numpy(force=True)
-                    gathered_labels = gathered_labels.cpu().numpy(force=True)
+                    gathered_predictions = (
+                        gathered_predictions.float().cpu().numpy(force=True)
+                    )
+                    gathered_labels = gathered_labels.float().cpu().numpy(force=True)
                     all_preds.append(gathered_predictions)
                     all_truth.append(gathered_labels)
 
@@ -258,25 +260,23 @@ class AccelerateTrainer:
             all_preds = np.concatenate(all_preds, axis=0)
             all_truth = np.concatenate(all_truth, axis=0)
 
-            valid_metrics = {}
-            for metric_func in self.compute_metrics:
-                valid_metrics.update(metric_func(all_truth, all_preds))
+            if not np.all(all_truth == -100):
+                valid_metrics = {}
+                for metric_func in self.compute_metrics:
+                    valid_metrics.update(metric_func(all_truth, all_preds))
+            else:
+                valid_metrics = {
+                    "Validation labels predictions may be NaN. No metrics calculated.": 0
+                }
 
             # 打印指标信息
             fprint(valid_metrics)
         else:
             valid_metrics = None
 
-        return valid_metrics
+        self.predictions.update({"valid": {"pred": all_preds, "true": all_truth}})
 
-    def unwrap_model(self, model):
-        try:
-            return self.accelerator.unwrap_model(model)
-        except:
-            try:
-                return model.module
-            except:
-                return model
+        return valid_metrics
 
     def test(self):
         self.model.eval()
@@ -299,8 +299,10 @@ class AccelerateTrainer:
                 gathered_labels = self.accelerator.gather(labels)
 
                 if self.accelerator.is_main_process:
-                    gathered_predictions = gathered_predictions.cpu().numpy(force=True)
-                    gathered_labels = gathered_labels.cpu().numpy(force=True)
+                    gathered_predictions = (
+                        gathered_predictions.float().cpu().numpy(force=True)
+                    )
+                    gathered_labels = gathered_labels.float().cpu().numpy(force=True)
                     all_preds.append(gathered_predictions)
                     all_truth.append(gathered_labels)
 
@@ -312,14 +314,20 @@ class AccelerateTrainer:
             all_preds = np.concatenate(all_preds, axis=0)
             all_truth = np.concatenate(all_truth, axis=0)
 
-            test_metrics = {}
-            for metric_func in self.compute_metrics:
-                test_metrics.update(metric_func(all_truth, all_preds))
-
+            if not np.all(all_truth == -100):
+                test_metrics = {}
+                for metric_func in self.compute_metrics:
+                    test_metrics.update(metric_func(all_truth, all_preds))
+            else:
+                test_metrics = {
+                    "Test labels predictions may be NaN. No metrics calculated.": 0
+                }
             # 打印指标信息
             fprint(test_metrics)
         else:
             test_metrics = None
+
+        self.predictions.update({"test": {"pred": all_preds, "true": all_truth}})
 
         return test_metrics
 
@@ -465,6 +473,9 @@ class AccelerateTrainer:
         if "best_valid" not in self.metrics:
             self.metrics.update({"best_valid": metrics})
             return True
+
+        if prev_metrics is None:
+            return False
 
         self._optimization_direction = (
             _infer_optimization_direction(metrics, prev_metrics)

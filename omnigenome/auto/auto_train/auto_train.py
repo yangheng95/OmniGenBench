@@ -26,6 +26,8 @@ from ...src.misc.utils import (
 from ...src.trainer.accelerate_trainer import AccelerateTrainer
 from ...src.trainer.trainer import Trainer
 
+autotrain_evaluations = "./autotrain_evaluations"
+
 
 class AutoTrain:
     def __init__(
@@ -49,13 +51,13 @@ class AutoTrain:
             self.model_name = self.model_name_or_path.__class__.__name__
         if isinstance(tokenizer, str):
             self.tokenizer = tokenizer.rstrip("/")
-        os.makedirs("./autotrain_evaluations", exist_ok=True)
+        os.makedirs(autotrain_evaluations, exist_ok=True)
         time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
         mv_name = f"{dataset}-{self.model_name}"
-        self.mv_path = f"./autobench_evaluations/{mv_name}-{time_str}.mv"
+        self.mv_path = f"{autotrain_evaluations}/{mv_name}-{time_str}.mv"
 
         mv_paths = findfile.find_files(
-            "./autotrain_evaluations",
+            autotrain_evaluations,
             [dataset, self.model_name, ".mv"],
         )
         if mv_paths and not self.overwrite:
@@ -300,6 +302,10 @@ class AutoTrain:
                     **_kwargs,
                 )
                 metrics = trainer.train()
+                save_path = os.path.join(
+                    autotrain_evaluations, self.dataset, self.model_name
+                )
+                trainer.save_model(save_path)
 
                 if metrics:
                     for key, value in metrics["test"][-1].items():
