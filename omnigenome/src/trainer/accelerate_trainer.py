@@ -441,7 +441,6 @@ class AccelerateTrainer:
 
         self.accelerator.free_memory()
         del (
-            self.model,
             self.optimizer,
             self.train_loader,
             self.eval_loader,
