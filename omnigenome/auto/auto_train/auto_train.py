@@ -49,13 +49,13 @@ class AutoTrain:
             self.model_name = self.model_name_or_path.__class__.__name__
         if isinstance(tokenizer, str):
             self.tokenizer = tokenizer.rstrip("/")
-        os.makedirs("./autobench_evaluations", exist_ok=True)
+        os.makedirs("./autotrain_evaluations", exist_ok=True)
         time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
         mv_name = f"{dataset}-{self.model_name}"
         self.mv_path = f"./autobench_evaluations/{mv_name}-{time_str}.mv"
 
         mv_paths = findfile.find_files(
-            "./autobench_evaluations",
+            "./autotrain_evaluations",
             [dataset, self.model_name, ".mv"],
         )
         if mv_paths and not self.overwrite:

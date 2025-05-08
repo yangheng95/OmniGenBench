@@ -8,10 +8,10 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 __name__ = "OmniGenome"
-__version__ = "0.2.4alpha5"
+__version__ = "0.2.4alpha6"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
-__license__ = "MIT"
+__license__ = "Apache-2.0"
 
 from .auto.auto_bench.auto_bench import AutoBench
 from .auto.auto_bench.auto_bench_config import AutoBenchConfig
