@@ -71,7 +71,7 @@ def _infer_optimization_direction(metrics, prev_metrics):
     if is_prev_decreasing and is_still_decreasing:
         return "smaller_is_better"
 
-    return 'larger_is_better' if is_prev_increasing else 'smaller_is_better'
+    return "larger_is_better" if is_prev_increasing else "smaller_is_better"
 
 
 class Trainer:
@@ -390,7 +390,9 @@ class Trainer:
             if os.path.exists(self._model_state_dict_path):
                 os.remove(self._model_state_dict_path)
         except Exception as e:
-            fprint(f"Failed to remove the temporary checkpoint file {self._model_state_dict_path}: {e}")
+            fprint(
+                f"Failed to remove the temporary checkpoint file {self._model_state_dict_path}: {e}"
+            )
 
         torch.save(self.unwrap_model().state_dict(), self._model_state_dict_path)
 
@@ -400,4 +402,6 @@ class Trainer:
                 if os.path.exists(self._model_state_dict_path):
                     os.remove(self._model_state_dict_path)
             except Exception as e:
-                fprint(f"Failed to remove the temporary checkpoint file {self._model_state_dict_path}: {e}")
+                fprint(
+                    f"Failed to remove the temporary checkpoint file {self._model_state_dict_path}: {e}"
+                )
