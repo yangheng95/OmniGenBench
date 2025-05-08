@@ -92,11 +92,15 @@ class OmniGenomeModel(torch.nn.Module):
             del model_cls
         elif isinstance(config_or_model_model, torch.nn.Module):
             self.model = config_or_model_model
-            self.model.config.num_labels = num_labels
+            self.model.config.num_labels = (
+                num_labels if len(label2id) == num_labels else len(label2id)
+            )
             self.model.config.label2id = label2id
         elif isinstance(config_or_model_model, AutoConfig):
             config = config_or_model_model
-            config.num_labels = num_labels
+            config.num_labels = (
+                num_labels if len(label2id) == num_labels else len(label2id)
+            )
             config.label2id = label2id
             self.model = AutoModel.from_config(config)
             self.model.config = config
@@ -111,7 +115,7 @@ class OmniGenomeModel(torch.nn.Module):
             self.config.label2id = label2id
             self.config.id2label = {v: k for k, v in label2id.items()}
         if (
-            not self.config.args.get("num_labels")
+            not hasattr(self.config, "num_labels")
             or len(self.config.id2label) != self.config.num_labels
         ):
             fprint(
