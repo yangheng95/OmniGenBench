@@ -8,12 +8,10 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 import os
 import tempfile
-import time
 import autocuda
 import numpy as np
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from typing_extensions import Optional, Union
 
 from ..misc.utils import env_meta_info, fprint, seed_everything
 
@@ -87,9 +85,9 @@ class Trainer:
         gradient_accumulation_steps: int = 1,
         optimizer: torch.optim.Optimizer = None,
         loss_fn: torch.nn.Module = None,
-        compute_metrics: Union[list, str] = None,
+        compute_metrics: [list | str] = None,
         seed: int = 42,
-        device: Optional[torch.device, str] = None,
+        device: [torch.device | str] = None,
         autocast: str = "float16",
         **kwargs,
     ):
