@@ -53,8 +53,16 @@ class OmniGenomeDict(dict):
 
 
 class OmniGenomeDataset(torch.utils.data.Dataset):
+    """
+    Custom dataset class for genomic data that supports flexible input formats,
+    automatic padding/truncation, optional structure augmentation, and label formatting.
+    """
     def __init__(self, data_source, tokenizer, max_length=None, **kwargs):
         super(OmniGenomeDataset, self).__init__()
+        """
+        Initialize dataset with tokenization, structure augmentation, label mapping, and filtering.
+        Loads raw data and converts it into processed format ready for model training.
+        """
         self.metadata = env_meta_info()
         self.tokenizer = tokenizer
         self.label2id = kwargs.get("label2id", None)
@@ -180,12 +188,16 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
         return self
 
     def _pad_and_truncate(self, pad_value=0):
+        """
+        Automatically pad or truncate each sample in the dataset to a uniform length,
+        aligning input and label sequences. Supports adaptive adjustment based on max_length.
+        """
         if hasattr(self.tokenizer, "pad_token_id"):
             pad_token_id = self.tokenizer.pad_token_id
         else:
             pad_token_id = self.tokenizer.base_tokenizer.pad_token_id
 
-        # 计算输入和标签的最大长度
+        # Compute the max length of input_ids and labels
         max_input_length = max(
             [
                 torch.sum(data_item["input_ids"] != pad_token_id).item()
@@ -199,11 +211,11 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
             ]
         )
 
-        # 确定初始max_length，不超过self.max_length
+        # Make sure that max_length <= self.max_length
         original_max_length = max(max_input_length, max_label_length)
         original_max_length = min(original_max_length, self.max_length)
 
-        # 调整到不超过self.max_length的最大的8的倍数
+        # Adjust to the largest multiple of 8 that does not exceed self.max_length
         remainder = original_max_length % 8
         if remainder != 0:
             adjusted_max_length = original_max_length + (8 - remainder)
@@ -212,7 +224,7 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
             adjusted_max_length = original_max_length
         max_length = adjusted_max_length
 
-        # 处理标签的特殊情况（修复错误的关键部分）
+        # Fix key errors and handle edge cases in label processing
         first_labels = self.data[0]["labels"]
 
         label_shape = first_labels.shape
@@ -230,7 +242,7 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
 
         for data_item in self.data:
             for key, value in data_item.items():
-                # 确保转换为Tensor
+
                 if not isinstance(value, torch.Tensor):
                     value = torch.as_tensor(value)
                 dtype = value.dtype
@@ -238,18 +250,19 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                     value.dtype == torch.int16 or value.dtype == torch.int32
                 ):
                     data_item[key] = value.long()
-                # 确定填充长度
+                
+                # Determine the padding length
                 if "label" in key:
-                    if value.ndim == 0:  # 处理标量标签
+                    if value.ndim == 0:  # Process scalar labels
                         padding_length = 0
                     else:
                         padding_length = label_padding_length - value.size(0)
                 else:
                     padding_length = max_length - value.size(0)
 
-                # 处理填充或截断
+                # Pad or truncate the tensor
                 if padding_length > 0:
-                    # 确定填充值
+                    # Determine the padding value
                     if key == "input_ids":
                         _pad_value = pad_token_id
                     elif key == "attention_mask":
@@ -263,7 +276,7 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                     else:
                         _pad_value = pad_value
 
-                    # 构建填充张量
+                    # Construct the padding tensor
                     if value.ndim == 2:
                         pad_shape = (padding_length, value.size(1))
                     else:
@@ -273,12 +286,16 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                 elif padding_length < 0:
                     data_item[key] = value[:max_length]
 
-                # 确保数据类型正确
+                # Make sure the tensor is on the same device as the original tensor
                 data_item[key] = data_item[key].to(dtype)
 
         return self.data
 
     def load_data_source(self, data_source, **kwargs):
+        """
+        Load dataset examples from different file formats including .csv, .json, .parquet, and .txt.
+        Shuffles and trims examples if needed.
+        """
         examples = []
         max_examples = kwargs.get("max_examples", None)
         if not isinstance(data_source, list):
@@ -337,6 +354,10 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
         )
 
     def _preprocessing(self):
+        """
+        Normalize input fields (e.g., renaming 'seq' or 'text' to 'sequence').
+        If structure is enabled, append predicted structure to the sequence using RNA folding tools.
+        """
         for idx, ex in enumerate(self.examples):
             if (
                 "seq" in self.examples[idx]
@@ -361,6 +382,10 @@ class OmniGenomeDataset(torch.utils.data.Dataset):
                     ] = f"{sequence}{self.tokenizer.eos_token}{structure}"
 
     def _postprocessing(self):
+        """
+        Finalize data format: ensure 'labels' field exists, convert missing ones to -100 (ignored),
+        and optionally print label distribution.
+        """
         for idx, ex in enumerate(self.data):
             if "label" in self.data[idx]:
                 self.data[idx]["labels"] = self.data[idx]["label"]
