@@ -39,6 +39,13 @@ class AutoBench:
         tokenizer=None,
         **kwargs,
     ):
+        """
+        Initialize AutoBench class.
+
+        - Set up benchmark directory and model/tokenizer configuration.
+        - Load existing metric visualizer or create a new one.
+        - Load benchmark metadata and version check.
+        """
         self.benchmark = benchmark.rstrip("/")
         self.autocast = kwargs.pop("autocast", "fp16")
         self.overwrite = kwargs.pop("overwrite", False)
@@ -86,6 +93,9 @@ class AutoBench:
         self.bench_info()
 
     def bench_info(self):
+        """
+        Print benchmark summary information.
+        """
         info = f"Benchmark Root: {self.benchmark}\n"
         info += f"Benchmark List: {self.bench_metadata.bench_list}\n"
         info += f"Model Name or Path: {self.model_name}\n"
@@ -97,9 +107,13 @@ class AutoBench:
 
     def run(self, **kwargs):
         """
+        Run evaluation on each task in the benchmark list.
 
-        :param kwargs: parameters in kwargs will be used to override the default parameters in the benchmark config
-        :return:
+        - Load benchmark configuration
+        - Override configuration with kwargs
+        - Load tokenizer and model
+        - Run training and evaluation loop
+        - Save metrics and predictions
         """
         bs_scale = kwargs.pop("bs_scale", 1)
         # Import benchmark config
@@ -123,6 +137,7 @@ class AutoBench:
             fprint(f"Loaded config for {bench} from {bench_config_path}")
             fprint(bench_config)
 
+            # Override config using kwargs
             for key, value in _kwargs.items():
                 if key in bench_config:
                     fprint(
@@ -228,8 +243,8 @@ class AutoBench:
                     **_kwargs,
                 )
 
+                # Set up HuggingFace Trainer
                 if self.trainer == "hf_trainer":
-                    # Set up HuggingFace Trainer
                     hf_kwargs = {
                         k: v
                         for k, v in kwargs.items()
@@ -294,6 +309,7 @@ class AutoBench:
                         "test": test_result,
                     }
                     fprint(metrics)
+                # Accelerate or custom trainer  
                 else:
                     optimizer = torch.optim.AdamW(
                         model.parameters(),
@@ -343,6 +359,7 @@ class AutoBench:
 
                     predictions = trainer.predictions
 
+                    # Save predictions if required
                     if bench_config.get("save_predictions", False):
                         os.makedirs(f"predictions/{bench}", exist_ok=True)
                         import numpy as np
@@ -354,6 +371,7 @@ class AutoBench:
                             ) as f:
                                 np.save(f, predictions[split])
 
+                    # Log final test results
                     if metrics:
                         for key, value in metrics["test"][-1].items():
                             try:
