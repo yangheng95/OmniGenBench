@@ -18,6 +18,10 @@ import torch
 from ..misc.utils import env_meta_info, fprint, seed_everything
 
 def _infer_optimization_direction(metrics, prev_metrics):
+    """
+    This function infers whether the optimization direction is 'larger_is_better' or 'smaller_is_better'
+    based on the comparison of the current and previous metrics.
+    """
     larger_is_better_metrics = [
         "accuracy",
         "f1",
@@ -82,12 +86,13 @@ class AccelerateTrainer:
 
         self.model = model
 
-        # DataLoaders
+        # # Set up DataLoaders based on the given datasets or keyword arguments
         if kwargs.get("train_loader"):
             self.train_loader = kwargs.get("train_loader")
             self.eval_loader = kwargs.get("eval_loader", None)
             self.test_loader = kwargs.get("test_loader", None)
         else:
+            # If no DataLoader is provided, create DataLoader from datasets
             self.train_loader = DataLoader(train_dataset, batch_size=batch_size,
                                            shuffle=True) if train_dataset else None
             self.eval_loader = DataLoader(eval_dataset, batch_size=batch_size) if eval_dataset else None
@@ -140,9 +145,10 @@ class AccelerateTrainer:
         self.accelerator = Accelerator(
             mixed_precision=mp_setting, kwargs_handlers=[ddp_kwargs]
         )
+        # If loss_fn is provided, set it to the model
         if self.loss_fn is not None:
             self.model.set_loss_fn(self.loss_fn)
-            # 创建 dataloaders
+            # Prepare the model, optimizer, and data loaders for distributed training
             if kwargs.get("train_loader"):
                 self.train_loader = kwargs.get("train_loader")
                 self.eval_loader = kwargs.get("eval_loader", None)
@@ -162,7 +168,7 @@ class AccelerateTrainer:
                     batch_size=batch_size
                 ) if test_dataset else None
 
-        # 让 accelerate 处理模型和优化器的准备
+        # Call Accelerator.prepare to wrap the model and optimizers for multi-GPU or multi-device support
         to_prepare = [self.model]
         if optimizer is not None:
             to_prepare.append(optimizer)
@@ -199,7 +205,7 @@ class AccelerateTrainer:
         all_truth = []
         all_preds = []
 
-        # 禁用进度条在非主进程上显示
+        # Use tqdm for progress bar and disable it in non-main processes
         it = tqdm(self.eval_loader, desc="Evaluating", disable=not self.accelerator.is_main_process)
 
         with torch.no_grad():
@@ -208,21 +214,20 @@ class AccelerateTrainer:
                 predictions = output["predictions"]
                 labels = batch["labels"]
 
-                # 收集所有进程的预测结果和标签
+                # Gather predictions and labels from all processes
                 gathered_predictions = self.accelerator.gather(predictions)
                 gathered_labels = self.accelerator.gather(labels)
 
-                # 只在主进程中处理收集到的数据
+                # Only in the main process, collect the predictions and labels
                 if self.accelerator.is_main_process:
                     gathered_predictions = gathered_predictions.cpu().numpy(force=True)
                     gathered_labels = gathered_labels.cpu().numpy(force=True)
                     all_preds.append(gathered_predictions)
                     all_truth.append(gathered_labels)
 
-        # # 同步所有进程
         # self.accelerator.wait_for_everyone()
 
-        # 只在主进程中计算指标
+        # Only in the main process, compute metrics
         if self.accelerator.is_main_process:
             all_preds = np.concatenate(all_preds, axis=0)
             all_truth = np.concatenate(all_truth, axis=0)
@@ -231,7 +236,6 @@ class AccelerateTrainer:
             for metric_func in self.compute_metrics:
                 valid_metrics.update(metric_func(all_truth, all_preds))
 
-            # 打印指标信息
             fprint(valid_metrics)
         else:
             valid_metrics = None
@@ -239,6 +243,15 @@ class AccelerateTrainer:
         return valid_metrics
 
     def unwrap_model(self, model):
+        """
+        Unwrap the model from a distributed training wrapper (if needed).
+        
+        Parameters:
+            model (nn.Module): The model to unwrap.
+            
+        Returns:
+            nn.Module: The unwrapped model.
+        """
         try:
             return self.accelerator.unwrap_model(model)
         except:
@@ -248,6 +261,12 @@ class AccelerateTrainer:
                 return model
 
     def test(self):
+        """
+        Test the model on the test dataset.
+
+        Returns:
+            dict: A dictionary of test metrics.
+        """
         self.model.eval()
         all_truth = []
         all_preds = []
@@ -269,10 +288,9 @@ class AccelerateTrainer:
                     all_preds.append(gathered_predictions)
                     all_truth.append(gathered_labels)
 
-        # # 同步所有进程
         # self.accelerator.wait_for_everyone()
 
-        # 只在主进程中计算指标
+        # Only in the main process, compute metrics
         if self.accelerator.is_main_process:
             all_preds = np.concatenate(all_preds, axis=0)
             all_truth = np.concatenate(all_truth, axis=0)
@@ -281,7 +299,6 @@ class AccelerateTrainer:
             for metric_func in self.compute_metrics:
                 test_metrics.update(metric_func(all_truth, all_preds))
 
-            # 打印指标信息
             fprint(test_metrics)
         else:
             test_metrics = None
@@ -289,11 +306,18 @@ class AccelerateTrainer:
         return test_metrics
 
     def train(self, path_to_save=None, **kwargs):
+        """
+        Train the model, evaluate periodically, and save the best model.
+
+        Parameters:
+            path_to_save (str, optional): Path to save the model checkpoints.
+            **kwargs: Additional arguments for saving the model.
+        """
         seed_everything(self.seed)
-        # 在所有进程上创建早停标志
+        # # Initialize early stopping flag
         early_stop_flag = torch.tensor(0, device=self.accelerator.device)
 
-        # 确保所有进程同步启动
+        # Ensure synchronization of all processes before starting
         self.accelerator.wait_for_everyone()
 
         # Initial validation or test
@@ -302,15 +326,15 @@ class AccelerateTrainer:
         else:
             valid_metrics = self.test()
 
-        # 在主进程中更新指标和保存模型
+        # In the main process, update metrics and save the model if necessary
         if self.accelerator.is_main_process:
             if self._is_metric_better(valid_metrics, stage="valid"):
                 self._save_state_dict()
                 early_stop_flag = torch.tensor(0, device=self.accelerator.device)
 
-        # 使用 all_gather 同步早停标志
+        # Synchronize early stop flags across all processes
         gathered_flags = self.accelerator.gather(early_stop_flag)
-        early_stop_flag = gathered_flags if gathered_flags.ndim==0 else gathered_flags[0] # 使用主进程的值
+        early_stop_flag = gathered_flags if gathered_flags.ndim==0 else gathered_flags[0] 
 
         for epoch in range(self.epochs):
             self.model.train()
@@ -323,7 +347,7 @@ class AccelerateTrainer:
                 disable=not self.accelerator.is_main_process,
             )
 
-            # 使用 accelerator.accumulate 控制梯度累积
+            # Use accelerator.accumulate to control gradient accumulation
             for step, batch in enumerate(train_it):
                 with self.accelerator.accumulate(self.model):
                     outputs = self.model(**batch)
@@ -333,7 +357,7 @@ class AccelerateTrainer:
                     self.optimizer.step()
                     self.optimizer.zero_grad()
 
-            # 同步所有进程后再进行评估
+            # Synchronize all processes before evaluation
             self.accelerator.wait_for_everyone()
 
             if self.eval_loader is not None and len(self.eval_loader) > 0:
@@ -341,7 +365,7 @@ class AccelerateTrainer:
             else:
                 valid_metrics = self.test()
 
-            # 在主进程中更新指标和判断是否需要早停
+            # Update metrics and check early stopping condition in the main process
             if self.accelerator.is_main_process:
                 if self._is_metric_better(valid_metrics, stage="valid"):
                     self._save_state_dict()
@@ -349,19 +373,19 @@ class AccelerateTrainer:
                 else:
                     early_stop_flag += 1
 
-            # 使用 all_gather 同步早停标志
+            # Synchronize early stop flag across all processes
             gathered_flags = self.accelerator.gather(early_stop_flag)
-            early_stop_flag = gathered_flags if gathered_flags.ndim == 0 else gathered_flags[0]  # 使用主进程的值
+            early_stop_flag = gathered_flags if gathered_flags.ndim == 0 else gathered_flags[0]  # Use the main process value
 
 
-            # 检查是否需要早停
+            # Check if early stopping is needed
             if early_stop_flag.item() > self.patience:
                 if self.accelerator.is_main_process:
                     print(f"Early stopping at epoch {epoch + 1}.")
                     fprint(f"Early stopping at epoch {epoch + 1}.")
                 break
 
-            # 只在主进程中保存检查点
+            # Save the checkpoint only in the main process
             if path_to_save and self.accelerator.is_main_process:
                 _path_to_save = path_to_save + "_epoch_" + str(epoch + 1)
                 if valid_metrics:
@@ -369,18 +393,18 @@ class AccelerateTrainer:
                         _path_to_save += f"_seed_{self.seed}_{key}_{value:.4f}"
                 self.save_model(_path_to_save, **kwargs)
 
-            # 确保所有进程同步后再进入下一轮
+            # Ensure all processes synchronize before the next epoch
             self.accelerator.wait_for_everyone()
 
         # Final test using the best checkpoint
         if self.test_loader is not None and len(self.test_loader) > 0:
             self._load_state_dict()
-            self.accelerator.wait_for_everyone()  # 确保加载完成后再测试
+            self.accelerator.wait_for_everyone()  # Ensure loading is complete before testing
             test_metrics = self.test()
             if self.accelerator.is_main_process:
                 self._is_metric_better(test_metrics, stage="test")
 
-        # 只在主进程中保存最终模型
+        # Save the final model only in the main process
         if path_to_save and self.accelerator.is_main_process:
             _path_to_save = path_to_save + "_final"
             if self.metrics.get("test"):
@@ -390,6 +414,7 @@ class AccelerateTrainer:
 
         self._remove_state_dict()
 
+        # Free accelerator memory
         self.accelerator.free_memory()
         del (
             self.model,
@@ -402,7 +427,7 @@ class AccelerateTrainer:
         return self.metrics
 
     def _is_metric_better(self, metrics, stage="valid"):
-        # 只在主进程中进行metric比较
+        # Only compare metrics in the main process
         if not self.accelerator.is_main_process:
             return False
 
@@ -427,7 +452,8 @@ class AccelerateTrainer:
             if self._optimization_direction is None
             else self._optimization_direction
         )
-
+        
+        # Compare metrics for optimization direction
         if self._optimization_direction == "larger_is_better":
             if np.mean(list(metrics.values())[0]) > np.mean(
                 list(self.metrics["best_valid"].values())[0]
@@ -469,6 +495,7 @@ class AccelerateTrainer:
             self.accelerator.unwrap_model(self.model).load_state_dict(weights)
 
     def _save_state_dict(self):
+        # Generate a unique path for saving state dict
         if not hasattr(self, "_model_state_dict_path"):
             from hashlib import sha256
 
@@ -487,6 +514,7 @@ class AccelerateTrainer:
             )
 
     def _remove_state_dict(self):
+        # Remove the model's state dict after training is complete
         if not hasattr(self, "_model_state_dict_path"):
             from hashlib import sha256
 
