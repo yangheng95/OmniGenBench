@@ -22,9 +22,13 @@ from omnigenome import (
 
 
 class Dataset(OmniGenomeDatasetForTokenRegression):
+    """
+    Custom dataset class that inherits from OmniGenomeDatasetForTokenRegression
+    """
     def __init__(self, data_source, tokenizer, max_length, **kwargs):
         super().__init__(data_source, tokenizer, max_length, **kwargs)
 
+    # Prepares the input for the model by tokenizing the sequence and creating labels
     def prepare_input(self, instance, **kwargs):
         target_cols = ["reactivity", "deg_Mg_pH10", "deg_Mg_50C"]
         instance["sequence"] = f'{instance["sequence"]}'
@@ -57,7 +61,7 @@ class Dataset(OmniGenomeDatasetForTokenRegression):
             tokenized_inputs[col] = tokenized_inputs[col].squeeze()
         return tokenized_inputs
 
-
+# Function to calculate the mean root-mean-square error (MCRMSE)
 def mcrmse(y_true, y_pred):
     if y_true.shape != y_pred.shape:
         raise ValueError("y_true and y_pred must have the same shape")
@@ -70,6 +74,9 @@ def mcrmse(y_true, y_pred):
 
 
 class Model(OmniGenomeModelForTokenRegression):
+    """
+    Custom model class for token regression tasks, inherited from OmniGenomeModelForTokenRegression
+    """
     def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
         super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
@@ -79,6 +86,7 @@ class Model(OmniGenomeModelForTokenRegression):
         self.loss_fn = torch.nn.MSELoss()
         self.model_info()
 
+    # Forward pass of the model
     def forward(self, **inputs):
         labels = inputs.pop("labels", None)
         last_hidden_state = self.last_hidden_state_forward(**inputs)
@@ -92,6 +100,7 @@ class Model(OmniGenomeModelForTokenRegression):
         }
         return outputs
 
+    # Prediction method for the model, outputs logits and predictions
     def predict(self, sequence_or_inputs, **kwargs):
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
 
@@ -114,6 +123,7 @@ class Model(OmniGenomeModelForTokenRegression):
 
         return outputs
 
+    # Inference method for generating model predictions
     def inference(self, sequence_or_inputs, **kwargs):
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
 
@@ -143,6 +153,7 @@ class Model(OmniGenomeModelForTokenRegression):
 
         return outputs
 
+    # Loss function to compute loss for model predictions
     def loss_function(self, logits, labels):
         padding_value = (
             self.config.ignore_y if hasattr(self.config, "ignore_y") else -100
@@ -158,7 +169,7 @@ class Model(OmniGenomeModelForTokenRegression):
         return loss
 
 
-# Hyperparameters
+# Hyperparameters for the configuration
 config_dict = {
     "task_name": "RNA-mRNA",
     "task_type": "token_regression",

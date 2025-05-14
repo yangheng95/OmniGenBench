@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # file: SSP_Demo.py
 # time: 17:04 18/04/2025
-# author: YANG, HENG <hy345@exeter.ac.uk> (杨恒)
-# 描述: 在同一视图展示 Ground Truth、ViennaRNA 与模型预测结构（三图水平排列）
+# author: YANG, HENG <hy345@exeter.ac.uk>
+# Description: Display Ground Truth, ViennaRNA prediction, and model prediction in a single view (three images aligned horizontally)）
 
 import os
 import time
@@ -15,16 +15,20 @@ import gradio as gr
 import RNA
 from omnigenome import ModelHub
 
-# 加载模型
+# Load the SSP structure prediction model
 print("Available files:", os.listdir('..'))
 ssp_model = ModelHub.load("../OmniGenome-186M-SSP")
 
-# 临时 SVG 存储目录
+#  Create a temporary directory for storing SVG images
 TEMP_DIR = Path(tempfile.mkdtemp())
 print(f"Using temporary directory: {TEMP_DIR}")
 
 
 def ss_validity_loss(rna_strct: str) -> float:
+    """
+    Compute the structural validity loss: unbalanced brackets / total pairs.
+    Helps detect invalid dot-bracket notations.
+    """
     left = right = 0
     dots = rna_strct.count('.')
     for c in rna_strct:
@@ -41,6 +45,9 @@ def ss_validity_loss(rna_strct: str) -> float:
 
 
 def find_invalid_positions(struct: str) -> list:
+    """
+    Find invalid base-pair positions in dot-bracket string (e.g. unmatched parentheses).
+    """
     stack, invalid = [], []
     for i, c in enumerate(struct):
         if c == '(': stack.append(i)
@@ -54,7 +61,9 @@ def find_invalid_positions(struct: str) -> list:
 
 
 def generate_svg_datauri(rna_seq: str, struct: str) -> str:
-    """生成 SVG 并返回 Base64 URI"""
+    """
+    Generate SVG from RNA sequence and structure, and return Base64-encoded data URI.
+    """
     try:
         path = TEMP_DIR / f"{hash(rna_seq+struct)}.svg"
         RNA.svg_rna_plot(rna_seq, struct, str(path))
@@ -69,18 +78,21 @@ def generate_svg_datauri(rna_seq: str, struct: str) -> str:
 
 
 def fold(rna_seq: str, gt_struct: str):
-    """展示 Ground Truth、ViennaRNA 与模型预测的结构对比"""
+    """
+    Display side-by-side structural comparison:
+    Ground Truth (if provided), ViennaRNA prediction, and SSP model prediction.
+    """
     if not rna_seq.strip():
         return "", "", "", ""
-    # Ground Truth: 用户输入优先
+    # Ground Truth (user-provided)
     ground = gt_struct.strip() if gt_struct and gt_struct.strip() else ""
     gt_uri = generate_svg_datauri(rna_seq, ground) if ground else ""
 
-    # ViennaRNA 预测
+    # ViennaRNA folding prediction
     vienna_struct, vienna_energy = RNA.fold(rna_seq)
     vienna_uri = generate_svg_datauri(rna_seq, vienna_struct)
 
-    # 模型预测
+    # Model prediction
     result = ssp_model.inference(rna_seq)
     pred = "".join(result.get('predictions', []))
     if ss_validity_loss(pred):
@@ -88,7 +100,7 @@ def fold(rna_seq: str, gt_struct: str):
             pred = pred[:i] + '.' + pred[i+1:]
     pred_uri = generate_svg_datauri(rna_seq, pred)
 
-    # 统计信息
+    # Structural similarity metrics
     match_gt = (sum(a==b for a,b in zip(ground, pred)) / len(ground)) if ground else 0
     match_vienna = sum(a==b for a,b in zip(vienna_struct, pred)) / len(vienna_struct)
     stats = (
@@ -96,7 +108,7 @@ def fold(rna_seq: str, gt_struct: str):
         f"Vienna↔Pred Match: {match_vienna:.2%}"
     )
 
-    # 合并 HTML：三图水平排列
+    # Combine the three SVGs in horizontal layout
     combined = (
         '<div style="display:flex;justify-content:space-around;">'
         f'{f"<div><h4>Ground Truth</h4><img src=\"{gt_uri}\" style=\"max-width:100%;height:auto;\"/></div>" if ground else ""}'
@@ -108,13 +120,15 @@ def fold(rna_seq: str, gt_struct: str):
 
 
 def sample_rna_sequence():
-    """从测试集中抽样，返回序列与 Ground Truth 结构"""
+    """
+    Randomly sample an RNA sequence and ground truth structure from the test set.
+    """
     try:
         exs = [json.loads(l) for l in open('toy_datasets/Archive2/test.json')]
         ex = exs[np.random.randint(len(exs))]
         return ex['seq'], ex.get('label','')
     except Exception as e:
-        return f"加载样本出错: {e}", ""
+        return f"Failed to load sample: {e}", ""
 
 # Gradio UI
 with gr.Blocks(css="""
@@ -122,18 +136,18 @@ with gr.Blocks(css="""
 .controls {display:flex;gap:10px;margin:20px 0;}
 .status {padding:10px;background:#f0f4f8;border-radius:4px;white-space:pre;}
 """) as demo:
-    gr.Markdown("# RNA 结构预测对比", elem_classes="heading")
+    gr.Markdown("# RNA Structure Prediction Comparison", elem_classes="heading")
     with gr.Row():
-        rna_input = gr.Textbox(label="RNA 序列", lines=3)
-        structure_input = gr.Textbox(label="Ground Truth 结构 (可选)", lines=3)
+        rna_input = gr.Textbox(label="RNA Sequence", lines=3)
+        structure_input = gr.Textbox(label="Ground Truth Structure (optional)", lines=3)
     with gr.Row(elem_classes="controls"):
-        sample_btn = gr.Button("抽取样本")
-        run_btn = gr.Button("预测并对比", variant="primary")
-    stats_out    = gr.Textbox(label="统计信息", interactive=False, elem_classes="status")
+        sample_btn = gr.Button("Sample Sequence")
+        run_btn = gr.Button("Predict & Compare", variant="primary")
+    stats_out    = gr.Textbox(label="Statistics", interactive=False, elem_classes="status")
     gt_out       = gr.Textbox(label="Ground Truth", interactive=False)
-    vienna_out   = gr.Textbox(label="ViennaRNA 结构", interactive=False)
-    pred_out     = gr.Textbox(label="Prediction 结构", interactive=False)
-    combined_view= gr.HTML(label="三图对比视图")
+    vienna_out   = gr.Textbox(label="ViennaRNA Structure", interactive=False)
+    pred_out     = gr.Textbox(label="Prediction Structure", interactive=False)
+    combined_view= gr.HTML(label="Side-by-Side Comparison View")
 
     run_btn.click(
         fold,

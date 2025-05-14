@@ -27,6 +27,16 @@ def count_parameters(model):
 
 
 class OmniGenomeModel(torch.nn.Module):
+    """
+    A custom model class inheriting from PyTorch's nn.Module, designed to wrap around a HuggingFace model.
+    This class adds additional functionality such as custom loss functions, tokenization, and model saving/loading.
+
+    Args:
+        config_or_model_model (Union[str, torch.nn.Module, AutoConfig]): Model configuration or model instance.
+        tokenizer (PreTrainedTokenizer): The tokenizer used for encoding inputs.
+        *args: Additional arguments passed to the superclass constructor.
+        **kwargs: Additional keyword arguments such as label2id, num_labels, etc.
+    """
     def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
         self.loss_fn = None
 
@@ -38,7 +48,7 @@ class OmniGenomeModel(torch.nn.Module):
         if label2id is not None and num_labels is None:
             num_labels = len(label2id)
 
-        # do not change the order of the following lines
+        # Do not change the order of the following lines
         super().__init__(*args, **kwargs)
 
         if isinstance(config_or_model_model, str):
@@ -270,6 +280,15 @@ class OmniGenomeModel(torch.nn.Module):
             )
 
     def save(self, path, overwrite=False, dtype=torch.float16, **kwargs):
+        """
+        Save the model and its components to the specified directory.
+
+        Args:
+            path (str): The directory to save the model.
+            overwrite (bool): Whether to overwrite existing files.
+            dtype (torch.dtype): The data type of the model when saving.
+            **kwargs: Additional arguments passed to the save procedure.
+        """
         self.eval()
 
         if os.path.exists(path) and not overwrite:
@@ -313,6 +332,16 @@ class OmniGenomeModel(torch.nn.Module):
         fprint(f"The model is saved to {path}.")
 
     def load(self, path, **kwargs):
+        """
+        Load the model and its components from the specified directory.
+
+        Args:
+            path (str): The directory to load the model from.
+            **kwargs: Additional arguments passed during model loading.
+
+        Returns:
+            OmniGenomeModel: The loaded model instance.
+        """
         with open(f"{path}/metadata.json", "r", encoding="utf8") as f:
             metadata = json.load(f)
 
@@ -362,6 +391,16 @@ class OmniGenomeModel(torch.nn.Module):
         return self
 
     def _forward_from_raw_input(self, sequence_or_inputs, **kwargs):
+        """
+        Convert raw inputs to tokenized form and pass them through the model for inference.
+
+        Args:
+            sequence_or_inputs (Union[str, dict, BatchEncoding]): The raw input data to be processed.
+            **kwargs: Additional arguments passed to the tokenizer.
+
+        Returns:
+            dict: The raw outputs from the model’s forward pass.
+        """
         if not isinstance(sequence_or_inputs, BatchEncoding) and not isinstance(
             sequence_or_inputs, dict
         ):
@@ -383,6 +422,17 @@ class OmniGenomeModel(torch.nn.Module):
 
     @staticmethod
     def from_pretrained(model_name_or_path, tokenizer, *args, **kwargs):
+        """
+        Load a pretrained model from a checkpoint or model hub.
+
+        Args:
+            model_name_or_path (str): The name or path of the pretrained model.
+            tokenizer (PreTrainedTokenizer): The tokenizer to use with the model.
+            *args, **kwargs: Additional arguments passed during the model initialization.
+
+        Returns:
+            OmniGenomeModel: The instantiated model.
+        """
         config = kwargs.pop("config", None)
         if config is None:
             config = AutoConfig.from_pretrained(model_name_or_path, **kwargs)

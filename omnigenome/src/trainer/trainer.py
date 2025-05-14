@@ -22,6 +22,10 @@ from torch.cuda.amp import GradScaler
 
 
 def _infer_optimization_direction(metrics, prev_metrics):
+    """
+    This function infers whether the optimization direction is 'larger_is_better' or 'smaller_is_better'
+    based on the comparison of the current and previous metrics.
+    """
     larger_is_better_metrics = [
         "accuracy",
         "f1",
@@ -75,6 +79,10 @@ def _infer_optimization_direction(metrics, prev_metrics):
 
 
 class Trainer:
+    """
+    A class that manages the training, evaluation, and testing process for a model.
+    Handles various aspects of training such as batch processing, optimization, early stopping, and model saving.
+    """
     def __init__(
         self,
         model,
@@ -150,6 +158,10 @@ class Trainer:
         self.predictions = {}
 
     def _is_metric_better(self, metrics, stage="valid"):
+        """
+        Compares the current metrics with previous ones to check if the current metrics are better.
+        Based on this comparison, the model may be saved if it improves.
+        """
         assert stage in [
             "valid",
             "test",
@@ -193,6 +205,10 @@ class Trainer:
         return False
 
     def train(self, path_to_save=None, **kwargs):
+        """
+        The main training loop. Handles training, validation, and early stopping.
+        Saves the model when it improves on the validation set.
+        """
         seed_everything(self.seed)
         patience = 0
 
@@ -284,6 +300,10 @@ class Trainer:
         return self.metrics
 
     def evaluate(self):
+        """
+        Evaluates the model on the validation dataset. 
+        Calculates and returns metrics such as accuracy, loss, etc.
+        """
         with torch.no_grad():
             self.model.eval()
             val_truth = []
@@ -320,6 +340,9 @@ class Trainer:
         return valid_metrics
 
     def test(self):
+        """
+        Test the model on the test dataset.
+        """
         with torch.no_grad():
             self.model.eval()
             preds = []

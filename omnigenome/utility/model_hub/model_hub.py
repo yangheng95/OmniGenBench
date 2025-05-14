@@ -18,6 +18,9 @@ from ...src.misc.utils import env_meta_info, fprint
 
 
 class ModelHub:
+    """
+    A class to handle the loading and management of models from the model hub.
+    """
     def __init__(self, *args, **kwargs):
         super(ModelHub, self).__init__(*args, **kwargs)
 
@@ -31,6 +34,19 @@ class ModelHub:
         fast_dtype=torch.float16,
         **kwargs,
     ):
+        """
+        Loads both the model and tokenizer from a specified model path or hub.
+
+        Args:
+            model_name_or_path: The model's name or path.
+            local_only: Whether to load only from local sources.
+            device: The device to load the model to (if None, auto-selects device).
+            fast_dtype: Data type to use (default: float16).
+            **kwargs: Additional arguments passed to model and tokenizer loading.
+
+        Returns:
+            model, tokenizer: The loaded model and tokenizer.
+        """
         model = ModelHub.load(model_name_or_path, local_only=local_only, **kwargs)
         fprint(f"The model and tokenizer has been loaded from {model_name_or_path}.")
         model.to(fast_type=fast_dtype)
@@ -52,6 +68,19 @@ class ModelHub:
         fast_dtype=torch.float16,
         **kwargs,
     ):
+        """
+        Loads a model from a specified path or the model hub.
+
+        Args:
+            model_name_or_path: The model's name or path.
+            local_only: Whether to load only from local sources.
+            device: The device to load the model to (if None, auto-selects device).
+            fast_dtype: Data type to use (default: float16).
+            **kwargs: Additional arguments passed to model loading.
+
+        Returns:
+            model: The loaded model.
+        """
         if isinstance(model_name_or_path, str) and os.path.exists(model_name_or_path):
             path = model_name_or_path
         elif isinstance(model_name_or_path, str) and not os.path.exists(
@@ -105,10 +134,29 @@ class ModelHub:
     def available_models(
         self, model_name_or_path=None, local_only=False, repo="", **kwargs
     ):
+        """
+        Queries and returns information about available models in the hub.
+
+        Args:
+            model_name_or_path: The model's name or path (optional).
+            local_only: Whether to load models only from local sources.
+            repo: The repository to query models from.
+            **kwargs: Additional arguments passed to the query.
+
+        Returns:
+            models_info: A list or dictionary with information about the available models.
+        """
         models_info = query_models_info(
             model_name_or_path, local_only=local_only, repo=repo, **kwargs
         )
         return models_info
 
     def push(self, model, **kwargs):
+        """
+        Pushes a model to the model hub (not implemented).
+
+        Args:
+            model: The model to be pushed.
+            **kwargs: Additional arguments for pushing the model.
+        """
         raise NotImplementedError("This method has not implemented yet.")
