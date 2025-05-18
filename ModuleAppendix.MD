@@ -1,7 +1,7 @@
 
 #  OmniGenBench Framework Module Appendix 
 
-This appendix provides a detailed, markdown-formatted overview of each core and auxiliary module in **OmniGenBench**. For each module you will find:
+> This appendix provides a detailed, markdown-formatted overview of each core and auxiliary module in **OmniGenBench**. For each module you will find:
 
 - **Functionality Description**  
 - **Inputs / Outputs Definition**  
