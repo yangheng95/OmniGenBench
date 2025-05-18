@@ -6,8 +6,6 @@ This appendix provides a detailed, markdown-formatted overview of each core and 
 - **Functionality Description**  
 - **Inputs / Outputs Definition**  
 - **Interface Introduction**  
-- **Design Highlights**  
-- **Extension Ideas**  
 - **Source Code Link**
 
 Each module title links directly to a representative code example or resource.
