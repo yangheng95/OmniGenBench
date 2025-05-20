@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>RNA Design Interface</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #1e1e1e;
+      color: #ccc;
+      font-family: monospace;
+      padding: 2rem;
+    }
+    pre {
+      background: #2d2d2d;
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      overflow-x: auto;
+    }
+    .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 1em;
+      background: #ccc;
+      animation: blink 1s step-start infinite;
+      vertical-align: bottom;
+      margin-left: -2px;
+    }
+    @keyframes blink {
+      50% { background: transparent; }
+    }
+  </style>
+</head>
+<body>
+  <h1>RNA Design Interface</h1>
+  <pre class="language-python"><code id="code-block"></code><span class="cursor"></span></pre>
+
+  <!-- Prism.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+
+  <script>
+ const rawCode = `# Install dependencies (run this if needed)
+!pip install OmniGenome torch transformers autocuda viennaRNA tqdm -U
+
+from omnigenome import OmniGenomeModelForRNADesign  # Assuming this is where the model class is defined
+ 
+# Initialize the model for RNA design
+model = OmniGenomeModelForRNADesign(model_path="anonymous8/OmniGenome-186M")
+
+
+# Define the target RNA structure
+structure = "(((....)))"  # Example of a simple RNA hairpin structure
+
+# Run the genetic algorithm to design RNA sequences
+best_sequences = model.run_rna_design(structure=structure, mutation_ratio=0.5, num_population=100, num_generation=100)
+
+# Print the best sequence(s)
+print("Best RNA sequences:", best_sequences)
+
+
+
+import json
+
+# Save the best sequences to a file
+output_file = "best_rna_sequences.json"
+with open(output_file, "w") as f:
+    json.dump({"structure": structure, "best_sequences": best_sequences}, f)
+
+print(f"Best sequences saved to {output_file}")
+
+
+
+# Load the sequences from the saved file
+with open(output_file, "r") as f:
+    loaded_data = json.load(f)
+
+print("Loaded RNA structure:", loaded_data["structure"])
+print("Loaded best sequences:", loaded_data["best_sequences"])
+
+
+
+# Run the design with a higher mutation ratio
+best_sequences = model.run_rna_design(structure=structure, mutation_ratio=0.7, num_population=100, num_generation=100)
+print("Best RNA sequences with higher mutation:", best_sequences)
+
+
+
+# Run the design with a larger population size
+best_sequences = model.run_rna_design(structure=structure, mutation_ratio=0.5, num_population=200, num_generation=100)
+print("Best RNA sequences with larger population:", best_sequences)
+
+
+
+# Run the design for more generations
+best_sequences = model.run_rna_design(structure=structure, mutation_ratio=0.5, num_population=100, num_generation=200)
+print("Best RNA sequences with more generations:", best_sequences)`;
+
+    let i = 0;
+    let buffer = "";
+    let throttle = 1;
+    const codeBlock = document.getElementById("code-block");
+    const cursor = document.querySelector(".cursor");
+
+    function typeChar() {
+      while (i < rawCode.length && rawCode[i] === ' ') {
+        buffer += rawCode[i++];
+      }
+      if (i < rawCode.length) {
+        buffer += rawCode[i++];
+        if (i % throttle === 0 || i === rawCode.length) {
+          codeBlock.innerHTML = Prism.highlight(buffer, Prism.languages.python, 'python');
+        }
+        setTimeout(typeChar, 20);
+      } else {
+        cursor.remove();
+        codeBlock.innerHTML = Prism.highlight(buffer, Prism.languages.python, 'python');
+      }
+    }
+
+    typeChar();
+  </script>
+</body>
+</html>
+
