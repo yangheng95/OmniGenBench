@@ -113,12 +113,13 @@ Please find more usage tutorials in [examples/tutorials](examples/tutorials).
       title={OmniGenBench: A Modular Platform for Reproducible Genomic Foundation Models Benchmarking}, 
       author={Heng Yang and Jack Cole, Yuan Li, Renzhi Chen, Geyong Min and Ke Li},
       year={2024},
-      eprint={[https://arxiv.org/abs/2505.14402](https://arxiv.org/abs/2505.14402)},
+      eprint={https://arxiv.org/abs/2505.14402},
       archivePrefix={arXiv},
       primaryClass={q-bio.GN},
-      url={[https://arxiv.org/abs/https://arxiv.org/abs/2505.14402](https://arxiv.org/abs/https://arxiv.org/abs/2505.14402)}, 
+      url={https://arxiv.org/abs/2505.14402}, 
 }
 ```
+
 ## License
 OmniGenomeBench is licensed under the Apache License 2.0. See the LICENSE file for more information.
 
