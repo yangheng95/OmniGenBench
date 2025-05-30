@@ -31,7 +31,7 @@ setup(
     url=f"https://github.com/yangheng95/{__name__}",
     author="Yang, Heng",
     author_email="hy345@exeter.ac.uk",
-    python_requires=">=3.9",
+    python_requires=">=3.10",
     platforms=["Windows", "Linux", "Mac OS-X"],
     packages=find_packages(),
     include_package_data=True,
@@ -63,7 +63,7 @@ setup(
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
     ],
 )

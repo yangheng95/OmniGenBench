@@ -10,6 +10,7 @@ import json
 import os
 
 import autocuda
+import dill
 import torch
 from transformers import AutoConfig, AutoModel, AutoTokenizer
 
@@ -28,12 +29,12 @@ class ModelHub:
         model_name_or_path,
         local_only=False,
         device=None,
-        fast_dtype=torch.float16,
+        dtype=torch.float16,
         **kwargs,
     ):
         model = ModelHub.load(model_name_or_path, local_only=local_only, **kwargs)
         fprint(f"The model and tokenizer has been loaded from {model_name_or_path}.")
-        model.to(fast_type=fast_dtype)
+        model.to(dtype)
         if device is None:
             device = autocuda.auto_cuda()
             fprint(
@@ -49,7 +50,7 @@ class ModelHub:
         model_name_or_path,
         local_only=False,
         device=None,
-        fast_dtype=torch.float16,
+        dtype=torch.float16,
         **kwargs,
     ):
         if isinstance(model_name_or_path, str) and os.path.exists(model_name_or_path):
@@ -68,18 +69,19 @@ class ModelHub:
         with open(f"{path}/metadata.json", "r", encoding="utf8") as f:
             metadata = json.load(f)
 
-        config.metadata = metadata
-        base_model = AutoModel.from_config(config, trust_remote_code=True, **kwargs)
-        model_lib = importlib.import_module(metadata["library_name"].lower()).model
-        model_cls = getattr(model_lib, metadata["model_cls"])
-
         if "Omni" in metadata["tokenizer_cls"]:
             lib = importlib.import_module(metadata["library_name"].lower())
             tokenizer_cls = getattr(lib, metadata["tokenizer_cls"])
             tokenizer = tokenizer_cls.from_pretrained(path, **kwargs)
         else:
-            tokenizer = AutoTokenizer.from_pretrained(path, **kwargs)
+            from multimolecule import RnaTokenizer
+            tokenizer = RnaTokenizer.from_pretrained(path, **kwargs)
 
+        config.metadata = metadata
+
+        base_model = AutoModel.from_config(config, trust_remote_code=True, **kwargs)
+        model_lib = importlib.import_module(metadata["library_name"].lower()).model
+        model_cls = getattr(model_lib, metadata["model_cls"])
         model = model_cls(
             base_model,
             tokenizer,
@@ -87,11 +89,12 @@ class ModelHub:
             num_labels=config.num_labels,
             **kwargs,
         )
+
         with open(f"{path}/pytorch_model.bin", "rb") as f:
             model.load_state_dict(
                 torch.load(f, map_location=kwargs.get("device", "cpu")), strict=False
             )
-        model.to(fast_dtype)
+        model.to(dtype)
         if device is None:
             device = autocuda.auto_cuda()
             fprint(

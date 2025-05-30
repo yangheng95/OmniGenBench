@@ -308,6 +308,8 @@ class Trainer:
                 valid_metrics = {}
                 for metric_func in self.compute_metrics:
                     valid_metrics.update(metric_func(val_truth, val_preds))
+
+                fprint(valid_metrics)
             else:
                 valid_metrics = {
                     "Validation set labels may be NaN. No metrics calculated.": 0
@@ -340,6 +342,8 @@ class Trainer:
                 test_metrics = {}
                 for metric_func in self.compute_metrics:
                     test_metrics.update(metric_func(truth, preds))
+
+                fprint(test_metrics)
             else:
                 test_metrics = {"Test set labels may be NaN. No metrics calculated.": 0}
 

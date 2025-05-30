@@ -13,6 +13,7 @@ import warnings
 import inspect
 from importlib import import_module
 
+import dill
 import findfile
 import torch
 from transformers import AutoModel, AutoConfig, AutoTokenizer, BatchEncoding
@@ -315,7 +316,8 @@ class OmniGenomeModel(torch.nn.Module):
 
         with open(f"{path}/metadata.json", "w", encoding="utf8") as f:
             json.dump(metadata, f)
-
+        with open(f"{path}/tokenizer.bin", "wb", encoding="utf8") as f:
+            dill.dump(self.tokenizer, f)
         self.model.save_pretrained(
             f"{path}", safe_serialization=False
         )  # do not remove this line, used to save customized model scripts
@@ -373,6 +375,10 @@ class OmniGenomeModel(torch.nn.Module):
                 warnings.warn(f"Unexpected keys in loaded weights: {unexpected_keys}")
 
             self.load_state_dict(loaded_state_dict, strict=False)
+        # Load the tokenizer
+        if os.path.exists(f"{path}/tokenizer.bin"):
+            with open(f"{path}/tokenizer.bin", "rb") as f:
+                self.tokenizer = dill.load(f)
 
         return self
 

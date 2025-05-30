@@ -42,7 +42,7 @@ class AutoBench:
         self.benchmark = benchmark.rstrip("/")
         self.autocast = kwargs.pop("autocast", "fp16")
         self.overwrite = kwargs.pop("overwrite", False)
-        self.trainer = kwargs.pop("trainer", "accelerate")
+        self.trainer = kwargs.pop("trainer", "native")
 
         self.model_name_or_path = model_name_or_path
         self.tokenizer = tokenizer

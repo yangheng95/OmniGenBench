@@ -71,6 +71,8 @@ def _infer_optimization_direction(metrics, prev_metrics):
     if is_prev_decreasing and is_still_decreasing:
         return "smaller_is_better"
 
+    return "larger_is_better" if is_prev_increasing else "smaller_is_better"
+
 
 class AccelerateTrainer:
     def __init__(
