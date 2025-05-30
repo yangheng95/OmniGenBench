@@ -1,27 +1,29 @@
-```
-   **  +----------- **           ___                     _ 
-  @@                 @@         / _ \  _ __ ___   _ __  (_)
- @@* #============== *@@       | | | || '_ ` _ \ | '_ \ | |
- @@*                 *@@       | |_| || | | | | || | | || |
- *@@  +------------ *@@         \___/ |_| |_| |_||_| |_||_|
-  *@*               @@*       
-   *@@  #========= @@*        
-    *@@*         *@@*          
-      *@@  +---@@@*              ____  
-        *@@*   **               / ___|  ___  _ __    ___   _ __ ___    ___ 
-          **@**                | |  _  / _ \| '_ \  / _ \ | '_ ` _ \  / _ \ 
-        *@@* *@@*              | |_| ||  __/| | | || (_) || | | | | ||  __/ 
-      *@@ ---+  @@*             \____| \___||_| |_| \___/ |_| |_| |_| \___| 
-    *@@*         *@@*          
-   *@@ =========#  @@*         
-  *@@               @@*        
- *@@ -------------+  @@*        ____                      _   
- @@                   @@       | __ )   ___  _ __    ___ | |__ 
- @@ ===============#  @@       |  _ \  / _ \| '_ \  / __|| '_ \ 
-  @@                 @@        | |_) ||  __/| | | || (__ | | | |
-   ** -----------+  **         |____/  \___||_| |_| \___||_| |_|
-```
-# OmniGenBench: Automating Large-scale in-silico Benchmarking for Genomic Foundation Models
+![favicon.png](asset/favicon.png)
+
+<h1 align="center"><strong>Reproducible Genomic Foundation Models Benchmarking</strong></h1>
+<p align="center">OmniGenBench is a modular benchmarking platform for evaluating genomic foundation models (GFMs) across diverse tasks like RNA structure prediction, gene function classification, and multi-species generalization.</p>
+
+
+<div align="center">
+
+  <a href="https://pypi.org/project/omnigenome/">
+    <img src="https://img.shields.io/pypi/v/omnigenome?color=blue&label=PyPI" alt="PyPI" />
+  </a>
+
+  <a href="https://pepy.tech/project/omnigenome">
+    <img src="https://static.pepy.tech/badge/omnigenome" alt="PyPI Downloads" />
+  </a>
+
+  <a href="https://pypi.org/project/omnigenbench/">
+    <img src="https://img.shields.io/pypi/pyversions/omnigenbench" alt="Python Version" />
+  </a>
+
+  <a href="https://github.com/yangheng95/omnigenome/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/yangheng95/omnigenome" alt="License" />
+  </a>
+
+</div>
+
 
 
 # Tutorials
@@ -128,13 +130,13 @@ OmniGenomeBench is licensed under the Apache License 2.0. See the LICENSE file f
 
 # Citation
 ```bibtex
-@misc{yang2024omnigenbenchautomatinglargescaleinsilico,
-      title={OmniGenBench: Automating Large-scale in-silico Benchmarking for Genomic Foundation Models}, 
-      author={Heng Yang and Jack Cole and Ke Li},
+@misc{yang2024omnigenben,
+      title={OmniGenBench: A Modular Platform for Reproducible Genomic Foundation Models Benchmarking}, 
+      author={Heng Yang and Jack Cole, Yuan Li, Renzhi Chen, Geyong Min and Ke Li},
       year={2024},
-      eprint={2410.01784},
+      eprint={https://arxiv.org/abs/2505.14402},
       archivePrefix={arXiv},
       primaryClass={q-bio.GN},
-      url={https://arxiv.org/abs/2410.01784}, 
+      url={https://arxiv.org/abs/https://arxiv.org/abs/2505.14402}, 
 }
 ```
