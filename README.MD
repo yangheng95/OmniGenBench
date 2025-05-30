@@ -1,6 +1,6 @@
 ![favicon.png](asset/favicon.png)
 
-<h3 align="center">OmniGenBench is a modular benchmarking platform for evaluating genomic foundation models (GFMs) across diverse tasks like RNA structure prediction, gene function classification, and multi-species generalization.</h3>
+<h3 align="center">OmniGenBench is a modular benchmarking platform for evaluating genomic foundation models (GFMs) across diverse tasks like RNA structure prediction, RNA design.</h3>
 
 <div align="center">
 
