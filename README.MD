@@ -60,7 +60,7 @@ pip install omnigenome -U
 ### Source Installation
 Or you can clone the repository and install it from source:
 ```bash
-git clone [https://github.com/yangheng95/OmniGenBench.git](https://github.com/yangheng95/OmniGenBench.git)
+git clone https://github.com/yangheng95/OmniGenBench.git
 cd OmniGenBench
 pip install -e .
 ```
