@@ -377,11 +377,28 @@ class AccelerateTrainer:
             for step, batch in enumerate(train_it):
                 with self.accelerator.accumulate(self.model):
                     outputs = self.model(**batch)
+                if "loss" not in outputs:
+                    # Generally, the model should return a loss in the outputs via OmniGenBench
+                    # For the Lora models, the loss is computed separately
+                    if hasattr(self.model, "loss_function") and callable(self.model.loss_function):
+                        loss = self.model.loss_function(outputs['logits'], outputs["labels"])
+                    elif (hasattr(self.model, "model")
+                          and hasattr(self.model.model, "loss_function")
+                          and callable(self.model.model.loss_function)):
+                        loss = self.model.model.loss_function(outputs['logits'], outputs["labels"])
+                    else:
+                        raise ValueError(
+                            "The model does not have a loss function defined. "
+                            "Please provide a loss function or ensure the model has one."
+                        )
+                else:
+                    # If the model returns a loss directly
                     loss = outputs["loss"]
-                    self.accelerator.backward(loss)
 
-                    self.optimizer.step()
-                    self.optimizer.zero_grad()
+            self.accelerator.backward(loss)
+
+            self.optimizer.step()
+            self.optimizer.zero_grad()
 
             # 同步所有进程后再进行评估
             self.accelerator.wait_for_everyone()

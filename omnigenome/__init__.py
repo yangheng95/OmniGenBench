@@ -8,7 +8,7 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 __name__ = "OmniGenome"
-__version__ = "0.2.4alpha9"
+__version__ = "0.2.6alpha0"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "Apache-2.0"
@@ -51,6 +51,7 @@ from .src.model import (
     OmniGenomeModelForEmbedding,
     OmniGenomeModelForAugmentation,
 )
+from .src.lora.lora_model import OmniLoraModel
 from .src.tokenizer import OmniBPETokenizer
 from .src.tokenizer import OmniKmersTokenizer
 from .src.tokenizer import OmniSingleNucleotideTokenizer
@@ -103,6 +104,7 @@ __all__ = [
     "OmniGenomeDatasetForTokenRegression",
     "OmniGenomeDatasetForSequenceClassification",
     "OmniGenomeDatasetForSequenceRegression",
+    "OmniLoraModel",
     "ClassificationMetric",
     "RegressionMetric",
     "RankingMetric",

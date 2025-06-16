@@ -98,6 +98,7 @@ class Trainer:
         # sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
         self.model = model
+
         # DataLoaders
         if kwargs.get("train_loader"):
             self.train_loader = kwargs.get("train_loader", None)
@@ -216,9 +217,26 @@ class Trainer:
 
                 if self.fast_dtype:
                     with torch.autocast(device_type="cuda", dtype=self.fast_dtype):
-                        loss = self.model(**batch)["loss"]
+                        outputs = self.model(**batch)
                 else:
-                    loss = self.model(**batch)["loss"]
+                    outputs = self.model(**batch)
+                if "loss" not in outputs:
+                    # Generally, the model should return a loss in the outputs via OmniGenBench
+                    # For the Lora models, the loss is computed separately
+                    if hasattr(self.model, "loss_function") and callable(self.model.loss_function):
+                        loss = self.model.loss_function(outputs['logits'], outputs["labels"])
+                    elif (hasattr(self.model, "model")
+                          and hasattr(self.model.model, "loss_function")
+                          and callable(self.model.model.loss_function)):
+                        loss = self.model.model.loss_function(outputs['logits'], outputs["labels"])
+                    else:
+                        raise ValueError(
+                            "The model does not have a loss function defined. "
+                            "Please provide a loss function or ensure the model has one."
+                        )
+                else:
+                    # If the model returns a loss directly
+                    loss = outputs["loss"]
 
                 loss = loss / self.gradient_accumulation_steps
 
@@ -379,7 +397,10 @@ class Trainer:
 
     def _load_state_dict(self):
         if os.path.exists(self._model_state_dict_path):
-            self.unwrap_model().load_state_dict(torch.load(self._model_state_dict_path))
+            self.unwrap_model().load_state_dict(
+                torch.load(self._model_state_dict_path, map_location='cpu')
+            )
+            self.unwrap_model().to(self.device)
 
     def _save_state_dict(self):
         if not hasattr(self, "_model_state_dict_path"):

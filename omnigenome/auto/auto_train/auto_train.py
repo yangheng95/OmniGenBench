@@ -16,6 +16,7 @@ import torch
 from metric_visualizer import MetricVisualizer
 from transformers import TrainingArguments, Trainer as HFTrainer
 
+from ...src.lora.lora_model import OmniLoraModel
 from ...src.abc.abstract_tokenizer import OmniGenomeTokenizer
 from ...src.misc.utils import (
     seed_everything,
@@ -150,11 +151,14 @@ class AutoTrain:
                     ignore_mismatched_sizes=True,
                 )
             else:
-                model = kwargs.get("model", None)
-                if not model:
-                    raise ValueError(
-                        "model_name_or_path and model cannot be both None."
-                    )
+                raise ValueError(
+                    "model_name_or_path is not specified. Please provide a valid model name or path."
+                )
+
+            if kwargs.get("lora_config", None) is not None:
+                fprint("Applying LoRA to the model with config:", kwargs["lora_config"])
+                model = OmniLoraModel(model, **kwargs.get("lora_config", {}))
+
             # Init Trainer
             dataset_cls = bench_config["dataset_cls"]
 
@@ -262,7 +266,7 @@ class AutoTrain:
                 fprint(metrics)
             else:
                 optimizer = torch.optim.AdamW(
-                    model.parameters(),
+                    filter(lambda p: p.requires_grad, model.parameters()),
                     lr=(
                         bench_config["learning_rate"]
                         if "learning_rate" in bench_config

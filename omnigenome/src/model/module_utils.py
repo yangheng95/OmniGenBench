@@ -11,7 +11,7 @@ import torch.nn as nn
 
 from transformers.models.bert.modeling_bert import BertPooler
 from transformers.tokenization_utils_base import BatchEncoding
-import torch.nn.functional as F
+
 
 
 class OmniGenomePooling(torch.nn.Module):
