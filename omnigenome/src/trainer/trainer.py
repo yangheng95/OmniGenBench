@@ -8,12 +8,10 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 import os
 import tempfile
-import time
 import autocuda
 import numpy as np
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from typing_extensions import Optional, Union
 
 from ..misc.utils import env_meta_info, fprint, seed_everything
 
@@ -22,10 +20,6 @@ from torch.cuda.amp import GradScaler
 
 
 def _infer_optimization_direction(metrics, prev_metrics):
-    """
-    This function infers whether the optimization direction is 'larger_is_better' or 'smaller_is_better'
-    based on the comparison of the current and previous metrics.
-    """
     larger_is_better_metrics = [
         "accuracy",
         "f1",
@@ -53,13 +47,16 @@ def _infer_optimization_direction(metrics, prev_metrics):
             return "smaller_is_better"
 
     fprint(
-        "Cannot determine the optimization direction. Trying to infer from the metrics."
+        "Cannot determine the optimisation direction. Attempting inference from the metrics."
     )
     is_prev_increasing = np.mean(list(prev_metrics[0].values())[0]) < np.mean(
         list(prev_metrics[-1].values())[0]
     )
     is_still_increasing = np.mean(list(prev_metrics[1].values())[0]) < np.mean(
         list(metrics.values())[0]
+    )
+    fprint(
+        "Cannot determine the optimisation direction. Attempting inference from the metrics."
     )
 
     if is_prev_increasing and is_still_increasing:
@@ -75,14 +72,10 @@ def _infer_optimization_direction(metrics, prev_metrics):
     if is_prev_decreasing and is_still_decreasing:
         return "smaller_is_better"
 
-    return 'larger_is_better' if is_prev_increasing else 'smaller_is_better'
+    return "larger_is_better" if is_prev_increasing else "smaller_is_better"
 
 
 class Trainer:
-    """
-    A class that manages the training, evaluation, and testing process for a model.
-    Handles various aspects of training such as batch processing, optimization, early stopping, and model saving.
-    """
     def __init__(
         self,
         model,
@@ -95,9 +88,9 @@ class Trainer:
         gradient_accumulation_steps: int = 1,
         optimizer: torch.optim.Optimizer = None,
         loss_fn: torch.nn.Module = None,
-        compute_metrics: Union[list, str] = None,
+        compute_metrics: [list | str] = None,
         seed: int = 42,
-        device: Optional[torch.device, str] = None,
+        device: [torch.device | str] = None,
         autocast: str = "float16",
         **kwargs,
     ):
@@ -105,6 +98,7 @@ class Trainer:
         # sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
         self.model = model
+
         # DataLoaders
         if kwargs.get("train_loader"):
             self.train_loader = kwargs.get("train_loader", None)
@@ -158,19 +152,12 @@ class Trainer:
         self.predictions = {}
 
     def _is_metric_better(self, metrics, stage="valid"):
-        """
-        Compares the current metrics with previous ones to check if the current metrics are better.
-        Based on this comparison, the model may be saved if it improves.
-        """
         assert stage in [
             "valid",
             "test",
         ], "The metrics stage should be either 'valid' or 'test'."
 
-        fprint(metrics)
-
         prev_metrics = self.metrics.get(stage, None)
-
         if stage not in self.metrics:
             self.metrics.update({f"{stage}": [metrics]})
         else:
@@ -205,10 +192,6 @@ class Trainer:
         return False
 
     def train(self, path_to_save=None, **kwargs):
-        """
-        The main training loop. Handles training, validation, and early stopping.
-        Saves the model when it improves on the validation set.
-        """
         seed_everything(self.seed)
         patience = 0
 
@@ -234,9 +217,26 @@ class Trainer:
 
                 if self.fast_dtype:
                     with torch.autocast(device_type="cuda", dtype=self.fast_dtype):
-                        loss = self.model(**batch)["loss"]
+                        outputs = self.model(**batch)
                 else:
-                    loss = self.model(**batch)["loss"]
+                    outputs = self.model(**batch)
+                if "loss" not in outputs:
+                    # Generally, the model should return a loss in the outputs via OmniGenBench
+                    # For the Lora models, the loss is computed separately
+                    if hasattr(self.model, "loss_function") and callable(self.model.loss_function):
+                        loss = self.model.loss_function(outputs['logits'], outputs["labels"])
+                    elif (hasattr(self.model, "model")
+                          and hasattr(self.model.model, "loss_function")
+                          and callable(self.model.model.loss_function)):
+                        loss = self.model.model.loss_function(outputs['logits'], outputs["labels"])
+                    else:
+                        raise ValueError(
+                            "The model does not have a loss function defined. "
+                            "Please provide a loss function or ensure the model has one."
+                        )
+                else:
+                    # If the model returns a loss directly
+                    loss = outputs["loss"]
 
                 loss = loss / self.gradient_accumulation_steps
 
@@ -300,10 +300,6 @@ class Trainer:
         return self.metrics
 
     def evaluate(self):
-        """
-        Evaluates the model on the validation dataset. 
-        Calculates and returns metrics such as accuracy, loss, etc.
-        """
         with torch.no_grad():
             self.model.eval()
             val_truth = []
@@ -330,6 +326,8 @@ class Trainer:
                 valid_metrics = {}
                 for metric_func in self.compute_metrics:
                     valid_metrics.update(metric_func(val_truth, val_preds))
+
+                fprint(valid_metrics)
             else:
                 valid_metrics = {
                     "Validation set labels may be NaN. No metrics calculated.": 0
@@ -340,9 +338,6 @@ class Trainer:
         return valid_metrics
 
     def test(self):
-        """
-        Test the model on the test dataset.
-        """
         with torch.no_grad():
             self.model.eval()
             preds = []
@@ -365,6 +360,8 @@ class Trainer:
                 test_metrics = {}
                 for metric_func in self.compute_metrics:
                     test_metrics.update(metric_func(truth, preds))
+
+                fprint(test_metrics)
             else:
                 test_metrics = {"Test set labels may be NaN. No metrics calculated.": 0}
 
@@ -400,7 +397,10 @@ class Trainer:
 
     def _load_state_dict(self):
         if os.path.exists(self._model_state_dict_path):
-            self.unwrap_model().load_state_dict(torch.load(self._model_state_dict_path))
+            self.unwrap_model().load_state_dict(
+                torch.load(self._model_state_dict_path, map_location='cpu')
+            )
+            self.unwrap_model().to(self.device)
 
     def _save_state_dict(self):
         if not hasattr(self, "_model_state_dict_path"):
@@ -413,7 +413,9 @@ class Trainer:
             if os.path.exists(self._model_state_dict_path):
                 os.remove(self._model_state_dict_path)
         except Exception as e:
-            fprint(f"Failed to remove the temporary checkpoint file {self._model_state_dict_path}: {e}")
+            fprint(
+                f"Failed to remove the temporary checkpoint file {self._model_state_dict_path}: {e}"
+            )
 
         torch.save(self.unwrap_model().state_dict(), self._model_state_dict_path)
 
@@ -423,4 +425,6 @@ class Trainer:
                 if os.path.exists(self._model_state_dict_path):
                     os.remove(self._model_state_dict_path)
             except Exception as e:
-                fprint(f"Failed to remove the temporary checkpoint file {self._model_state_dict_path}: {e}")
+                fprint(
+                    f"Failed to remove the temporary checkpoint file {self._model_state_dict_path}: {e}"
+                )

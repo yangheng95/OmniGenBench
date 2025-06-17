@@ -12,12 +12,12 @@ import time
 import warnings
 
 import findfile
-import numpy as np
 import torch
 from metric_visualizer import MetricVisualizer
 
 from transformers import TrainingArguments, Trainer as HFTrainer
 from ...src.abc.abstract_tokenizer import OmniGenomeTokenizer
+from ...src.lora.lora_model import OmniLoraModel
 from ...src.misc.utils import (
     seed_everything,
     fprint,
@@ -39,17 +39,10 @@ class AutoBench:
         tokenizer=None,
         **kwargs,
     ):
-        """
-        Initialize AutoBench class.
-
-        - Set up benchmark directory and model/tokenizer configuration.
-        - Load existing metric visualizer or create a new one.
-        - Load benchmark metadata and version check.
-        """
         self.benchmark = benchmark.rstrip("/")
         self.autocast = kwargs.pop("autocast", "fp16")
         self.overwrite = kwargs.pop("overwrite", False)
-        self.trainer = kwargs.pop("trainer", "accelerate")
+        self.trainer = kwargs.pop("trainer", "native")
 
         self.model_name_or_path = model_name_or_path
         self.tokenizer = tokenizer
@@ -93,9 +86,6 @@ class AutoBench:
         self.bench_info()
 
     def bench_info(self):
-        """
-        Print benchmark summary information.
-        """
         info = f"Benchmark Root: {self.benchmark}\n"
         info += f"Benchmark List: {self.bench_metadata.bench_list}\n"
         info += f"Model Name or Path: {self.model_name}\n"
@@ -107,13 +97,9 @@ class AutoBench:
 
     def run(self, **kwargs):
         """
-        Run evaluation on each task in the benchmark list.
 
-        - Load benchmark configuration
-        - Override configuration with kwargs
-        - Load tokenizer and model
-        - Run training and evaluation loop
-        - Save metrics and predictions
+        :param kwargs: parameters in kwargs will be used to override the default parameters in the benchmark config
+        :return:
         """
         bs_scale = kwargs.pop("bs_scale", 1)
         # Import benchmark config
@@ -137,7 +123,6 @@ class AutoBench:
             fprint(f"Loaded config for {bench} from {bench_config_path}")
             fprint(bench_config)
 
-            # Override config using kwargs
             for key, value in _kwargs.items():
                 if key in bench_config:
                     fprint(
@@ -198,6 +183,17 @@ class AutoBench:
                         trust_remote_code=True,
                         ignore_mismatched_sizes=True,
                     )
+                else:
+                    raise ValueError(
+                        "model_name_or_path is not specified. Please provide a valid model name or path."
+                    )
+
+                fprint(f"\n{model}")
+
+                if kwargs.get("lora_config", None) is not None:
+                    fprint("Applying LoRA to the model with config:", kwargs["lora_config"])
+                    model = OmniLoraModel(model, **kwargs.get("lora_config", {}))
+
                 # Init Trainer
                 dataset_cls = bench_config["dataset_cls"]
 
@@ -243,8 +239,8 @@ class AutoBench:
                     **_kwargs,
                 )
 
-                # Set up HuggingFace Trainer
                 if self.trainer == "hf_trainer":
+                    # Set up HuggingFace Trainer
                     hf_kwargs = {
                         k: v
                         for k, v in kwargs.items()
@@ -309,10 +305,9 @@ class AutoBench:
                         "test": test_result,
                     }
                     fprint(metrics)
-                # Accelerate or custom trainer  
                 else:
                     optimizer = torch.optim.AdamW(
-                        model.parameters(),
+                        filter(lambda p: p.requires_grad, model.parameters()),
                         lr=(
                             bench_config["learning_rate"]
                             if "learning_rate" in bench_config
@@ -359,7 +354,6 @@ class AutoBench:
 
                     predictions = trainer.predictions
 
-                    # Save predictions if required
                     if bench_config.get("save_predictions", False):
                         os.makedirs(f"predictions/{bench}", exist_ok=True)
                         import numpy as np
@@ -371,7 +365,6 @@ class AutoBench:
                             ) as f:
                                 np.save(f, predictions[split])
 
-                    # Log final test results
                     if metrics:
                         for key, value in metrics["test"][-1].items():
                             try:
