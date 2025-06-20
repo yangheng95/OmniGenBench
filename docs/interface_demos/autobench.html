@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Autobench Interface</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #1e1e1e;
+      color: #ccc;
+      font-family: monospace;
+      padding: 2rem;
+    }
+    pre {
+      background: #2d2d2d;
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      overflow-x: auto;
+    }
+    .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 1em;
+      background: #ccc;
+      animation: blink 1s step-start infinite;
+      vertical-align: bottom;
+      margin-left: -2px;
+    }
+    @keyframes blink {
+      50% { background: transparent; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Autobench Interface</h1>
+  <pre class="language-python"><code id="code-block"></code><span class="cursor"></span></pre>
+
+  <!-- Prism.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+
+  <script>
+    const rawCode = `from omnigenome import AutoBench
+import autocuda
+
+root = 'RGB'  # Abbreviation of the RNA genome benchmark
+
+model_name_or_path = 'anonymous8/OmniGenome-52M'
+
+device = autocuda.auto_cuda()
+auto_bench = AutoBench(
+    benchmark=root,
+    model_name_or_path=model_name_or_path,
+    device="cuda",
+    overwrite=True,
+)
+
+batch_size = 4
+epochs = 1  # increase for real cases
+seeds = [42]
+auto_bench.run(epochs=epochs, batch_size=batch_size, seeds=seeds)`;
+    let i = 0;
+    let buffer = "";
+    let throttle = 1;
+    const codeBlock = document.getElementById("code-block");
+    const cursor = document.querySelector(".cursor");
+
+    function typeChar() {
+      while (i < rawCode.length && rawCode[i] === ' ') {
+        buffer += rawCode[i++];
+      }
+      if (i < rawCode.length) {
+        buffer += rawCode[i++];
+        if (i % throttle === 0 || i === rawCode.length) {
+          codeBlock.innerHTML = Prism.highlight(buffer, Prism.languages.python, 'python');
+        }
+        setTimeout(typeChar, 20);
+      } else {
+        cursor.remove();
+        codeBlock.innerHTML = Prism.highlight(buffer, Prism.languages.python, 'python');
+      }
+    }
+
+    typeChar();
+  </script>
+</body>
+</html>
