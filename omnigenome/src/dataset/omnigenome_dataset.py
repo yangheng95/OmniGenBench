@@ -54,8 +54,8 @@ class OmniGenomeDatasetForTokenClassification(OmniGenomeDataset):
 
         tokenized_inputs = self.tokenizer(
             sequence,
-            padding="do_not_pad",
-            truncation=True,
+            padding=kwargs.get("padding", "do_not_pad"),
+            truncation=kwargs.get("truncation", True),
             max_length=self.max_length,
             return_tensors="pt",
         )
@@ -115,8 +115,8 @@ class OmniGenomeDatasetForSequenceClassification(OmniGenomeDataset):
 
         tokenized_inputs = self.tokenizer(
             sequence,
-            padding="do_not_pad",
-            truncation=True,
+            padding=kwargs.get("padding", "do_not_pad"),
+            truncation=kwargs.get("truncation", True),
             max_length=self.max_length,
             return_tensors="pt",
         )
@@ -124,7 +124,7 @@ class OmniGenomeDatasetForSequenceClassification(OmniGenomeDataset):
             tokenized_inputs[col] = tokenized_inputs[col].squeeze()
 
         if labels is not None:
-            if len(set(self.label2id.keys()) | set([labels])) != len(
+            if len(set(self.label2id.keys()) | set([str(labels)])) != len(
                 set(self.label2id.keys())
             ):
                 fprint(
@@ -178,8 +178,8 @@ class OmniGenomeDatasetForTokenRegression(OmniGenomeDataset):
 
         tokenized_inputs = self.tokenizer(
             sequence,
-            padding="do_not_pad",
-            truncation=True,
+            padding=kwargs.get("padding", "do_not_pad"),
+            truncation=kwargs.get("truncation", True),
             max_length=self.max_length,
             return_tensors="pt",
         )
@@ -250,8 +250,8 @@ class OmniGenomeDatasetForSequenceRegression(OmniGenomeDataset):
 
         tokenized_inputs = self.tokenizer(
             sequence,
-            padding="do_not_pad",
-            truncation=True,
+            padding=kwargs.get("padding", "do_not_pad"),
+            truncation=kwargs.get("truncation", True),
             max_length=self.max_length,
             return_tensors="pt",
         )

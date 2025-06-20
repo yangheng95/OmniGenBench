@@ -13,6 +13,7 @@ import warnings
 import inspect
 from importlib import import_module
 
+import dill
 import findfile
 import torch
 from transformers import AutoModel, AutoConfig, AutoTokenizer, BatchEncoding
@@ -37,6 +38,8 @@ class OmniGenomeModel(torch.nn.Module):
 
         if label2id is not None and num_labels is None:
             num_labels = len(label2id)
+        elif num_labels is not None and label2id is None:
+            label2id = {str(i): i for i in range(num_labels)}
 
         # do not change the order of the following lines
         super().__init__(*args, **kwargs)
@@ -92,11 +95,15 @@ class OmniGenomeModel(torch.nn.Module):
             del model_cls
         elif isinstance(config_or_model_model, torch.nn.Module):
             self.model = config_or_model_model
-            self.model.config.num_labels = num_labels
+            self.model.config.num_labels = (
+                num_labels if len(label2id) == num_labels else len(label2id)
+            )
             self.model.config.label2id = label2id
         elif isinstance(config_or_model_model, AutoConfig):
             config = config_or_model_model
-            config.num_labels = num_labels
+            config.num_labels = (
+                num_labels if len(label2id) == num_labels else len(label2id)
+            )
             config.label2id = label2id
             self.model = AutoModel.from_config(config)
             self.model.config = config
@@ -110,17 +117,28 @@ class OmniGenomeModel(torch.nn.Module):
         if isinstance(label2id, dict):
             self.config.label2id = label2id
             self.config.id2label = {v: k for k, v in label2id.items()}
+        if (
+            not hasattr(self.config, "num_labels")
+            or len(self.config.id2label) != self.config.num_labels
+        ):
+            fprint(
+                "Warning: The number of labels in the config is not equal to the number of labels in the label2id dictionary. "
+            )
+            fprint(
+                "Please check the label2id dictionary and the num_labels parameter in the config."
+            )
+            self.config.num_labels = len(self.config.id2label)
 
         # The metadata of the model
         self.metadata = env_meta_info()
         self.metadata["model_cls"] = self.__class__.__name__
 
         # The config of the model
-        if hasattr(self.config, "n_embd"):
+        if hasattr(self.config, "n_embd") and self.config.n_embd:
             self.config.hidden_size = self.config.n_embd
-        elif hasattr(self.config, "d_model"):
+        elif hasattr(self.config, "d_model") and self.config.d_model:
             self.config.hidden_size = self.config.d_model
-        elif hasattr(self.config, "hidden_size"):
+        elif hasattr(self.config, "hidden_size") and self.config.hidden_size:
             self.config.hidden_size = self.config.hidden_size
         else:
             raise RuntimeError(
@@ -145,6 +163,8 @@ class OmniGenomeModel(torch.nn.Module):
         """
         model = self.model
         input_mapping = {}
+        inputs["output_hidden_states"] = True
+        inputs["x"] = inputs["input_ids"]  # For compatibility with Evo models
         if isinstance(inputs, BatchEncoding) or isinstance(inputs, dict):
             # Determine the input parameter names of the model's forward method
             forward_params = inspect.signature(model.forward).parameters
@@ -152,6 +172,11 @@ class OmniGenomeModel(torch.nn.Module):
             for param in forward_params:
                 if param in inputs:
                     input_mapping[param] = inputs[param]
+            # 对于未在模型签名中声明的关键参数，可以给出警告或日志
+            ignored_keys = set(inputs.keys()) - set(input_mapping.keys())
+            if ignored_keys:
+                warnings.warn(f"Warning: Ignored keys in inputs: {ignored_keys}")
+
             inputs = input_mapping
         elif isinstance(inputs, tuple):
             input_ids = inputs[0]
@@ -184,7 +209,8 @@ class OmniGenomeModel(torch.nn.Module):
                 f"The inputs should be a tuple, BatchEncoding or a dictionary-like object, got {type(inputs)}."
             )
 
-        outputs = model(**inputs, output_hidden_states=True)
+        # 执行模型
+        outputs = model(**inputs)
 
         if not hasattr(outputs, "last_hidden_state"):
             warnings.warn(
@@ -198,12 +224,15 @@ class OmniGenomeModel(torch.nn.Module):
         elif hasattr(outputs, "hidden_states"):
             last_hidden_state = outputs.hidden_states[-1]
         elif isinstance(outputs, (list, tuple, torch.Tensor)):
-            last_hidden_state = (
-                outputs[-1] if len(outputs[-1].shape) == 3 else outputs[0]
-            )
+            if len(outputs) <= 2:
+                # For Evo models that return a tuple of (last_hidden_state, logits)
+                last_hidden_state = outputs[0]
+            elif len(outputs) >= 3:
+                last_hidden_state = outputs[-1]
         else:
             raise ValueError(
-                f"Cannot find the last hidden state in the outputs from the {model.__class__.__name__} model, please check the model architecture."
+                f"Cannot find the last hidden state in the outputs from the {model.__class__.__name__} model, "
+                f"please check the model architecture."
             )
 
         return last_hidden_state
@@ -300,7 +329,8 @@ class OmniGenomeModel(torch.nn.Module):
 
         with open(f"{path}/metadata.json", "w", encoding="utf8") as f:
             json.dump(metadata, f)
-
+        with open(f"{path}/tokenizer.bin", "wb", encoding="utf8") as f:
+            dill.dump(self.tokenizer, f)
         self.model.save_pretrained(
             f"{path}", safe_serialization=False
         )  # do not remove this line, used to save customized model scripts
@@ -358,6 +388,10 @@ class OmniGenomeModel(torch.nn.Module):
                 warnings.warn(f"Unexpected keys in loaded weights: {unexpected_keys}")
 
             self.load_state_dict(loaded_state_dict, strict=False)
+        # Load the tokenizer
+        if os.path.exists(f"{path}/tokenizer.bin"):
+            with open(f"{path}/tokenizer.bin", "rb") as f:
+                self.tokenizer = dill.load(f)
 
         return self
 

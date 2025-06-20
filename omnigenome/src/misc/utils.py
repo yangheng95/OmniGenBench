@@ -296,7 +296,6 @@ def check_bench_version(bench_version, omnigenome_version):
         )
 
 
-
 def clean_temp_dir_pt_files():
     tmp_dir = tempfile.gettempdir()
     for f in os.listdir(tmp_dir):

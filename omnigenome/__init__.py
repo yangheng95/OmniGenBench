@@ -8,10 +8,10 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 __name__ = "OmniGenome"
-__version__ = "0.2.4alpha4"
+__version__ = "0.2.6alpha1"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
-__license__ = "MIT"
+__license__ = "Apache-2.0"
 
 from .auto.auto_bench.auto_bench import AutoBench
 from .auto.auto_bench.auto_bench_config import AutoBenchConfig
@@ -51,6 +51,7 @@ from .src.model import (
     OmniGenomeModelForEmbedding,
     OmniGenomeModelForAugmentation,
 )
+from .src.lora.lora_model import OmniLoraModel
 from .src.tokenizer import OmniBPETokenizer
 from .src.tokenizer import OmniKmersTokenizer
 from .src.tokenizer import OmniSingleNucleotideTokenizer
@@ -61,9 +62,12 @@ from .src.trainer.accelerate_trainer import AccelerateTrainer
 from .utility.hub_utils import download_benchmark
 from .utility.hub_utils import download_model
 from .utility.hub_utils import download_pipeline
-
 from .utility import hub_utils as hub_utils
+
 from .utility.model_hub.model_hub import ModelHub
+
+from .utility.dataset_hub.dataset_hub import load_benchmark_datasets
+
 from .utility.pipeline_hub.pipeline import Pipeline
 from .utility.pipeline_hub.pipeline_hub import PipelineHub
 
@@ -71,6 +75,7 @@ from .src.model.module_utils import OmniGenomePooling
 
 
 __all__ = [
+    "load_benchmark_datasets",
     "OmniGenomeDataset",
     "OmniGenomeModel",
     "OmniGenomeMetric",
@@ -103,6 +108,7 @@ __all__ = [
     "OmniGenomeDatasetForTokenRegression",
     "OmniGenomeDatasetForSequenceClassification",
     "OmniGenomeDatasetForSequenceRegression",
+    "OmniLoraModel",
     "ClassificationMetric",
     "RegressionMetric",
     "RankingMetric",

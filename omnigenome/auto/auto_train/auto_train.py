@@ -16,6 +16,7 @@ import torch
 from metric_visualizer import MetricVisualizer
 from transformers import TrainingArguments, Trainer as HFTrainer
 
+from ...src.lora.lora_model import OmniLoraModel
 from ...src.abc.abstract_tokenizer import OmniGenomeTokenizer
 from ...src.misc.utils import (
     seed_everything,
@@ -25,6 +26,8 @@ from ...src.misc.utils import (
 )
 from ...src.trainer.accelerate_trainer import AccelerateTrainer
 from ...src.trainer.trainer import Trainer
+
+autotrain_evaluations = "./autotrain_evaluations"
 
 
 class AutoTrain:
@@ -39,32 +42,30 @@ class AutoTrain:
         self.autocast = kwargs.pop("autocast", "fp16")
         self.overwrite = kwargs.pop("overwrite", False)
         self.trainer = kwargs.pop("trainer", "accelerate")
-        os.makedirs("./autotrain_evaluations", exist_ok=True)
-        time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-        mv_name = (
-            f"{os.path.basename(self.dataset)}-{model_name_or_path.split('/')[-1]}"
-        )
-        self.mv_path = f"./autotrain_evaluations/{mv_name}-{time_str}.mv"
 
         self.model_name_or_path = model_name_or_path
         self.tokenizer = tokenizer
-        if isinstance(model_name_or_path, str):
-            self.model_name_or_path = model_name_or_path.rstrip("/")
+        if isinstance(self.model_name_or_path, str):
+            self.model_name_or_path = self.model_name_or_path.rstrip("/")
             self.model_name = self.model_name_or_path.split("/")[-1]
         else:
-            self.model_name = model_name_or_path.__class__.__name__
+            self.model_name = self.model_name_or_path.__class__.__name__
         if isinstance(tokenizer, str):
             self.tokenizer = tokenizer.rstrip("/")
+        os.makedirs(autotrain_evaluations, exist_ok=True)
+        time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+        mv_name = f"{dataset}-{self.model_name}"
+        self.mv_path = f"{autotrain_evaluations}/{mv_name}-{time_str}.mv"
+
         mv_paths = findfile.find_files(
-            "./autotrain_evaluations",
-            [dataset, model_name_or_path.split("/")[-1], ".mv"],
+            autotrain_evaluations,
+            [dataset, self.model_name, ".mv"],
         )
         if mv_paths and not self.overwrite:
             self.mv = MetricVisualizer.load(mv_paths[-1])
             self.mv.summary(round=4)
         else:
             self.mv = MetricVisualizer(self.mv_path)
-
         self.bench_info()
 
     def bench_info(self):
@@ -150,11 +151,14 @@ class AutoTrain:
                     ignore_mismatched_sizes=True,
                 )
             else:
-                model = kwargs.get("model", None)
-                if not model:
-                    raise ValueError(
-                        "model_name_or_path and model cannot be both None."
-                    )
+                raise ValueError(
+                    "model_name_or_path is not specified. Please provide a valid model name or path."
+                )
+
+            if kwargs.get("lora_config", None) is not None:
+                fprint("Applying LoRA to the model with config:", kwargs["lora_config"])
+                model = OmniLoraModel(model, **kwargs.get("lora_config", {}))
+
             # Init Trainer
             dataset_cls = bench_config["dataset_cls"]
 
@@ -262,7 +266,7 @@ class AutoTrain:
                 fprint(metrics)
             else:
                 optimizer = torch.optim.AdamW(
-                    model.parameters(),
+                    filter(lambda p: p.requires_grad, model.parameters()),
                     lr=(
                         bench_config["learning_rate"]
                         if "learning_rate" in bench_config
@@ -302,6 +306,10 @@ class AutoTrain:
                     **_kwargs,
                 )
                 metrics = trainer.train()
+                save_path = os.path.join(
+                    autotrain_evaluations, self.dataset, self.model_name
+                )
+                trainer.save_model(save_path)
 
                 if metrics:
                     for key, value in metrics["test"][-1].items():

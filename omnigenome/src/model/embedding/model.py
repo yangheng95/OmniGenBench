@@ -16,13 +16,14 @@ from omnigenome.src.misc.utils import fprint
 class OmniGenomeModelForEmbedding(torch.nn.Module):
     def __init__(self, model_name_or_path, *args, **kwargs):
         """Initializes the embedding model."""
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         self.model = AutoModel.from_pretrained(model_name_or_path, *args, **kwargs)
-        self.model.to(self.device)
+        self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(self._device)
         self.model.eval()  # Set model to evaluation mode
 
-    def batch_encode(self, sequences, batch_size=8, max_length=512):
+    def batch_encode(self, sequences, batch_size=8, max_length=512, agg='head'):
         """
         Encode a list of sequences to their corresponding embeddings.
 
@@ -30,6 +31,7 @@ class OmniGenomeModelForEmbedding(torch.nn.Module):
             sequences (list of str): List of input sequences to encode.
             batch_size (int): Batch size for processing.
             max_length (int): Maximum sequence length for encoding.
+            agg (str): Aggregation method for embeddings. Options are 'head', 'mean', 'tail'.
 
         Returns:
             torch.Tensor: Embeddings for the input sequences.
@@ -37,7 +39,7 @@ class OmniGenomeModelForEmbedding(torch.nn.Module):
         embeddings = []
 
         for i in range(0, len(sequences), batch_size):
-            batch_sequences = sequences[i : i + batch_size]
+            batch_sequences = sequences[i: i + batch_size]
             inputs = self.tokenizer(
                 batch_sequences,
                 return_tensors="pt",
@@ -50,20 +52,39 @@ class OmniGenomeModelForEmbedding(torch.nn.Module):
             with torch.no_grad():
                 outputs = self.model(**inputs)
 
-            # Assuming the last hidden state is used as the embedding representation
-            # You may use `outputs.pooler_output` for the pooled representation if available
-            batch_embeddings = outputs.last_hidden_state
-            embeddings.append(batch_embeddings.cpu())
+            batch_embeddings = outputs.last_hidden_state.cpu()
 
-        return torch.cat(embeddings, dim=0)
+            if agg == 'head':
+                emb = batch_embeddings[:, 0, :]
+            elif agg == 'mean':
+                attention_mask = inputs["attention_mask"].cpu()
+                masked_embeddings = batch_embeddings * attention_mask.unsqueeze(-1)
+                lengths = attention_mask.sum(dim=1).unsqueeze(1)
+                emb = masked_embeddings.sum(dim=1) / lengths
+            elif agg == 'tail':
+                attention_mask = inputs["attention_mask"]
+                lengths = attention_mask.sum(dim=1) - 1
+                emb = torch.stack([
+                    batch_embeddings[i, l.item()] for i, l in enumerate(lengths)
+                ])
+            else:
+                raise ValueError(f"Unsupported aggregation method: {agg}")
 
-    def encode(self, sequence, max_length=512):
+            embeddings.append(emb)
+
+        embeddings = torch.cat(embeddings, dim=0)
+        fprint(f"Generated embeddings for {len(sequences)} sequences.")
+        return embeddings
+
+    def encode(self, sequence, max_length=512, agg='head', keep_dim=False):
         """
         Encode a single sequence to its corresponding embedding.
 
         Args:
             sequence (str): Input sequence to encode.
             max_length (int): Maximum sequence length for encoding.
+            agg (str): Aggregation method.
+            keep_dim (bool): Whether to retain the batch dimension.
 
         Returns:
             torch.Tensor: Embedding for the input sequence.
@@ -80,8 +101,24 @@ class OmniGenomeModelForEmbedding(torch.nn.Module):
         with torch.no_grad():
             outputs = self.model(**inputs)
 
-        # Assuming the last hidden state is used as the embedding representation
-        return outputs.last_hidden_state.cpu()
+        last_hidden = outputs.last_hidden_state.cpu()
+
+        if agg == 'head':
+            emb = last_hidden[0, 0]
+        elif agg == 'mean':
+            attention_mask = inputs["attention_mask"].cpu()
+            masked_embeddings = last_hidden * attention_mask.unsqueeze(-1)
+            lengths = attention_mask.sum(dim=1).unsqueeze(1)
+            emb = masked_embeddings.sum(dim=1) / lengths
+            emb = emb.squeeze(0)
+        elif agg == 'tail':
+            attention_mask = inputs["attention_mask"]
+            lengths = attention_mask.sum(dim=1) - 1
+            emb = last_hidden[0, lengths[0].item()]
+        else:
+            raise ValueError(f"Unsupported aggregation method: {agg}")
+
+        return emb.unsqueeze(0) if keep_dim else emb
 
     def save_embeddings(self, embeddings, output_path):
         """
@@ -108,26 +145,27 @@ class OmniGenomeModelForEmbedding(torch.nn.Module):
         fprint(f"Loaded embeddings from {embedding_path}")
         return embeddings
 
-    def compute_similarity(self, embedding1, embedding2):
+    def compute_similarity(self, embedding1, embedding2, dim=0):
         """
         Compute cosine similarity between two embeddings.
 
         Args:
             embedding1 (torch.Tensor): The first embedding.
             embedding2 (torch.Tensor): The second embedding.
+            dim (int): Dimension along which to compute cosine similarity.
 
         Returns:
             float: Cosine similarity score.
         """
         similarity = torch.nn.functional.cosine_similarity(
-            embedding1, embedding2, dim=0
+            embedding1, embedding2, dim=dim
         )
         return similarity
 
     @property
     def device(self):
         """Get the current device ('cuda' or 'cpu')."""
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        return self._device
 
 
 # Example usage
@@ -138,6 +176,7 @@ if __name__ == "__main__":
     # Encode multiple sequences
     sequences = ["ATCGGCTA", "GGCTAGCTA"]
     embedding = embedding_model.encode(sequences[0])
+    fprint(f"Single embedding shape: {embedding.shape}")
 
     embeddings = embedding_model.batch_encode(sequences)
     fprint(f"Embeddings for sequences: {embeddings}")

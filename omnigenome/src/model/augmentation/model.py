@@ -37,8 +37,9 @@ class OmniGenomeModelForAugmentation(torch.nn.Module):
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         except Exception as e:
-            if 'RnaTokenizer' in str(e):
+            if "RnaTokenizer" in str(e):
                 from multimolecule import RnaTokenizer
+
                 self.tokenizer = RnaTokenizer.from_pretrained(model_name_or_path)
 
         self.model = AutoModelForMaskedLM.from_pretrained(
