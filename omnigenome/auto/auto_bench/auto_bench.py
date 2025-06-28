@@ -122,7 +122,6 @@ class AutoBench:
             fprint(f"Loaded config for {bench} from {bench_config_path}")
             fprint(bench_config)
 
-
             # Init Tokenizer and Model
             if not self.tokenizer:
                 tokenizer = OmniGenomeTokenizer.from_pretrained(

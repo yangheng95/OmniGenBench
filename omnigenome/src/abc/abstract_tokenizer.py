@@ -42,6 +42,7 @@ class OmniGenomeTokenizer:
                 f"No tokenizer wrapper found in {wrapper_path} -> Exception: {e}"
             )
             kwargs.pop("num_labels", None) # Remove num_labels if it exists, as it may not be applicable
+
             tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
 
         return tokenizer

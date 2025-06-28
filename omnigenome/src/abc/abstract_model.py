@@ -117,6 +117,17 @@ class OmniGenomeModel(torch.nn.Module):
         if isinstance(label2id, dict):
             self.config.label2id = label2id
             self.config.id2label = {v: k for k, v in label2id.items()}
+        if (
+            not hasattr(self.config, "num_labels")
+            or len(self.config.id2label) != self.config.num_labels
+        ):
+            fprint(
+                "Warning: The number of labels in the config is not equal to the number of labels in the label2id dictionary. "
+            )
+            fprint(
+                "Please check the label2id dictionary and the num_labels parameter in the config."
+            )
+            self.config.num_labels = len(self.config.id2label)
 
         assert len(self.config.label2id) == num_labels, f"Expected {num_labels} labels, but got {len(self.config.label2id)} in label2id dictionary."
 

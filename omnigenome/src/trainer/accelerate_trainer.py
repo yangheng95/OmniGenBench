@@ -370,6 +370,7 @@ class AccelerateTrainer:
             # 使用 accelerator.accumulate 控制梯度累积
             for step, batch in enumerate(train_it):
                 train_loss = []
+
                 with self.accelerator.accumulate(self.model):
                     outputs = self.model(**batch)
                 if "loss" not in outputs:

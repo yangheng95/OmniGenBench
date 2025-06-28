@@ -7,8 +7,9 @@
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
 
-__name__ = "OmniGenome"
+__name__ = "omnigenome"
 __version__ = "0.2.7alpha"
+
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "Apache-2.0"
