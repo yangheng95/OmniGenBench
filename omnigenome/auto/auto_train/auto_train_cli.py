@@ -121,7 +121,7 @@ def run_train():
     fprint("You can find the logs in the 'autobench_logs' directory.")
     fprint("You can find the metrics in the 'autobench_evaluations' directory.")
     fprint(
-        "If you don't intend to use accelerate, please add '--use_accelerate false' to the command."
+        "If you don't intend to use accelerate, please add '--trainer native' to the command."
     )
     fprint(
         "If you want to alter accelerate's behavior, please refer to 'accelerate config' command."

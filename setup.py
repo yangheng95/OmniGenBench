@@ -49,13 +49,16 @@ setup(
         "metric-visualizer>=0.9.6",
         "termcolor",
         "gitpython",
-        "torch>=2.0.0",
+        "torch>=2.6.0",
         "pandas",
         "viennarna",
         "scikit-learn",
         "accelerate",
-        "transformers>=4.45.0",
+        "transformers>=4.46.0",
         "packaging",
+        "peft",
+        "dill",
+        "accelerate"
     ],
     extras_require=extras,
     classifiers=[

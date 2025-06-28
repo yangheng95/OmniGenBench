@@ -8,7 +8,7 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 __name__ = "OmniGenome"
-__version__ = "0.2.6alpha0"
+__version__ = "0.2.6alpha2"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "Apache-2.0"
@@ -62,9 +62,12 @@ from .src.trainer.accelerate_trainer import AccelerateTrainer
 from .utility.hub_utils import download_benchmark
 from .utility.hub_utils import download_model
 from .utility.hub_utils import download_pipeline
-
 from .utility import hub_utils as hub_utils
+
 from .utility.model_hub.model_hub import ModelHub
+
+from .utility.dataset_hub.dataset_hub import load_benchmark_datasets
+
 from .utility.pipeline_hub.pipeline import Pipeline
 from .utility.pipeline_hub.pipeline_hub import PipelineHub
 
@@ -72,6 +75,7 @@ from .src.model.module_utils import OmniGenomePooling
 
 
 __all__ = [
+    "load_benchmark_datasets",
     "OmniGenomeDataset",
     "OmniGenomeModel",
     "OmniGenomeMetric",

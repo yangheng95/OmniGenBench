@@ -92,21 +92,8 @@ class OmniLoraModel(nn.Module):
             "AVOIDING: optimizer = torch.optim.AdamW(model.parameters(), ...)"
         )
 
-        # self.lora_model is a PEFT wrapped model, which is a wrapper around the original model
-        # self.lora_model.base_model is the original omnigenome wrapped model with output heads
-        # self.lora_model.base_model.model is the omnigenome model without output heads
-        # self.lora_model.base_model.model.model is the transformers-loaded backbone model
-
         self.config = model.config
-        for param in self.parameters():
-            self.device = param.device
-            self.dtype = param.dtype
-            break
-        for module in self.lora_model.modules():
-            module.device = self.device
-            if hasattr(module, 'dtype'):
-                module.dtype = self.dtype
-
+        self.to('cpu')  # Move the model to CPU initially
         fprint(
             "LoRA model initialized with the following configuration:\n",
             self.lora_model
@@ -118,14 +105,18 @@ class OmniLoraModel(nn.Module):
         Override the to method to ensure the lora_model is moved to the correct device and dtype.
         """
         self.lora_model.to(*args, **kwargs)
-        for param in self.parameters():
-            self.device = param.device
-            self.dtype = param.dtype
-            break
-        for module in self.lora_model.modules():
-            module.device = self.device
-            if hasattr(module, 'dtype'):
-                module.dtype = self.dtype
+        try:
+            # For evo-1 and similar models, we need to set the device and dtype
+            for param in self.parameters():
+                self.device = param.device
+                self.dtype = param.dtype
+                break
+            for module in self.lora_model.modules():
+                module.device = self.device
+                if hasattr(module, 'dtype'):
+                    module.dtype = self.dtype
+        except Exception as e:
+            pass # Ignore errors if parameters are not available
         return self
 
     def forward(self, *args, **kwargs):

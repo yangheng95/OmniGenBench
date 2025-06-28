@@ -60,7 +60,7 @@ class AutoBench:
 
         mv_paths = findfile.find_files(
             "./autobench_evaluations",
-            [benchmark, self.model_name, ".mv"],
+            and_key=[benchmark, self.model_name, ".mv"],
         )
         if mv_paths and not self.overwrite:
             self.mv = MetricVisualizer.load(mv_paths[-1])
@@ -114,36 +114,14 @@ class AutoBench:
                 len(self.bench_metadata.bench_list),
                 f"{(_ + 1) * 100 / len(self.bench_metadata.bench_list)}%",
             )
-            _kwargs = kwargs.copy()
             bench_config_path = findfile.find_file(
-                self.benchmark, f"{self.benchmark}.{bench}.config".split(".")
+                self.benchmark, and_key=f"{self.benchmark}.{bench}.config".split(".")
             )
             config = load_module_from_path("config", bench_config_path)
             bench_config = config.bench_config
             fprint(f"Loaded config for {bench} from {bench_config_path}")
             fprint(bench_config)
 
-            for key, value in _kwargs.items():
-                if key in bench_config:
-                    fprint(
-                        "Override", key, "with", value, "according to the input kwargs"
-                    )
-                    bench_config.update({key: value})
-
-                else:
-                    warnings.warn(
-                        f"kwarg: {key} not found in bench_config while setting {key} = {value}"
-                    )
-                    bench_config.update({key: value})
-
-            for key, value in bench_config.items():
-                if key in bench_config and key in _kwargs:
-                    _kwargs.pop(key)
-
-            fprint(
-                f"AutoBench Config for {bench}:",
-                "\n".join([f"{k}: {v}" for k, v in bench_config.items()]),
-            )
 
             # Init Tokenizer and Model
             if not self.tokenizer:
@@ -158,7 +136,52 @@ class AutoBench:
             if not isinstance(bench_config["seeds"], list):
                 bench_config["seeds"] = [bench_config["seeds"]]
 
-            for seed in bench_config["seeds"]:
+            random_seeds = bench_config["seeds"]
+            for seed in random_seeds:
+                _kwargs = kwargs.copy()
+                for key, value in _kwargs.items():
+                    if key in bench_config:
+                        fprint(
+                            "Override", key, "with", value, "according to the input kwargs"
+                        )
+                        bench_config.update({key: value})
+
+                    else:
+                        warnings.warn(
+                            f"kwarg: {key} not found in bench_config while setting {key} = {value}"
+                        )
+                        bench_config.update({key: value})
+
+                for key, value in bench_config.items():
+                    if key in bench_config and key in _kwargs:
+                        _kwargs.pop(key)
+
+                fprint(
+                    f"AutoBench Config for {bench}:",
+                    "\n".join([f"{k}: {v}" for k, v in bench_config.items()]),
+                )
+                for key, value in _kwargs.items():
+                    if key in bench_config:
+                        fprint(
+                            "Override", key, "with", value, "according to the input kwargs"
+                        )
+                        bench_config.update({key: value})
+
+                    else:
+                        warnings.warn(
+                            f"kwarg: {key} not found in bench_config while setting {key} = {value}"
+                        )
+                        bench_config.update({key: value})
+
+                for key, value in bench_config.items():
+                    if key in bench_config and key in _kwargs:
+                        _kwargs.pop(key)
+
+                fprint(
+                    f"AutoBench Config for {bench}:",
+                    "\n".join([f"{k}: {v}" for k, v in bench_config.items()]),
+                )
+
                 batch_size = (
                     bench_config["batch_size"] if "batch_size" in bench_config else 8
                 ) * bs_scale

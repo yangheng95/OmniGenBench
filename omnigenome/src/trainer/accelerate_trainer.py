@@ -367,14 +367,9 @@ class AccelerateTrainer:
                 desc=f"Epoch {epoch + 1}/{self.epochs} Loss",
                 disable=not self.accelerator.is_main_process,
             )
-            train_it = tqdm(
-                self.train_loader,
-                desc=f"Epoch {epoch + 1}/{self.epochs} Loss",
-                disable=not self.accelerator.is_main_process,
-            )
-
             # 使用 accelerator.accumulate 控制梯度累积
             for step, batch in enumerate(train_it):
+                train_loss = []
                 with self.accelerator.accumulate(self.model):
                     outputs = self.model(**batch)
                 if "loss" not in outputs:
@@ -394,6 +389,11 @@ class AccelerateTrainer:
                 else:
                     # If the model returns a loss directly
                     loss = outputs["loss"]
+
+                train_loss.append(loss.item() * self.gradient_accumulation_steps)
+                train_it.set_description(
+                    f"Epoch {epoch + 1}/{self.epochs} Loss: {np.nanmean(train_loss):.4f}"
+                )
 
             self.accelerator.backward(loss)
 

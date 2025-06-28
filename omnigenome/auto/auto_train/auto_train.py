@@ -94,26 +94,6 @@ class AutoTrain:
         fprint(f"Loaded config for {self.dataset} from {bench_config_path}")
         fprint(bench_config)
 
-        for key, value in _kwargs.items():
-            if key in bench_config:
-                fprint("Override", key, "with", value, "according to the input kwargs")
-                bench_config.update({key: value})
-
-            else:
-                warnings.warn(
-                    f"kwarg: {key} not found in config while setting {key} = {value}"
-                )
-                bench_config.update({key: value})
-
-        for key, value in bench_config.items():
-            if key in bench_config and key in _kwargs:
-                _kwargs.pop(key)
-
-        fprint(
-            f"AutoTrain Config for {self.dataset}:",
-            "\n".join([f"{k}: {v}" for k, v in bench_config.items()]),
-        )
-
         # Init Tokenizer and Model
         if not self.tokenizer:
             tokenizer = OmniGenomeTokenizer.from_pretrained(
@@ -125,7 +105,51 @@ class AutoTrain:
         if not isinstance(bench_config["seeds"], list):
             bench_config["seeds"] = [bench_config["seeds"]]
 
-        for seed in bench_config["seeds"]:
+        random_seeds = bench_config["seeds"]
+        for seed in random_seeds:
+            for key, value in _kwargs.items():
+                if key in bench_config:
+                    fprint(
+                        "Override", key, "with", value, "according to the input kwargs"
+                    )
+                    bench_config.update({key: value})
+
+                else:
+                    warnings.warn(
+                        f"kwarg: {key} not found in bench_config while setting {key} = {value}"
+                    )
+                    bench_config.update({key: value})
+
+            for key, value in bench_config.items():
+                if key in bench_config and key in _kwargs:
+                    _kwargs.pop(key)
+
+            fprint(
+                f"AutoBench Config for {self.dataset}:",
+                "\n".join([f"{k}: {v}" for k, v in bench_config.items()]),
+            )
+            for key, value in _kwargs.items():
+                if key in bench_config:
+                    fprint(
+                        "Override", key, "with", value, "according to the input kwargs"
+                    )
+                    bench_config.update({key: value})
+
+                else:
+                    warnings.warn(
+                        f"kwarg: {key} not found in bench_config while setting {key} = {value}"
+                    )
+                    bench_config.update({key: value})
+
+            for key, value in bench_config.items():
+                if key in bench_config and key in _kwargs:
+                    _kwargs.pop(key)
+
+            fprint(
+                f"AutoBench Config for {self.dataset}:",
+                "\n".join([f"{k}: {v}" for k, v in bench_config.items()]),
+            )
+
             batch_size = (
                 bench_config["batch_size"] if "batch_size" in bench_config else 8
             )

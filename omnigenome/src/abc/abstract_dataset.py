@@ -19,6 +19,93 @@ from transformers import BatchEncoding
 from ..misc.utils import fprint, env_meta_info, RNA2StructureCache
 
 
+def load_omnigenome_dataset(benchmark=None, dataset='', **kwargs):
+    """
+    Load the OmniGenome dataset for a specific benchmark and dataset name.
+    This function will search for the dataset files in the specified benchmark directory.
+    :param benchmark: The benchmark name, such as "BEACON", "GUE", "RGB", etc.
+    :param dataset: The dataset name, such as "train", "test", "valid", etc.
+    :param kwargs: Additional keyword arguments for the dataset.
+    :return: A collection of instances without tokenization.
+    """
+    import os
+    from findfile import find_file, find_files
+    from ... import download_benchmark
+
+    if not benchmark:
+        assert dataset, "Either benchmark or dataset (name or path) must be provided."
+        benchmark = dataset
+
+    if not os.path.exists(benchmark):
+        fprint(
+            "Benchmark:",
+            benchmark,
+            "does not exist. Search online for available benchmarks.",
+        )
+        benchmark_root = download_benchmark(benchmark)
+    else:
+        benchmark_root = benchmark
+
+    data_cfg_file = find_file(benchmark_root, ['config', dataset])
+    data_files = find_files(
+        os.path.dirname(data_cfg_file),
+        or_key=['train', 'dev', 'test', 'valid', dataset],
+        exclude_key=['.py', '__pycache__', '.ipynb_checkpoints'],
+    )
+    examples = {}
+    max_examples = kwargs.get("max_examples", None)
+
+    for data_source in data_files:
+        split = []
+
+        if data_source.endswith(".csv"):
+            import pandas as pd
+
+            df = pd.read_csv(data_source)
+            for i in range(len(df)):
+                split.append(df.iloc[i].to_dict())
+        elif data_source.endswith(".json"):
+            import json
+
+            try:
+                with open(data_source, "r", encoding="utf8") as f:
+                    split = json.load(f)
+            except:
+                with open(data_source, "r", encoding="utf8") as f:
+                    lines = f.readlines()  # Assume the data is a list of examples
+                for i in range(len(lines)):
+                    lines[i] = json.loads(lines[i])
+                for line in lines:
+                    split.append(line)
+        elif data_source.endswith(".parquet"):
+            import pandas as pd
+
+            df = pd.read_parquet(data_source)
+            for i in range(len(df)):
+                split.append(df.iloc[i].to_dict())
+        elif data_source.endswith(".txt") or data_source.endswith(".dat"):
+            with open(data_source, "r", encoding="utf8") as f:
+                lines = f.readlines()
+            for line in lines:
+                split.append({"text": line.strip()})
+        else:
+            raise Exception(f"Unknown file format of {data_source}.")
+
+        fprint(f"Loaded {len(split)} examples from {data_source}")
+
+        if kwargs.get("shuffle", True) is True:
+            fprint("Detected shuffle=True, shuffling the examples...")
+            random.shuffle(split)
+
+        if max_examples is not None:
+            fprint(f"Detected max_examples={max_examples}, truncating the examples...")
+            split = split[:max_examples]
+
+        examples[os.path.basename(data_source)] = split
+
+    return examples
+
+
 def covert_input_to_tensor(data):
     """
     Convert the data in the dataset to PyTorch tensors.
