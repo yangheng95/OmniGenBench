@@ -10,12 +10,12 @@ import numpy as np
 import torch
 from transformers import BatchEncoding
 
-from ...abc.abstract_model import OmniGenomeModel
+from ...abc.abstract_model import OmniModel
 
 
-class OmniGenomeModelForMLM(OmniGenomeModel):
-    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
-        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+class OmniModelForMLM(OmniModel):
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         if "MaskedLM" not in self.model.__class__.__name__:
             raise ValueError(

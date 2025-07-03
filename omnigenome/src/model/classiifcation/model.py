@@ -9,13 +9,13 @@
 
 import torch
 
-from ...abc.abstract_model import OmniGenomeModel
-from ..module_utils import OmniGenomePooling
+from ...abc.abstract_model import OmniModel
+from ..module_utils import OmniPooling
 
 
-class OmniGenomeModelForTokenClassification(OmniGenomeModel):
-    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
-        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+class OmniModelForTokenClassification(OmniModel):
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.softmax = torch.nn.Softmax(dim=-1)
         self.classifier = torch.nn.Linear(
@@ -99,11 +99,11 @@ class OmniGenomeModelForTokenClassification(OmniGenomeModel):
         return loss
 
 
-class OmniGenomeModelForSequenceClassification(OmniGenomeModel):
+class OmniModelForSequenceClassification(OmniModel):
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
-        self.pooler = OmniGenomePooling(self.config)
+        self.pooler = OmniPooling(self.config)
         self.softmax = torch.nn.Softmax(dim=-1)
         self.classifier = torch.nn.Linear(
             self.config.hidden_size, self.config.num_labels
@@ -182,8 +182,8 @@ class OmniGenomeModelForSequenceClassification(OmniGenomeModel):
         return loss
 
 
-class OmniGenomeModelForMultiLabelSequenceClassification(
-    OmniGenomeModelForSequenceClassification
+class OmniModelForMultiLabelSequenceClassification(
+    OmniModelForSequenceClassification
 ):
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
@@ -223,13 +223,13 @@ class OmniGenomeModelForMultiLabelSequenceClassification(
         return self.predict(sequence_or_inputs, **kwargs)
 
 
-class OmniGenomeModelForTokenClassificationWith2DStructure(
-    OmniGenomeModelForTokenClassification
+class OmniModelForTokenClassificationWith2DStructure(
+    OmniModelForTokenClassification
 ):
-    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
-        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
-        self.pooler = OmniGenomePooling(self.config)
+        self.pooler = OmniPooling(self.config)
         self.model_info()
 
     def forward(self, **inputs):
@@ -247,13 +247,13 @@ class OmniGenomeModelForTokenClassificationWith2DStructure(
         return outputs
 
 
-class OmniGenomeModelForSequenceClassificationWith2DStructure(
-    OmniGenomeModelForSequenceClassification
+class OmniModelForSequenceClassificationWith2DStructure(
+    OmniModelForSequenceClassification
 ):
-    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
-        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
-        self.pooler = OmniGenomePooling(self.config)
+        self.pooler = OmniPooling(self.config)
         self.model_info()
 
     def forward(self, **inputs):
@@ -273,11 +273,11 @@ class OmniGenomeModelForSequenceClassificationWith2DStructure(
         return outputs
 
 
-class OmniGenomeModelForMultiLabelSequenceClassificationWith2DStructure(
-    OmniGenomeModelForSequenceClassificationWith2DStructure
+class OmniModelForMultiLabelSequenceClassificationWith2DStructure(
+    OmniModelForSequenceClassificationWith2DStructure
 ):
-    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
-        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.softmax = torch.nn.Sigmoid()
         self.loss_fn = torch.nn.BCELoss()

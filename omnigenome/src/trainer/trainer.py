@@ -88,7 +88,7 @@ class Trainer:
         gradient_accumulation_steps: int = 1,
         optimizer: torch.optim.Optimizer = None,
         loss_fn: torch.nn.Module = None,
-        compute_metrics: [list | str] = None,
+        compute_metrics: list | str = None,
         seed: int = 42,
         device: [torch.device | str] = None,
         autocast: str = "float16",

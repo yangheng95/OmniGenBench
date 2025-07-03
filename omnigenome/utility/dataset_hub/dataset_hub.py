@@ -13,13 +13,13 @@ import warnings
 import findfile
 from typing_extensions import Union
 
-from ... import OmniGenomeTokenizer, download_benchmark
+from ... import OmniTokenizer, download_benchmark
 from ...src.misc.utils import load_module_from_path, fprint
 
 
 def load_benchmark_datasets(
     benchmark: str,
-    tokenizer: Union["OmniGenomeTokenizer", str] = None,
+    tokenizer: Union["OmniTokenizer", str] = None,
     **kwargs: dict,
 ):
     if not os.path.exists(benchmark):
@@ -48,7 +48,7 @@ def load_benchmark_datasets(
 
         # Init Tokenizer and Model
         if isinstance(tokenizer, str):
-            tokenizer = OmniGenomeTokenizer.from_pretrained(
+            tokenizer = OmniTokenizer.from_pretrained(
                 tokenizer,
                 trust_remote_code=bench_config.get("trust_remote_code", True),
                 **bench_config,

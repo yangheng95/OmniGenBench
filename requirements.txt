@@ -2,3 +2,4 @@
 findfile
 autocuda
 metric-visualizer
+safetensors

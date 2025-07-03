@@ -11,12 +11,12 @@ import warnings
 
 from transformers import AutoTokenizer
 
-from ..abc.abstract_tokenizer import OmniGenomeTokenizer
+from ..abc.abstract_tokenizer import OmniTokenizer
 
 warnings.filterwarnings("once")
 
 
-class OmniSingleNucleotideTokenizer(OmniGenomeTokenizer):
+class OmniSingleNucleotideTokenizer(OmniTokenizer):
     def __init__(self, base_tokenizer=None, **kwargs):
         super(OmniSingleNucleotideTokenizer, self).__init__(base_tokenizer, **kwargs)
         self.metadata["tokenizer_name"] = self.__class__.__name__

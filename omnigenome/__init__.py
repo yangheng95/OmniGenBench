@@ -8,7 +8,7 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 __name__ = "omnigenome"
-__version__ = "0.2.7alpha"
+__version__ = "0.3.0alpha"
 
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
@@ -25,33 +25,41 @@ from .src import dataset as dataset
 from .src import metric as metric
 from .src import model as model
 from .src import tokenizer as tokenizer
-from .src.abc.abstract_dataset import OmniGenomeDataset
-from .src.abc.abstract_metric import OmniGenomeMetric
-from .src.abc.abstract_model import OmniGenomeModel
-from .src.abc.abstract_tokenizer import OmniGenomeTokenizer
-from .src.abc.abstract_tokenizer import OmniGenomeTokenizer as AutoTokenizer
-from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForSequenceClassification
-from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForSequenceRegression
-from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForTokenClassification
-from .src.dataset.omnigenome_dataset import OmniGenomeDatasetForTokenRegression
+
+from .src.abc.abstract_dataset import OmniDataset
+from .src.abc.abstract_metric import OmniMetric
+from .src.abc.abstract_model import OmniModel
+
+
+
+from .src.abc.abstract_tokenizer import OmniTokenizer
+from .src.abc.abstract_tokenizer import OmniTokenizer as AutoTokenizer
+from .src.dataset.omni_dataset import OmniDatasetForSequenceClassification
+from .src.dataset.omni_dataset import OmniDatasetForSequenceRegression
+from .src.dataset.omni_dataset import OmniDatasetForTokenClassification
+from .src.dataset.omni_dataset import OmniDatasetForTokenRegression
+
+
+
 from .src.metric import ClassificationMetric, RegressionMetric, RankingMetric
 from .src.misc import utils as utils
 from .src.misc.utils import clean_temp_dir_pt_files
 from .src.model import (
-    OmniGenomeModelForSequenceClassification,
-    OmniGenomeModelForMultiLabelSequenceClassification,
-    OmniGenomeModelForTokenClassification,
-    OmniGenomeModelForSequenceRegression,
-    OmniGenomeModelForTokenRegression,
-    OmniGenomeModelForStructuralImputation,
-    OmniGenomeModelForMatrixRegression,
-    OmniGenomeModelForMatrixClassification,
-    OmniGenomeModelForMLM,
-    OmniGenomeModelForSeq2Seq,
-    OmniGenomeModelForRNADesign,
-    OmniGenomeModelForEmbedding,
-    OmniGenomeModelForAugmentation,
+    OmniModelForSequenceClassification,
+    OmniModelForMultiLabelSequenceClassification,
+    OmniModelForTokenClassification,
+    OmniModelForSequenceRegression,
+    OmniModelForTokenRegression,
+    OmniModelForStructuralImputation,
+    OmniModelForMatrixRegression,
+    OmniModelForMatrixClassification,
+    OmniModelForMLM,
+    OmniModelForSeq2Seq,
+    OmniModelForRNADesign,
+    OmniModelForEmbedding,
+    OmniModelForAugmentation,
 )
+
 from .src.lora.lora_model import OmniLoraModel
 from .src.tokenizer import OmniBPETokenizer
 from .src.tokenizer import OmniKmersTokenizer
@@ -72,16 +80,45 @@ from .utility.dataset_hub.dataset_hub import load_benchmark_datasets
 from .utility.pipeline_hub.pipeline import Pipeline
 from .utility.pipeline_hub.pipeline_hub import PipelineHub
 
-from .src.model.module_utils import OmniGenomePooling
+from .src.model.module_utils import OmniPooling
 
+
+# --------------------------------------------------------------------------------
+# For backward compatibility version 0.2.7alpha and earlier
+from .src.abc.abstract_tokenizer import OmniTokenizer as OmniGenomeTokenizer
+from .src.abc.abstract_dataset import OmniDataset as OmniGenomeDataset
+from .src.abc.abstract_metric import OmniMetric as OmniGenomeMetric
+from .src.abc.abstract_model import OmniModel as OmniGenomeModel
+from .src.dataset.omni_dataset import OmniDatasetForSequenceClassification as OmniGenomeDatasetForSequenceClassification
+from .src.dataset.omni_dataset import OmniDatasetForSequenceRegression as OmniGenomeDatasetForSequenceRegression
+from .src.dataset.omni_dataset import OmniDatasetForTokenClassification as OmniGenomeDatasetForTokenClassification
+from .src.dataset.omni_dataset import OmniDatasetForTokenRegression as OmniGenomeDatasetForTokenRegression
+from .src.lora.lora_model import OmniLoraModel as OmniGenomeLoraModel
+from .src.model import (
+    OmniModelForSequenceClassification as OmniGenomeModelForSequenceClassification,
+    OmniModelForMultiLabelSequenceClassification as OmniGenomeModelForMultiLabelSequenceClassification,
+    OmniModelForTokenClassification as OmniGenomeModelForTokenClassification,
+    OmniModelForSequenceRegression as OmniGenomeModelForSequenceRegression,
+    OmniModelForTokenRegression as OmniGenomeModelForTokenRegression,
+    OmniModelForStructuralImputation as OmniGenomeModelForStructuralImputation,
+    OmniModelForMatrixRegression as OmniGenomeModelForMatrixRegression,
+    OmniModelForMatrixClassification as OmniGenomeModelForMatrixClassification,
+    OmniModelForMLM as OmniGenomeModelForMLM,
+    OmniModelForSeq2Seq as OmniGenomeModelForSeq2Seq,
+    OmniModelForRNADesign as OmniGenomeModelForRNADesign,
+    OmniModelForEmbedding as OmniGenomeModelForEmbedding,
+    OmniModelForAugmentation as OmniGenomeModelForAugmentation,
+
+)
+# ------------------------------------------------------------------------------
 
 __all__ = [
     "load_benchmark_datasets",
-    "OmniGenomeDataset",
-    "OmniGenomeModel",
-    "OmniGenomeMetric",
+    "OmniDataset",
+    "OmniModel",
+    "OmniMetric",
     "AutoTokenizer",
-    "OmniGenomeTokenizer",
+    "OmniTokenizer",
     "OmniKmersTokenizer",
     "OmniSingleNucleotideTokenizer",
     "OmniBPETokenizer",
@@ -95,20 +132,20 @@ __all__ = [
     "model",
     "tokenizer",
     "dataset",
-    "OmniGenomeModelForSequenceClassification",
-    "OmniGenomeModelForMultiLabelSequenceClassification",
-    "OmniGenomeModelForTokenClassification",
-    "OmniGenomeModelForSequenceRegression",
-    "OmniGenomeModelForTokenRegression",
-    "OmniGenomeModelForStructuralImputation",
-    "OmniGenomeModelForMatrixRegression",
-    "OmniGenomeModelForMatrixClassification",
-    "OmniGenomeModelForMLM",
-    "OmniGenomeModelForSeq2Seq",
-    "OmniGenomeDatasetForTokenClassification",
-    "OmniGenomeDatasetForTokenRegression",
-    "OmniGenomeDatasetForSequenceClassification",
-    "OmniGenomeDatasetForSequenceRegression",
+    "OmniModelForSequenceClassification",
+    "OmniModelForMultiLabelSequenceClassification",
+    "OmniModelForTokenClassification",
+    "OmniModelForSequenceRegression",
+    "OmniModelForTokenRegression",
+    "OmniModelForStructuralImputation",
+    "OmniModelForMatrixRegression",
+    "OmniModelForMatrixClassification",
+    "OmniModelForMLM",
+    "OmniModelForSeq2Seq",
+    "OmniDatasetForTokenClassification",
+    "OmniDatasetForTokenRegression",
+    "OmniDatasetForSequenceClassification",
+    "OmniDatasetForSequenceRegression",
     "OmniLoraModel",
     "ClassificationMetric",
     "RegressionMetric",

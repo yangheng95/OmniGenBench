@@ -13,7 +13,7 @@ from transformers import AutoTokenizer
 from ..misc.utils import env_meta_info, load_module_from_path
 
 
-class OmniGenomeTokenizer:
+class OmniTokenizer:
     def __init__(self, base_tokenizer=None, max_length=512, **kwargs):
         self.metadata = env_meta_info()
 
@@ -32,7 +32,7 @@ class OmniGenomeTokenizer:
         wrapper_path = f"{model_name_or_path.rstrip('/')}/omnigenome_wrapper.py"
         try:
             tokenizer_cls = load_module_from_path(
-                "OmniGenomeTokenizerWrapper", wrapper_path
+                "OmniTokenizerWrapper", wrapper_path
             ).Tokenizer
             tokenizer = tokenizer_cls(
                 AutoTokenizer.from_pretrained(model_name_or_path, **kwargs), **kwargs

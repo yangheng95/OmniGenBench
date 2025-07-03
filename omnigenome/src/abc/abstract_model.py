@@ -27,8 +27,8 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-class OmniGenomeModel(torch.nn.Module):
-    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
+class OmniModel(torch.nn.Module):
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         self.loss_fn = None
 
         label2id = kwargs.pop("label2id", None)
@@ -44,9 +44,9 @@ class OmniGenomeModel(torch.nn.Module):
         # do not change the order of the following lines
         super().__init__(*args, **kwargs)
 
-        if isinstance(config_or_model_model, str):
+        if isinstance(config_or_model, str):
             config = AutoConfig.from_pretrained(
-                config_or_model_model,
+                config_or_model,
                 num_labels=num_labels,
                 label2id=label2id,
                 trust_remote_code=trust_remote_code,
@@ -63,14 +63,14 @@ class OmniGenomeModel(torch.nn.Module):
                     model_cls = getattr(import_module(f"transformers"), model_cls_name)
 
                     model = model_cls.from_pretrained(
-                        config_or_model_model,
+                        config_or_model,
                         config=config,
                         trust_remote_code=trust_remote_code,
                         ignore_mismatched_sizes=ignore_mismatched_sizes,
                     ).base_model
                 else:
                     raise ValueError(
-                        f"The model cannot be instantiated from {config_or_model_model}. "
+                        f"The model cannot be instantiated from {config_or_model}. "
                         f"Please check the model configuration contains the architectures or auto_map."
                     )
             elif hasattr(config, "architectures") and config.architectures:
@@ -81,7 +81,7 @@ class OmniGenomeModel(torch.nn.Module):
                 )
                 model_cls = getattr(import_module(f"transformers"), model_cls_name)
                 model = model_cls.from_pretrained(
-                    config_or_model_model,
+                    config_or_model,
                     config=config,
                     trust_remote_code=trust_remote_code,
                     ignore_mismatched_sizes=ignore_mismatched_sizes,
@@ -93,14 +93,14 @@ class OmniGenomeModel(torch.nn.Module):
             self.model = model
             self.model.config = config
             del model_cls
-        elif isinstance(config_or_model_model, torch.nn.Module):
-            self.model = config_or_model_model
+        elif isinstance(config_or_model, torch.nn.Module):
+            self.model = config_or_model
             self.model.config.num_labels = (
                 num_labels if len(label2id) == num_labels else len(label2id)
             )
             self.model.config.label2id = label2id
-        elif isinstance(config_or_model_model, AutoConfig):
-            config = config_or_model_model
+        elif isinstance(config_or_model, AutoConfig):
+            config = config_or_model
             config.num_labels = (
                 num_labels if len(label2id) == num_labels else len(label2id)
             )
@@ -109,7 +109,7 @@ class OmniGenomeModel(torch.nn.Module):
             self.model.config = config
         else:
             raise ValueError(
-                "The config_or_model_model should be either a string, a torch.nn.Module or a AutoConfig object."
+                "The config_or_model should be either a string, a torch.nn.Module or a AutoConfig object."
             )
 
         # Update the config
@@ -425,7 +425,7 @@ class OmniGenomeModel(torch.nn.Module):
         base_model = AutoModel.from_pretrained(model_name_or_path, **kwargs)
         if tokenizer is None:
             tokenizer = AutoTokenizer.from_pretrained(base_model, **kwargs)
-        return OmniGenomeModel(config, base_model, tokenizer, *args, **kwargs)
+        return OmniModel(config, base_model, tokenizer, *args, **kwargs)
 
     def model_info(self):
         info = f"Model Name: {self.__class__.__name__}\n"

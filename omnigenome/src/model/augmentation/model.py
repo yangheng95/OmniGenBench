@@ -14,7 +14,7 @@ from transformers import AutoModelForMaskedLM, AutoTokenizer
 import autocuda
 
 
-class OmniGenomeModelForAugmentation(torch.nn.Module):
+class OmniModelForAugmentation(torch.nn.Module):
     def __init__(
         self,
         model_name_or_path=None,
@@ -124,7 +124,7 @@ class OmniGenomeModelForAugmentation(torch.nn.Module):
 
 # Example usage
 if __name__ == "__main__":
-    model = OmniGenomeModelForAugmentation(
+    model = OmniModelForAugmentation(
         model_name_or_path="anonymous8/OmniGenome-186M",
         noise_ratio=0.2,  # Example noise ratio
         max_length=1026,  # Maximum token length

@@ -7,9 +7,9 @@
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
 
-from ...abc.abstract_model import OmniGenomeModel
+from ...abc.abstract_model import OmniModel
 
 
-class OmniGenomeModelForSeq2Seq(OmniGenomeModel):
-    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
-        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+class OmniModelForSeq2Seq(OmniModel):
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model, tokenizer, *args, **kwargs)

@@ -58,7 +58,7 @@ def main():
     args = parser.parse_args()
 
     if args.command == "rna_design":
-        from omnigenome import OmniGenomeModelForRNADesign
+        from omnigenome import OmniModelForRNADesign
 
         # Validate parameters
         if not 0 <= args.mutation_ratio <= 1:
@@ -69,7 +69,7 @@ def main():
             )
 
         # Run RNA design
-        model = OmniGenomeModelForRNADesign(model=args.model)
+        model = OmniModelForRNADesign(model=args.model)
         best_sequences = model.design(
             structure=args.structure,
             mutation_ratio=args.mutation_ratio,

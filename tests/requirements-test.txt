@@ -1,0 +1,44 @@
+# Test dependencies for OmniGenomeBench
+# Install with: pip install -r requirements-test.txt
+
+# Core testing framework
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+pytest-xdist>=3.0.0
+
+# Additional testing utilities
+coverage>=7.0.0
+pytest-html>=3.1.0
+pytest-json-report>=1.5.0
+
+# Mocking and testing utilities
+unittest-mock>=1.0.0
+responses>=0.23.0
+
+# Code quality tools
+flake8>=6.0.0
+black>=23.0.0
+isort>=5.12.0
+
+# Documentation testing
+doctest-ignore-unicode>=0.1.2
+
+# Performance testing
+pytest-benchmark>=4.0.0
+
+# Memory testing
+pytest-memray>=1.4.0
+
+# Async testing
+pytest-asyncio>=0.21.0
+
+# Parameterized testing
+pytest-parametrize>=1.0.0
+
+# Test data generation
+faker>=18.0.0
+factory-boy>=3.2.0
+
+# Notebook parsing for example tests
+nbformat>=5.9.0 

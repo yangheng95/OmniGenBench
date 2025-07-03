@@ -9,13 +9,13 @@
 import torch
 
 from .resnet import resnet_b16
-from ...abc.abstract_model import OmniGenomeModel
-from ..module_utils import OmniGenomePooling
+from ...abc.abstract_model import OmniModel
+from ..module_utils import OmniPooling
 
 
-class OmniGenomeModelForTokenRegression(OmniGenomeModel):
-    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
-        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+class OmniModelForTokenRegression(OmniModel):
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.classifier = torch.nn.Linear(
             self.config.hidden_size, self.config.num_labels
@@ -102,11 +102,11 @@ class OmniGenomeModelForTokenRegression(OmniGenomeModel):
         return loss
 
 
-class OmniGenomeModelForSequenceRegression(OmniGenomeModel):
-    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
-        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+class OmniModelForSequenceRegression(OmniModel):
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
-        self.pooler = OmniGenomePooling(self.config)
+        self.pooler = OmniPooling(self.config)
         self.classifier = torch.nn.Linear(
             self.config.hidden_size, self.config.num_labels
         )
@@ -189,9 +189,9 @@ class OmniGenomeModelForSequenceRegression(OmniGenomeModel):
         return loss
 
 
-class OmniGenomeModelForStructuralImputation(OmniGenomeModelForSequenceRegression):
-    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
-        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+class OmniModelForStructuralImputation(OmniModelForSequenceRegression):
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.loss_fn = torch.nn.MSELoss()
         self.embedding = torch.nn.Embedding(1, self.config.hidden_size)
@@ -215,13 +215,13 @@ class OmniGenomeModelForStructuralImputation(OmniGenomeModelForSequenceRegressio
         return outputs
 
 
-class OmniGenomeModelForTokenRegressionWith2DStructure(
-    OmniGenomeModelForTokenRegression
+class OmniModelForTokenRegressionWith2DStructure(
+    OmniModelForTokenRegression
 ):
-    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
-        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
-        self.pooler = OmniGenomePooling(self.config)
+        self.pooler = OmniPooling(self.config)
         self.classifier = torch.nn.Linear(
             self.config.hidden_size, self.config.num_labels
         )
@@ -241,13 +241,13 @@ class OmniGenomeModelForTokenRegressionWith2DStructure(
         return outputs
 
 
-class OmniGenomeModelForSequenceRegressionWith2DStructure(
-    OmniGenomeModelForSequenceRegression
+class OmniModelForSequenceRegressionWith2DStructure(
+    OmniModelForSequenceRegression
 ):
-    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
-        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
-        self.pooler = OmniGenomePooling(self.config)
+        self.pooler = OmniPooling(self.config)
         self.classifier = torch.nn.Linear(
             self.config.hidden_size, self.config.num_labels
         )
@@ -268,9 +268,9 @@ class OmniGenomeModelForSequenceRegressionWith2DStructure(
         return outputs
 
 
-class OmniGenomeModelForMatrixRegression(OmniGenomeModel):
-    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
-        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+class OmniModelForMatrixRegression(OmniModel):
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.classifier = torch.nn.Linear(
             self.config.hidden_size, self.config.num_labels
@@ -365,9 +365,9 @@ class OmniGenomeModelForMatrixRegression(OmniGenomeModel):
         return loss
 
 
-class OmniGenomeModelForMatrixClassification(OmniGenomeModel):
-    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
-        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+class OmniModelForMatrixClassification(OmniModel):
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         # For binary classification, output size is 1
         self.classifier = torch.nn.Linear(self.config.hidden_size, 1)

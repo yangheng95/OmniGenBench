@@ -9,7 +9,7 @@
 import numpy as np
 import warnings
 
-from ..abc.abstract_tokenizer import OmniGenomeTokenizer
+from ..abc.abstract_tokenizer import OmniTokenizer
 
 warnings.filterwarnings("once")
 
@@ -30,7 +30,7 @@ def is_bpe_tokenization(tokens, threshold=0.1):
     return rmse >= threshold
 
 
-class OmniBPETokenizer(OmniGenomeTokenizer):
+class OmniBPETokenizer(OmniTokenizer):
     def __init__(self, base_tokenizer=None, **kwargs):
         super(OmniBPETokenizer, self).__init__(base_tokenizer, **kwargs)
         self.metadata["tokenizer_name"] = self.__class__.__name__

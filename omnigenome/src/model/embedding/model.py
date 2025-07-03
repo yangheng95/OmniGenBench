@@ -13,7 +13,7 @@ from transformers import AutoTokenizer, AutoModel
 from omnigenome.src.misc.utils import fprint
 
 
-class OmniGenomeModelForEmbedding(torch.nn.Module):
+class OmniModelForEmbedding(torch.nn.Module):
     def __init__(self, model_name_or_path, *args, **kwargs):
         """Initializes the embedding model."""
         super().__init__()
@@ -171,7 +171,7 @@ class OmniGenomeModelForEmbedding(torch.nn.Module):
 # Example usage
 if __name__ == "__main__":
     model_name = "anonymous8/OmniGenome-186M"
-    embedding_model = OmniGenomeModelForEmbedding(model_name)
+    embedding_model = OmniModelForEmbedding(model_name)
 
     # Encode multiple sequences
     sequences = ["ATCGGCTA", "GGCTAGCTA"]

@@ -14,13 +14,13 @@ from transformers import AutoConfig, AutoTokenizer
 
 from ..hub_utils import download_pipeline
 from ..model_hub.model_hub import ModelHub
-from ...src.abc.abstract_model import OmniGenomeModel
+from ...src.abc.abstract_model import OmniModel
 from ...src.misc.utils import env_meta_info, fprint
 from ...src.trainer.trainer import Trainer
 
 
 class Pipeline:
-    model: OmniGenomeModel = None
+    model: OmniModel = None
     tokenizer = None
     dataset: dict = None
     metadata: dict = None
@@ -79,7 +79,7 @@ class Pipeline:
                 tokenizer = AutoTokenizer.from_pretrained(
                     model_name_or_path, trust_remote_code=trust_remote_code
                 )
-            self.model = OmniGenomeModel.from_pretrained(
+            self.model = OmniModel.from_pretrained(
                 model_name_or_path,
                 config=config,
                 tokenizer=tokenizer,

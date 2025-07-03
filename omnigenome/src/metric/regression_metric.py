@@ -14,7 +14,7 @@ import warnings
 import numpy as np
 import sklearn.metrics as metrics
 
-from ..abc.abstract_metric import OmniGenomeMetric
+from ..abc.abstract_metric import OmniMetric
 
 
 def mcrmse(y_true, y_pred):
@@ -31,7 +31,7 @@ def mcrmse(y_true, y_pred):
 setattr(metrics, "mcrmse", mcrmse)
 
 
-class RegressionMetric(OmniGenomeMetric):
+class RegressionMetric(OmniMetric):
     """
     Classification metric class
     """

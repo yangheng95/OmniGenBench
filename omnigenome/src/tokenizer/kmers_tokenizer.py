@@ -8,12 +8,12 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 import warnings
 
-from ..abc.abstract_tokenizer import OmniGenomeTokenizer
+from ..abc.abstract_tokenizer import OmniTokenizer
 
 warnings.filterwarnings("once")
 
 
-class OmniKmersTokenizer(OmniGenomeTokenizer):
+class OmniKmersTokenizer(OmniTokenizer):
     def __init__(self, base_tokenizer=None, k=3, overlap=0, max_length=512, **kwargs):
         super(OmniKmersTokenizer, self).__init__(base_tokenizer, **kwargs)
         self.k = k

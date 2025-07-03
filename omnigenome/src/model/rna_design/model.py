@@ -18,7 +18,7 @@ from scipy.spatial.distance import hamming
 from omnigenome.src.misc.utils import fprint
 
 
-class OmniGenomeModelForRNADesign(torch.nn.Module):
+class OmniModelForRNADesign(torch.nn.Module):
     def __init__(
         self,
         model="yangheng/OmniGenome-186M",
@@ -274,7 +274,7 @@ class OmniGenomeModelForRNADesign(torch.nn.Module):
 
 # Example usage
 if __name__ == "__main__":
-    model = OmniGenomeModelForRNADesign(model="anonymous8/OmniGenome-186M")
+    model = OmniModelForRNADesign(model="anonymous8/OmniGenome-186M")
     best_sequence = model.design(
         structure="(((....)))",
         mutation_ratio=0.5,

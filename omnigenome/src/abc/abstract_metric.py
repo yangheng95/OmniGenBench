@@ -12,7 +12,7 @@ import sklearn.metrics as metrics
 from ..misc.utils import env_meta_info
 
 
-class OmniGenomeMetric:
+class OmniMetric:
     """
     Abstract class for all metrics, based on sklearn.metrics
     """

@@ -19,7 +19,7 @@ from transformers import BatchEncoding
 from ..misc.utils import fprint, env_meta_info, RNA2StructureCache
 
 
-def load_omnigenome_dataset(benchmark=None, dataset='', **kwargs):
+def load_omni_dataset(benchmark=None, dataset='', **kwargs):
     """
     Load the OmniGenome dataset for a specific benchmark and dataset name.
     This function will search for the dataset files in the specified benchmark directory.
@@ -139,9 +139,9 @@ class OmniGenomeDict(dict):
         return self
 
 
-class OmniGenomeDataset(torch.utils.data.Dataset):
+class OmniDataset(torch.utils.data.Dataset):
     def __init__(self, data_source, tokenizer, max_length=None, **kwargs):
-        super(OmniGenomeDataset, self).__init__()
+        super(OmniDataset, self).__init__()
         self.metadata = env_meta_info()
         self.tokenizer = tokenizer
         self.label2id = kwargs.get("label2id", None)

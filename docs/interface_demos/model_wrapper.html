@@ -56,8 +56,8 @@ class Model(OmniGenomeModelForTokenRegression):
     """
     Custom model class for token regression tasks, inherited from OmniGenomeModelForTokenRegression
     """
-    def __init__(self, config_or_model_model, tokenizer, *args, **kwargs):
-        super().__init__(config_or_model_model, tokenizer, *args, **kwargs)
+    def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.classifier = torch.nn.Linear(
             self.config.hidden_size, self.config.num_labels

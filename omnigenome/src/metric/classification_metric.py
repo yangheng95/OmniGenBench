@@ -13,10 +13,10 @@ import warnings
 import numpy as np
 import sklearn.metrics as metrics
 
-from ..abc.abstract_metric import OmniGenomeMetric
+from ..abc.abstract_metric import OmniMetric
 
 
-class ClassificationMetric(OmniGenomeMetric):
+class ClassificationMetric(OmniMetric):
     """
     Classification metric class
     """

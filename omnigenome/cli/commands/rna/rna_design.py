@@ -11,7 +11,7 @@ import json
 import argparse
 from pathlib import Path
 from typing import Optional
-from omnigenome import OmniGenomeModelForRNADesign
+from omnigenome import OmniModelForRNADesign
 from ..base import BaseCommand
 
 
@@ -65,7 +65,7 @@ class RNADesignCommand(BaseCommand):
             raise ValueError("--mutation-ratio should be between 0.0 and 1.0")
 
         # 核心业务逻辑
-        model = OmniGenomeModelForRNADesign(model_path=args.model_path)
+        model = OmniModelForRNADesign(model_path=args.model_path)
         best_sequences = model.design(
             structure=args.structure,
             mutation_ratio=args.mutation_ratio,

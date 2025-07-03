@@ -14,7 +14,7 @@ from transformers.tokenization_utils_base import BatchEncoding
 
 
 
-class OmniGenomePooling(torch.nn.Module):
+class OmniPooling(torch.nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config = config

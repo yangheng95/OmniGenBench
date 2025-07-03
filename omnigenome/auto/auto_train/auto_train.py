@@ -17,7 +17,7 @@ from metric_visualizer import MetricVisualizer
 from transformers import TrainingArguments, Trainer as HFTrainer
 
 from ...src.lora.lora_model import OmniLoraModel
-from ...src.abc.abstract_tokenizer import OmniGenomeTokenizer
+from ...src.abc.abstract_tokenizer import OmniTokenizer
 from ...src.misc.utils import (
     seed_everything,
     fprint,
@@ -96,7 +96,7 @@ class AutoTrain:
 
         # Init Tokenizer and Model
         if not self.tokenizer:
-            tokenizer = OmniGenomeTokenizer.from_pretrained(
+            tokenizer = OmniTokenizer.from_pretrained(
                 self.model_name_or_path, trust_remote_code=True
             )
         else:
