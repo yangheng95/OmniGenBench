@@ -14,8 +14,36 @@ from omnigenome.src.misc.utils import fprint
 
 
 class OmniModelForEmbedding(torch.nn.Module):
+    """
+    A wrapper class for generating embeddings from pre-trained models.
+    
+    This class provides a unified interface for loading pre-trained models and
+    generating embeddings from genomic sequences. It supports various aggregation
+    methods and batch processing for efficient embedding generation.
+    
+    Attributes:
+        tokenizer: The tokenizer for processing input sequences
+        model: The pre-trained model for generating embeddings
+        _device: The device (CPU/GPU) where the model is loaded
+        
+    Example:
+        >>> from omnigenome import OmniModelForEmbedding
+        >>> model = OmniModelForEmbedding("anonymous8/OmniGenome-186M")
+        >>> sequences = ["ATCGGCTA", "GGCTAGCTA"]
+        >>> embeddings = model.batch_encode(sequences)
+        >>> print(f"Embeddings shape: {embeddings.shape}")
+        torch.Size([2, 768])
+    """
+    
     def __init__(self, model_name_or_path, *args, **kwargs):
-        """Initializes the embedding model."""
+        """
+        Initialize the embedding model.
+        
+        Args:
+            model_name_or_path (str): Name or path of the pre-trained model to load
+            *args: Additional positional arguments passed to AutoModel.from_pretrained
+            **kwargs: Additional keyword arguments passed to AutoModel.from_pretrained
+        """
         super().__init__()
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         self.model = AutoModel.from_pretrained(model_name_or_path, *args, **kwargs)
@@ -26,15 +54,27 @@ class OmniModelForEmbedding(torch.nn.Module):
     def batch_encode(self, sequences, batch_size=8, max_length=512, agg='head'):
         """
         Encode a list of sequences to their corresponding embeddings.
-
+        
+        This method processes sequences in batches for memory efficiency and
+        supports different aggregation methods for the final embeddings.
+        
         Args:
-            sequences (list of str): List of input sequences to encode.
-            batch_size (int): Batch size for processing.
-            max_length (int): Maximum sequence length for encoding.
-            agg (str): Aggregation method for embeddings. Options are 'head', 'mean', 'tail'.
-
+            sequences (list of str): List of input sequences to encode
+            batch_size (int, optional): Batch size for processing. Defaults to 8
+            max_length (int, optional): Maximum sequence length for encoding. Defaults to 512
+            agg (str, optional): Aggregation method for embeddings. Options are 'head', 'mean', 'tail'. Defaults to 'head'
+            
         Returns:
-            torch.Tensor: Embeddings for the input sequences.
+            torch.Tensor: Embeddings for the input sequences with shape (n_sequences, embedding_dim)
+            
+        Raises:
+            ValueError: If unsupported aggregation method is provided
+            
+        Example:
+            >>> sequences = ["ATCGGCTA", "GGCTAGCTA", "TATCGCTA"]
+            >>> embeddings = model.batch_encode(sequences, batch_size=2, agg='mean')
+            >>> print(f"Embeddings shape: {embeddings.shape}")
+            torch.Size([3, 768])
         """
         embeddings = []
 
@@ -79,15 +119,24 @@ class OmniModelForEmbedding(torch.nn.Module):
     def encode(self, sequence, max_length=512, agg='head', keep_dim=False):
         """
         Encode a single sequence to its corresponding embedding.
-
+        
         Args:
-            sequence (str): Input sequence to encode.
-            max_length (int): Maximum sequence length for encoding.
-            agg (str): Aggregation method.
-            keep_dim (bool): Whether to retain the batch dimension.
-
+            sequence (str): Input sequence to encode
+            max_length (int, optional): Maximum sequence length for encoding. Defaults to 512
+            agg (str, optional): Aggregation method. Options are 'head', 'mean', 'tail'. Defaults to 'head'
+            keep_dim (bool, optional): Whether to retain the batch dimension. Defaults to False
+            
         Returns:
-            torch.Tensor: Embedding for the input sequence.
+            torch.Tensor: Embedding for the input sequence
+            
+        Raises:
+            ValueError: If unsupported aggregation method is provided
+            
+        Example:
+            >>> sequence = "ATCGGCTA"
+            >>> embedding = model.encode(sequence, agg='mean')
+            >>> print(f"Embedding shape: {embedding.shape}")
+            torch.Size([768])
         """
         inputs = self.tokenizer(
             sequence,
@@ -123,10 +172,15 @@ class OmniModelForEmbedding(torch.nn.Module):
     def save_embeddings(self, embeddings, output_path):
         """
         Save the generated embeddings to a file.
-
+        
         Args:
-            embeddings (torch.Tensor): The embeddings to save.
-            output_path (str): Path to save the embeddings.
+            embeddings (torch.Tensor): The embeddings to save
+            output_path (str): Path to save the embeddings
+            
+        Example:
+            >>> embeddings = model.batch_encode(sequences)
+            >>> model.save_embeddings(embeddings, "embeddings.pt")
+            >>> print("Embeddings saved successfully")
         """
         torch.save(embeddings, output_path)
         fprint(f"Embeddings saved to {output_path}")
@@ -134,12 +188,17 @@ class OmniModelForEmbedding(torch.nn.Module):
     def load_embeddings(self, embedding_path):
         """
         Load embeddings from a file.
-
+        
         Args:
-            embedding_path (str): Path to the saved embeddings.
-
+            embedding_path (str): Path to the saved embeddings
+            
         Returns:
-            torch.Tensor: The loaded embeddings.
+            torch.Tensor: The loaded embeddings
+            
+        Example:
+            >>> embeddings = model.load_embeddings("embeddings.pt")
+            >>> print(f"Loaded embeddings shape: {embeddings.shape}")
+            torch.Size([100, 768])
         """
         embeddings = torch.load(embedding_path)
         fprint(f"Loaded embeddings from {embedding_path}")
@@ -148,14 +207,21 @@ class OmniModelForEmbedding(torch.nn.Module):
     def compute_similarity(self, embedding1, embedding2, dim=0):
         """
         Compute cosine similarity between two embeddings.
-
+        
         Args:
-            embedding1 (torch.Tensor): The first embedding.
-            embedding2 (torch.Tensor): The second embedding.
-            dim (int): Dimension along which to compute cosine similarity.
-
+            embedding1 (torch.Tensor): The first embedding
+            embedding2 (torch.Tensor): The second embedding
+            dim (int, optional): Dimension along which to compute cosine similarity. Defaults to 0
+            
         Returns:
-            float: Cosine similarity score.
+            float: Cosine similarity score between -1 and 1
+            
+        Example:
+            >>> emb1 = model.encode("ATCGGCTA")
+            >>> emb2 = model.encode("GGCTAGCTA")
+            >>> similarity = model.compute_similarity(emb1, emb2)
+            >>> print(f"Cosine similarity: {similarity:.4f}")
+            0.8234
         """
         similarity = torch.nn.functional.cosine_similarity(
             embedding1, embedding2, dim=dim
@@ -164,7 +230,12 @@ class OmniModelForEmbedding(torch.nn.Module):
 
     @property
     def device(self):
-        """Get the current device ('cuda' or 'cpu')."""
+        """
+        Get the current device ('cuda' or 'cpu').
+        
+        Returns:
+            torch.device: The device where the model is loaded
+        """
         return self._device
 
 

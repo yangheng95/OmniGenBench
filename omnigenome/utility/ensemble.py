@@ -12,6 +12,36 @@ import numpy as np
 
 
 class VoteEnsemblePredictor:
+    """
+    An ensemble predictor that combines predictions from multiple models using voting.
+    
+    This class implements ensemble methods for combining predictions from multiple
+    models or checkpoints. It supports both weighted and unweighted voting, and
+    provides various aggregation methods for different data types (numeric and string).
+    
+    Attributes:
+        checkpoints: List of checkpoint names
+        predictors: Dictionary of initialized predictors
+        weights: List of weights for each predictor
+        numeric_agg_func: Function for aggregating numeric predictions
+        str_agg: Function for aggregating string predictions
+        numeric_agg_methods: Dictionary of available numeric aggregation methods
+        str_agg_methods: Dictionary of available string aggregation methods
+        
+    Example:
+        >>> from omnigenome.utility import VoteEnsemblePredictor
+        >>> predictors = {
+        ...     "model1": predictor1,
+        ...     "model2": predictor2,
+        ...     "model3": predictor3
+        ... }
+        >>> weights = {"model1": 1.0, "model2": 0.8, "model3": 0.6}
+        >>> ensemble = VoteEnsemblePredictor(predictors, weights, numeric_agg="average")
+        >>> result = ensemble.predict("ACGUAGGUAUCGUAGA")
+        >>> print(result)
+        {'prediction': 0.85}
+    """
+
     def __init__(
         self,
         predictors: [List, dict],
@@ -21,12 +51,18 @@ class VoteEnsemblePredictor:
     ):
         """
         Initialize the VoteEnsemblePredictor.
-
-        :param predictors: A list of checkpoints, or a dictionary of initialized predictors.
-        :param weights: A list of weights for each predictor, or a dictionary of weights for each predictor.
-        :param numeric_agg: The aggregation method for numeric data. Options are 'average', 'mean', 'max', 'min',
-                            'median', 'mode', and 'sum'.
-        :param str_agg: The aggregation method for string data. Options are 'max_vote', 'min_vote', 'vote', and 'mode'.
+        
+        Args:
+            predictors (List or dict): A list of checkpoints, or a dictionary of initialized predictors
+            weights (List or dict, optional): A list of weights for each predictor, or a dictionary of weights for each predictor
+            numeric_agg (str, optional): The aggregation method for numeric data. Options are 'average', 'mean', 'max', 'min',
+                                        'median', 'mode', and 'sum'. Defaults to 'average'
+            str_agg (str, optional): The aggregation method for string data. Options are 'max_vote', 'min_vote', 'vote', and 'mode'. Defaults to 'max_vote'
+                                        
+        Raises:
+            AssertionError: If predictors and weights have different lengths or types
+            AssertionError: If predictors list is empty
+            AssertionError: If unsupported aggregation methods are provided
         """
         if weights is not None:
             assert len(predictors) == len(
@@ -77,9 +113,18 @@ class VoteEnsemblePredictor:
     def numeric_agg(self, result: list):
         """
         Aggregate a list of numeric values.
-
-        :param result: a list of numeric values
-        :return: the aggregated value
+        
+        Args:
+            result (list): A list of numeric values to aggregate
+            
+        Returns:
+            The aggregated value using the specified numeric aggregation method
+            
+        Example:
+            >>> ensemble = VoteEnsemblePredictor(predictors, numeric_agg="average")
+            >>> result = ensemble.numeric_agg([0.8, 0.9, 0.7])
+            >>> print(result)
+            0.8
         """
         res = np.stack([np.array(x) for x in result])
         return self.numeric_agg_methods[self.numeric_agg_func](res, axis=0)
@@ -87,9 +132,15 @@ class VoteEnsemblePredictor:
     def __ensemble(self, result: dict):
         """
         Aggregate prediction results by calling the appropriate aggregation method.
-
-        :param result: a dictionary containing the prediction results
-        :return: the aggregated prediction result
+        
+        This method determines the type of result and calls the appropriate
+        aggregation method (numeric or string).
+        
+        Args:
+            result (dict): A dictionary containing the prediction results
+            
+        Returns:
+            The aggregated prediction result
         """
         if isinstance(result, dict):
             return self.__dict_aggregate(result)
@@ -101,9 +152,15 @@ class VoteEnsemblePredictor:
     def __dict_aggregate(self, result: dict):
         """
         Recursively aggregate a dictionary of prediction results.
-
-        :param result: a dictionary containing the prediction results
-        :return: the aggregated prediction result
+        
+        This method recursively processes nested dictionaries and applies
+        appropriate aggregation methods to each level.
+        
+        Args:
+            result (dict): A dictionary containing the prediction results
+            
+        Returns:
+            dict: The aggregated prediction result
         """
         ensemble_result = {}
         for k, v in result.items():
@@ -116,6 +173,21 @@ class VoteEnsemblePredictor:
         return ensemble_result
 
     def __list_aggregate(self, result: list):
+        """
+        Aggregate a list of prediction results.
+        
+        This method handles different types of list elements and applies
+        appropriate aggregation methods based on the data type.
+        
+        Args:
+            result (list): A list of prediction results to aggregate
+            
+        Returns:
+            The aggregated result
+            
+        Raises:
+            AssertionError: If all elements in the list are not of the same type
+        """
         if not isinstance(result, list):
             result = [result]
 
@@ -155,15 +227,22 @@ class VoteEnsemblePredictor:
     def predict(self, text, ignore_error=False, print_result=False):
         """
         Predicts on a single text and returns the ensemble result.
-
-        :param text: The text to perform prediction on
-        :type text: str
-        :param ignore_error: Whether to ignore any errors that occur during prediction, defaults to False
-        :type ignore_error: bool
-        :param print_result: Whether to print the prediction result, defaults to False
-        :type print_result: bool
-        :return: The ensemble prediction result
-        :rtype: dict
+        
+        This method combines predictions from all predictors in the ensemble
+        using the specified weights and aggregation methods.
+        
+        Args:
+            text (str): The text to perform prediction on
+            ignore_error (bool, optional): Whether to ignore any errors that occur during prediction. Defaults to False
+            print_result (bool, optional): Whether to print the prediction result. Defaults to False
+            
+        Returns:
+            dict: The ensemble prediction result
+            
+        Example:
+            >>> result = ensemble.predict("ACGUAGGUAUCGUAGA", ignore_error=True)
+            >>> print(result)
+            {'prediction': 0.85, 'confidence': 0.92}
         """
         # Initialize an empty dictionary to store the prediction result
         result = {}
@@ -188,10 +267,23 @@ class VoteEnsemblePredictor:
     def batch_predict(self, texts, ignore_error=False, print_result=False):
         """
         Predicts on a batch of texts using the ensemble of predictors.
-        :param texts: a list of strings to predict on.
-        :param ignore_error: boolean indicating whether to ignore errors or raise exceptions when prediction fails.
-        :param print_result: boolean indicating whether to print the raw results for each predictor.
-        :return: a list of dictionaries, each dictionary containing the aggregated results of the corresponding text in the input list.
+        
+        This method processes multiple texts efficiently by combining predictions
+        from all predictors in the ensemble for each text in the batch.
+        
+        Args:
+            texts (list): A list of strings to predict on
+            ignore_error (bool, optional): Boolean indicating whether to ignore errors or raise exceptions when prediction fails. Defaults to False
+            print_result (bool, optional): Boolean indicating whether to print the raw results for each predictor. Defaults to False
+            
+        Returns:
+            list: A list of dictionaries, each dictionary containing the aggregated results of the corresponding text in the input list
+            
+        Example:
+            >>> texts = ["ACGUAGGUAUCGUAGA", "GGCTAGCTA", "TATCGCTA"]
+            >>> results = ensemble.batch_predict(texts, ignore_error=True)
+            >>> print(len(results))
+            3
         """
         batch_raw_results = []
         for ckpt, predictor in self.predictors.items():

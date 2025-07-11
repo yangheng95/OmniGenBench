@@ -22,6 +22,22 @@ default_omnigenome_repo = (
 
 
 def seed_everything(seed=42):
+    """
+    Sets random seeds for reproducibility across all random number generators.
+    
+    This function sets seeds for Python's random module, NumPy, PyTorch (CPU and CUDA),
+    and sets the PYTHONHASHSEED environment variable to ensure reproducible results
+    across different runs.
+    
+    Args:
+        seed (int): The seed value to use for all random number generators. 
+                   Defaults to 42.
+
+    Example:
+        >>> # Set seeds for reproducibility
+        >>> seed_everything(42)
+        >>> # Now all random operations will be reproducible
+    """
     import random
     import numpy as np
     import torch
@@ -35,8 +51,39 @@ def seed_everything(seed=42):
 
 
 class RNA2StructureCache(dict):
-    def __init__(self, cache_file=None, *args, **kwargs):
+    """
+    A cache for RNA sequence to structure predictions using ViennaRNA.
+    
+    This class provides a dictionary-like interface for caching RNA secondary
+    structure predictions. It uses ViennaRNA for structure prediction and
+    supports both single sequences and batches of sequences.
+    
+    The cache can be persisted to disk and loaded back, making it useful for
+    avoiding redundant structure predictions across multiple runs.
+    
+    Attributes:
+        cache_file (str): Path to the cache file on disk.
+        cache (dict): The in-memory cache dictionary.
+        queue_num (int): Counter for tracking cache updates.
+    """
 
+    def __init__(self, cache_file=None, *args, **kwargs):
+        """
+        Initializes the RNA structure cache.
+
+        Args:
+            cache_file (str, optional): Path to the cache file. If None, uses
+                                      a default path in `__OMNIGENOME_DATA__`.
+            *args: Additional arguments passed to dict constructor.
+            **kwargs: Additional keyword arguments passed to dict constructor.
+
+        Example:
+            >>> # Initialize with default cache file
+            >>> cache = RNA2StructureCache()
+            
+            >>> # Initialize with custom cache file
+            >>> cache = RNA2StructureCache("my_cache.pkl")
+        """
         super().__init__(*args, **kwargs)
 
         if not cache_file:
@@ -54,18 +101,51 @@ class RNA2StructureCache(dict):
         self.queue_num = 0
 
     def __getitem__(self, key):
+        """Gets a cached structure prediction."""
         return self.cache[key]
 
     def __setitem__(self, key, value):
+        """Sets a structure prediction in the cache."""
         self.cache[key] = value
 
     def __str__(self):
+        """String representation of the cache."""
         return str(self.cache)
 
     def __repr__(self):
+        """String representation of the cache."""
         return str(self.cache)
 
     def fold(self, sequence, return_mfe=False, num_workers=1):
+        """
+        Predicts RNA secondary structure for given sequences.
+        
+        This method predicts RNA secondary structures using ViennaRNA. It supports
+        both single sequences and batches of sequences. The method uses caching
+        to avoid redundant predictions and supports multiprocessing for batch
+        processing on non-Windows systems.
+        
+        Args:
+            sequence (str or list): A single RNA sequence or a list of sequences.
+            return_mfe (bool): Whether to return minimum free energy along with
+                              structure. Defaults to False.
+            num_workers (int): Number of worker processes for batch processing.
+                             Defaults to 1. Set to None for auto-detection.
+
+        Returns:
+            str or list: The predicted structure(s). If return_mfe is True,
+                        returns tuples of (structure, mfe).
+
+        Example:
+            >>> cache = RNA2StructureCache()
+            >>> # Predict structure for a single sequence
+            >>> structure = cache.fold("GGGAAAUCC")
+            >>> print(structure)  # "(((...)))"
+            
+            >>> # Predict structures for multiple sequences
+            >>> structures = cache.fold(["GGGAAAUCC", "AUUGCUAA"])
+            >>> print(structures)  # ["(((...)))", "........"]
+        """
         if not isinstance(sequence, list):
             sequences = [sequence]
         else:
@@ -110,6 +190,19 @@ class RNA2StructureCache(dict):
             return structures
 
     def update_cache_file(self, cache_file=None):
+        """
+        Updates the cache file on disk.
+        
+        This method saves the in-memory cache to disk. It only saves when
+        the queue_num reaches 100 to avoid excessive disk I/O.
+        
+        Args:
+            cache_file (str, optional): Path to the cache file. If None, uses
+                                      the instance's cache_file.
+
+        Example:
+            >>> cache.update_cache_file()  # Force save to disk
+        """
         if self.queue_num < 100:
             return
 
@@ -127,6 +220,24 @@ class RNA2StructureCache(dict):
 
 
 def env_meta_info():
+    """
+    Collects metadata about the current environment and library versions.
+    
+    This function gathers information about the current Python environment,
+    including versions of key libraries like PyTorch and Transformers,
+    as well as OmniGenome version information.
+    
+    Returns:
+        dict: A dictionary containing environment metadata including:
+              - library_name: Name of the OmniGenome library
+              - omnigenome_version: Version of OmniGenome
+              - torch_version: PyTorch version with CUDA info
+              - transformers_version: Transformers library version
+
+    Example:
+        >>> metadata = env_meta_info()
+        >>> print(metadata['torch_version'])  # "2.0.0+cu118+git..."
+    """
     from torch.version import __version__ as torch_version
     from torch.version import cuda as torch_cuda_version
     from torch.version import git_version
@@ -145,13 +256,23 @@ def env_meta_info():
 def naive_secondary_structure_repair(sequence, structure):
     """
     Repair the secondary structure of a sequence.
+    
+    This function attempts to repair malformed RNA secondary structure
+    representations by ensuring proper bracket matching. It handles
+    common issues like unmatched brackets by converting them to dots.
 
     Args:
-    - sequence: A string representing the sequence.
-    - structure: A string representing the secondary structure.
+        sequence (str): A string representing the sequence.
+        structure (str): A string representing the secondary structure.
 
     Returns:
-    - repaired_structure: A string representing the repaired secondary structure.
+        str: A string representing the repaired secondary structure.
+
+    Example:
+        >>> sequence = "GGGAAAUCC"
+        >>> structure = "(((...)"  # Malformed structure
+        >>> repaired = naive_secondary_structure_repair(sequence, structure)
+        >>> print(repaired)  # "(((...))"
     """
     repaired_structure = ""
     stack = []
@@ -173,13 +294,18 @@ def naive_secondary_structure_repair(sequence, structure):
 def save_args(config, save_path):
     """
     Save arguments to a file.
+    
+    This function saves the arguments from a configuration object to a text file.
+    It's useful for logging experiment parameters and configurations.
 
     Args:
-    - config: A Namespace object containing the arguments.
-    - save_path: A string representing the path of the file to be saved.
+        config: A Namespace object containing the arguments.
+        save_path (str): A string representing the path of the file to be saved.
 
-    Returns:
-    None
+    Example:
+        >>> from argparse import Namespace
+        >>> config = Namespace(learning_rate=0.001, batch_size=32)
+        >>> save_args(config, "config.txt")
     """
     f = open(os.path.join(save_path), mode="w", encoding="utf8")
     for arg in config.args:
@@ -191,13 +317,18 @@ def save_args(config, save_path):
 def print_args(config, logger=None):
     """
     Print the arguments to the console.
+    
+    This function prints the arguments from a configuration object to the console
+    or a logger. It's useful for debugging and logging experiment parameters.
 
     Args:
-    - config: A Namespace object containing the arguments.
-    - logger: A logger object.
+        config: A Namespace object containing the arguments.
+        logger: A logger object. If None, prints to console.
 
-    Returns:
-    None
+    Example:
+        >>> from argparse import Namespace
+        >>> config = Namespace(learning_rate=0.001, batch_size=32)
+        >>> print_args(config)
     """
     args = [key for key in sorted(config.args.keys())]
     if logger:

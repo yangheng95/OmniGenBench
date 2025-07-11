@@ -7,6 +7,47 @@
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
 
+"""
+OmniGenome: A comprehensive toolkit for genomic foundation models.
+
+This package provides a suite of tools for working with genomic data, including:
+- Automated benchmarking and training pipelines.
+- A hub for accessing pre-trained models, datasets, and pipelines.
+- A flexible and extensible framework for building custom models and tasks.
+
+This __init__.py file exposes the core components of the library for easy access.
+
+Key Components:
+---------------
+- AutoBench: Automated benchmarking of genomic models
+- AutoTrain: Automated training of genomic models  
+- BenchHub: Hub for accessing benchmarks
+- ModelHub: Hub for accessing pre-trained models
+- PipelineHub: Hub for accessing pipelines
+- Various model classes for different genomic tasks
+- Dataset classes for different data formats
+- Tokenizer classes for different sequence representations
+- Metric classes for evaluation
+- Trainer classes for model training
+
+Example Usage:
+--------------
+```python
+from omnigenome import AutoBench, AutoTrain, OmniModelForSequenceClassification
+
+# Run automated benchmarking
+bench = AutoBench("RGB", "model_name")
+bench.run()
+
+# Train a model
+trainer = AutoTrain("RGB", "model_name")
+trainer.run()
+
+# Use a specific model
+model = OmniModelForSequenceClassification("model_path", tokenizer)
+```
+"""
+
 __name__ = "omnigenome"
 __version__ = "0.3.0alpha"
 
@@ -14,6 +55,7 @@ __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "Apache-2.0"
 
+# Import core auto components
 from .auto.auto_bench.auto_bench import AutoBench
 from .auto.auto_bench.auto_bench_config import AutoBenchConfig
 from .auto.bench_hub.bench_hub import BenchHub
@@ -21,29 +63,33 @@ from .auto.auto_train.auto_train import AutoTrain
 from .auto.auto_bench.auto_bench_cli import run_bench, bench_command
 from .auto.auto_train.auto_train_cli import run_train, train_command
 
+# Import source modules
 from .src import dataset as dataset
 from .src import metric as metric
 from .src import model as model
 from .src import tokenizer as tokenizer
 
+# Import abstract base classes
 from .src.abc.abstract_dataset import OmniDataset
 from .src.abc.abstract_metric import OmniMetric
 from .src.abc.abstract_model import OmniModel
-
-
-
 from .src.abc.abstract_tokenizer import OmniTokenizer
 from .src.abc.abstract_tokenizer import OmniTokenizer as AutoTokenizer
+
+# Import dataset classes
 from .src.dataset.omni_dataset import OmniDatasetForSequenceClassification
 from .src.dataset.omni_dataset import OmniDatasetForSequenceRegression
 from .src.dataset.omni_dataset import OmniDatasetForTokenClassification
 from .src.dataset.omni_dataset import OmniDatasetForTokenRegression
 
-
-
+# Import metric classes
 from .src.metric import ClassificationMetric, RegressionMetric, RankingMetric
+
+# Import utility functions
 from .src.misc import utils as utils
 from .src.misc.utils import clean_temp_dir_pt_files
+
+# Import model classes
 from .src.model import (
     OmniModelForSequenceClassification,
     OmniModelForMultiLabelSequenceClassification,
@@ -60,28 +106,33 @@ from .src.model import (
     OmniModelForAugmentation,
 )
 
+# Import LoRA model
 from .src.lora.lora_model import OmniLoraModel
+
+# Import tokenizer classes
 from .src.tokenizer import OmniBPETokenizer
 from .src.tokenizer import OmniKmersTokenizer
 from .src.tokenizer import OmniSingleNucleotideTokenizer
+
+# Import trainer classes
 from .src.trainer.hf_trainer import HFTrainer
 from .src.trainer.trainer import Trainer
 from .src.trainer.accelerate_trainer import AccelerateTrainer
 
+# Import hub utilities
 from .utility.hub_utils import download_benchmark
 from .utility.hub_utils import download_model
 from .utility.hub_utils import download_pipeline
 from .utility import hub_utils as hub_utils
 
+# Import hub classes
 from .utility.model_hub.model_hub import ModelHub
-
 from .utility.dataset_hub.dataset_hub import load_benchmark_datasets
-
 from .utility.pipeline_hub.pipeline import Pipeline
 from .utility.pipeline_hub.pipeline_hub import PipelineHub
 
+# Import module utilities
 from .src.model.module_utils import OmniPooling
-
 
 # --------------------------------------------------------------------------------
 # For backward compatibility version 0.2.7alpha and earlier
@@ -110,7 +161,10 @@ from .src.model import (
     OmniModelForAugmentation as OmniGenomeModelForAugmentation,
 
 )
+
+from .utility.ensemble import VoteEnsemblePredictor
 # ------------------------------------------------------------------------------
+
 
 __all__ = [
     "load_benchmark_datasets",
@@ -137,6 +191,9 @@ __all__ = [
     "OmniModelForTokenClassification",
     "OmniModelForSequenceRegression",
     "OmniModelForTokenRegression",
+    "OmniModelForRNADesign",
+    "OmniModelForEmbedding",
+    "OmniModelForAugmentation",
     "OmniModelForStructuralImputation",
     "OmniModelForMatrixRegression",
     "OmniModelForMatrixClassification",
@@ -158,6 +215,7 @@ __all__ = [
     "download_benchmark",
     "download_model",
     "download_pipeline",
+    "VoteEnsemblePredictor"
 ]
 
 
@@ -183,7 +241,7 @@ LOGO1 = r"""
 """
 
 LOGO2 = r"""
-                                
+
    **  +----------- **           ___                     _ 
   @@                 @@         / _ \  _ __ ___   _ __  (_)
  @@* #============== *@@       | | | || '_ ` _ \ | '_ \ | |

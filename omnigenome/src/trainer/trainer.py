@@ -6,6 +6,13 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
+"""
+Training utilities for OmniGenome models.
+
+This module provides a comprehensive training framework for OmniGenome models,
+including automatic mixed precision training, early stopping, metric tracking,
+and model checkpointing.
+"""
 import os
 import tempfile
 import autocuda
@@ -20,6 +27,19 @@ from torch.cuda.amp import GradScaler
 
 
 def _infer_optimization_direction(metrics, prev_metrics):
+    """
+    Infer the optimization direction based on metric names and trends.
+    
+    This function determines whether larger or smaller values are better for
+    the given metrics by analyzing metric names and their trends over time.
+    
+    Args:
+        metrics (dict): Current metric values
+        prev_metrics (list): Previous metric values from multiple epochs
+        
+    Returns:
+        str: Either "larger_is_better" or "smaller_is_better"
+    """
     larger_is_better_metrics = [
         "accuracy",
         "f1",
@@ -76,6 +96,29 @@ def _infer_optimization_direction(metrics, prev_metrics):
 
 
 class Trainer:
+    """
+    Comprehensive trainer for OmniGenome models.
+    
+    This trainer provides a complete training framework with automatic mixed precision,
+    early stopping, metric tracking, and model checkpointing. It supports various
+    training configurations and can handle different types of genomic sequence tasks.
+    
+    Attributes:
+        model: The model to be trained
+        train_loader: DataLoader for training data
+        eval_loader: DataLoader for validation data
+        test_loader: DataLoader for test data
+        epochs: Number of training epochs
+        patience: Early stopping patience
+        optimizer: Optimizer for training
+        loss_fn: Loss function
+        compute_metrics: List of metric computation functions
+        device: Device to run training on
+        scaler: Gradient scaler for mixed precision training
+        metrics: Dictionary to store training metrics
+        predictions: Dictionary to store model predictions
+    """
+    
     def __init__(
         self,
         model,
@@ -94,7 +137,26 @@ class Trainer:
         autocast: str = "float16",
         **kwargs,
     ):
-
+        """
+        Initialize the trainer.
+        
+        Args:
+            model: The model to be trained
+            train_dataset: Training dataset
+            eval_dataset: Validation dataset
+            test_dataset: Test dataset
+            epochs (int): Number of training epochs (default: 3)
+            batch_size (int): Batch size for training (default: 8)
+            patience (int): Early stopping patience (default: -1, no early stopping)
+            gradient_accumulation_steps (int): Gradient accumulation steps (default: 1)
+            optimizer: Optimizer for training (default: None)
+            loss_fn: Loss function (default: None)
+            compute_metrics: Metric computation functions (default: None)
+            seed (int): Random seed (default: 42)
+            device: Device to run training on (default: None, auto-detect)
+            autocast (str): Mixed precision type (default: "float16")
+            **kwargs: Additional keyword arguments
+        """
         # sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
         self.model = model
@@ -129,6 +191,8 @@ class Trainer:
         )
         self.seed = seed
         self.device = device if device else autocuda.auto_cuda()
+        self.device = torch.device(self.device) if isinstance(self.device, str) else self.device
+
         self.fast_dtype = {
             "float32": torch.float32,
             "fp32": torch.float32,
@@ -152,6 +216,16 @@ class Trainer:
         self.predictions = {}
 
     def _is_metric_better(self, metrics, stage="valid"):
+        """
+        Check if the current metrics are better than the best metrics so far.
+        
+        Args:
+            metrics (dict): Current metric values
+            stage (str): Stage name ("valid" or "test")
+            
+        Returns:
+            bool: True if current metrics are better than best metrics
+        """
         assert stage in [
             "valid",
             "test",
@@ -192,6 +266,16 @@ class Trainer:
         return False
 
     def train(self, path_to_save=None, **kwargs):
+        """
+        Train the model.
+        
+        Args:
+            path_to_save (str, optional): Path to save the best model
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            dict: Training metrics and results
+        """
         seed_everything(self.seed)
         patience = 0
 
@@ -216,7 +300,7 @@ class Trainer:
                     self.optimizer.zero_grad()
 
                 if self.fast_dtype:
-                    with torch.autocast(device_type="cuda", dtype=self.fast_dtype):
+                    with torch.autocast(device_type=self.device.type, dtype=self.fast_dtype):
                         outputs = self.model(**batch)
                 else:
                     outputs = self.model(**batch)
@@ -300,6 +384,12 @@ class Trainer:
         return self.metrics
 
     def evaluate(self):
+        """
+        Evaluate the model on the validation set.
+
+        Returns:
+            dict: Evaluation metrics
+        """
         with torch.no_grad():
             self.model.eval()
             val_truth = []
@@ -338,6 +428,12 @@ class Trainer:
         return valid_metrics
 
     def test(self):
+        """
+        Test the model on the test set.
+
+        Returns:
+            dict: Test metrics and predictions
+        """
         with torch.no_grad():
             self.model.eval()
             preds = []
@@ -370,18 +466,48 @@ class Trainer:
         return test_metrics
 
     def predict(self, data_loader):
+        """
+        Generate predictions using the model.
+
+        Args:
+            data_loader: DataLoader for prediction data
+
+        Returns:
+            torch.Tensor: Model predictions
+        """
         return self.model.predict(data_loader)
 
     def get_model(self, **kwargs):
+        """
+        Get the trained model.
+        
+        Args:
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            The trained model
+        """
         return self.model
 
     def compute_metrics(self):
-        raise NotImplementedError(
-            "The compute_metrics() function should be implemented for your model."
-            " It should return a dictionary of metrics."
-        )
+        """
+        Get the metric computation functions.
+        
+        Returns:
+            list: List of metric computation functions
+        """
+        return self.compute_metrics
 
     def unwrap_model(self, model=None):
+        """
+        Unwrap the model from any distributed training wrappers.
+        
+        Args:
+            model: Model to unwrap (default: None, uses self.model)
+            
+        Returns:
+            The unwrapped model
+        """
         if model is None:
             model = self.model
         try:
@@ -393,9 +519,23 @@ class Trainer:
                 return model
 
     def save_model(self, path, overwrite=False, **kwargs):
+        """
+        Save the model to disk.
+
+        Args:
+            path (str): Path to save the model
+            overwrite (bool): Whether to overwrite existing files (default: False)
+            **kwargs: Additional keyword arguments
+        """
         self.unwrap_model().save(path, overwrite, **kwargs)
 
     def _load_state_dict(self):
+        """
+        Load model state dictionary from temporary file.
+
+        Returns:
+            dict: Model state dictionary
+        """
         if os.path.exists(self._model_state_dict_path):
             self.unwrap_model().load_state_dict(
                 torch.load(self._model_state_dict_path, map_location='cpu')
@@ -403,6 +543,12 @@ class Trainer:
             self.unwrap_model().to(self.device)
 
     def _save_state_dict(self):
+        """
+        Save model state dictionary to temporary file.
+
+        Returns:
+            str: Path to temporary file
+        """
         if not hasattr(self, "_model_state_dict_path"):
             # 创建临时文件，并关闭以便写入
             tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pt")
@@ -420,6 +566,9 @@ class Trainer:
         torch.save(self.unwrap_model().state_dict(), self._model_state_dict_path)
 
     def _remove_state_dict(self):
+        """
+        Remove temporary state dictionary file.
+        """
         if hasattr(self, "_model_state_dict_path"):
             try:
                 if os.path.exists(self._model_state_dict_path):

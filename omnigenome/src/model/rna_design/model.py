@@ -5,7 +5,14 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
+"""
+RNA design model using masked language modeling and evolutionary algorithms.
 
+This module provides an RNA design model that combines masked language modeling
+with evolutionary algorithms to design RNA sequences that fold into specific
+target structures. It uses a multi-objective optimization approach to balance
+structure similarity and thermodynamic stability.
+"""
 import random
 import numpy as np
 import torch
@@ -19,6 +26,21 @@ from omnigenome.src.misc.utils import fprint
 
 
 class OmniModelForRNADesign(torch.nn.Module):
+    """
+    RNA design model using masked language modeling and evolutionary algorithms.
+    
+    This model combines a pre-trained masked language model with evolutionary
+    algorithms to design RNA sequences that fold into specific target structures.
+    It uses a multi-objective optimization approach to balance structure similarity
+    and thermodynamic stability.
+    
+    Attributes:
+        device: Device to run the model on (CPU or GPU)
+        parallel: Whether to use parallel processing for structure prediction
+        tokenizer: Tokenizer for processing RNA sequences
+        model: Pre-trained masked language model
+    """
+    
     def __init__(
         self,
         model="yangheng/OmniGenome-186M",
@@ -27,7 +49,16 @@ class OmniModelForRNADesign(torch.nn.Module):
         *args,
         **kwargs,
     ):
-        """Initialize the model and tokenizer."""
+        """
+        Initialize the RNA design model.
+        
+        Args:
+            model (str): Model name or path for the pre-trained MLM model
+            device: Device to run the model on (default: None, auto-detect)
+            parallel (bool): Whether to use parallel processing (default: False)
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+        """
         super().__init__(*args, **kwargs)
         self.device = autocuda.auto_cuda() if device is None else device
         self.parallel = parallel
@@ -37,12 +68,28 @@ class OmniModelForRNADesign(torch.nn.Module):
 
     @staticmethod
     def _random_bp_span(bp_span=None):
-        """Generate a random base pair span."""
+        """
+        Generate a random base pair span.
+        
+        Args:
+            bp_span (int, optional): Base pair span to center around (default: None)
+            
+        Returns:
+            int: Random base pair span within ±50 of the input span
+        """
         return random.choice(range(max(0, bp_span - 50), min(bp_span + 50, 400)))
 
     @staticmethod
     def _longest_bp_span(structure):
-        """Compute the longest base-pair span from RNA structure."""
+        """
+        Compute the longest base-pair span from RNA structure.
+        
+        Args:
+            structure (str): RNA structure in dot-bracket notation
+            
+        Returns:
+            int: Length of the longest base-pair span
+        """
         stack = []
         max_span = 0
         for i, char in enumerate(structure):
@@ -55,18 +102,45 @@ class OmniModelForRNADesign(torch.nn.Module):
 
     @staticmethod
     def _predict_structure_single(sequence, bp_span=-1):
-        """Predict the RNA structure and minimum free energy (MFE) for a single sequence."""
+        """
+        Predict the RNA structure and minimum free energy (MFE) for a single sequence.
+        
+        Args:
+            sequence (str): RNA sequence
+            bp_span (int): Maximum base pair span for folding (default: -1, no limit)
+            
+        Returns:
+            tuple: (structure, mfe) where structure is in dot-bracket notation
+        """
         md = ViennaRNA.md()
         md.max_bp_span = bp_span
         fc = ViennaRNA.fold_compound(sequence, md)
         return fc.mfe()
 
     def _predict_structure(self, sequences, bp_span=-1):
-        """Predict RNA structures for multiple sequences."""
+        """
+        Predict RNA structures for multiple sequences.
+        
+        Args:
+            sequences (list): List of RNA sequences
+            bp_span (int): Maximum base pair span for folding (default: -1, no limit)
+            
+        Returns:
+            list: List of (structure, mfe) tuples
+        """
         return [self._predict_structure_single(seq, bp_span) for seq in sequences]
 
     def _init_population(self, structure, num_population):
-        """Initialize the population with masked sequences."""
+        """
+        Initialize the population with masked sequences.
+        
+        Args:
+            structure (str): Target RNA structure in dot-bracket notation
+            num_population (int): Number of individuals in the population
+            
+        Returns:
+            list: List of (sequence, bp_span) tuples representing the initial population
+        """
         population = []
         mlm_inputs = []
         for _ in range(num_population):
@@ -89,7 +163,17 @@ class OmniModelForRNADesign(torch.nn.Module):
         return population
 
     def _mlm_mutate(self, population, structure, mutation_ratio):
-        """Apply mutation to the population using the masked language model (MLM)."""
+        """
+        Apply mutation to the population using the masked language model (MLM).
+        
+        Args:
+            population (list): Current population of (sequence, bp_span) tuples
+            structure (str): Target RNA structure
+            mutation_ratio (float): Ratio of tokens to mutate
+            
+        Returns:
+            list: Mutated population of (sequence, bp_span) tuples
+        """
 
         def mutate(sequence, mutation_rate):
             sequence = np.array(list(sequence))
@@ -117,7 +201,16 @@ class OmniModelForRNADesign(torch.nn.Module):
         return mut_population
 
     def _crossover(self, population, num_points=3):
-        """Perform crossover operation to create offspring."""
+        """
+        Perform crossover operation to create offspring.
+        
+        Args:
+            population (list): Current population of (sequence, bp_span) tuples
+            num_points (int): Number of crossover points (default: 3)
+            
+        Returns:
+            list: Offspring population after crossover
+        """
         population_size = len(population)
         sequence_length = len(population[0][0])
 
@@ -156,7 +249,16 @@ class OmniModelForRNADesign(torch.nn.Module):
         ]
 
     def _evaluate_structure_fitness(self, sequences, structure):
-        """Evaluate the fitness of the RNA structure by comparing with the target structure."""
+        """
+        Evaluate the fitness of the RNA structure by comparing with the target structure.
+        
+        Args:
+            sequences (list): List of (sequence, bp_span) tuples to evaluate
+            structure (str): Target RNA structure
+            
+        Returns:
+            list: Sorted population with fitness scores and MFE values
+        """
         if self.parallel:
             with ProcessPoolExecutor() as executor:
                 structures_mfe = list(
@@ -179,6 +281,16 @@ class OmniModelForRNADesign(torch.nn.Module):
 
     @staticmethod
     def _non_dominated_sorting(scores, mfe_values):
+        """
+        Perform non-dominated sorting for multi-objective optimization.
+        
+        Args:
+            scores (list): Structure similarity scores
+            mfe_values (list): Minimum free energy values
+            
+        Returns:
+            list: List of fronts (Pareto fronts)
+        """
         num_solutions = len(scores)
         domination_count = [0] * num_solutions
         dominated_solutions = [[] for _ in range(num_solutions)]
@@ -212,6 +324,16 @@ class OmniModelForRNADesign(torch.nn.Module):
 
     @staticmethod
     def _select_next_generation(next_generation, fronts):
+        """
+        Select the next generation based on Pareto fronts.
+        
+        Args:
+            next_generation (list): Current population with fitness scores
+            fronts (list): Pareto fronts
+            
+        Returns:
+            list: Selected population for the next generation
+        """
         sorted_population = []
         for front in fronts:
             front_population = [next_generation[i] for i in front]
@@ -222,14 +344,23 @@ class OmniModelForRNADesign(torch.nn.Module):
         return sorted_population[: len(next_generation)]
 
     def _mlm_predict(self, mlm_inputs, structure):
-        """Predict sequences using the masked language model."""
+        """
+        Perform masked language model prediction.
+        
+        Args:
+            mlm_inputs (list): List of masked input sequences
+            structure (str): Target RNA structure
+            
+        Returns:
+            list: Predicted token IDs for each input
+        """
         batch_size = 8
         all_outputs = []
 
         with torch.no_grad():
             for i in range(0, len(mlm_inputs), batch_size):
                 inputs = self.tokenizer(
-                    mlm_inputs[i : i + batch_size],
+                    mlm_inputs[i: i + batch_size],
                     padding=False,
                     max_length=1024,
                     truncation=True,
@@ -246,7 +377,18 @@ class OmniModelForRNADesign(torch.nn.Module):
     def design(
         self, structure, mutation_ratio=0.5, num_population=100, num_generation=100
     ):
-        """Run the genetic algorithm to design an RNA sequence."""
+        """
+        Design RNA sequences for a target structure using evolutionary algorithms.
+        
+        Args:
+            structure (str): Target RNA structure in dot-bracket notation
+            mutation_ratio (float): Ratio of tokens to mutate (default: 0.5)
+            num_population (int): Population size (default: 100)
+            num_generation (int): Number of generations (default: 100)
+            
+        Returns:
+            list: List of designed RNA sequences with their fitness scores
+        """
         population = self._init_population(structure, num_population)
         population = self._mlm_mutate(population, structure, mutation_ratio)
 

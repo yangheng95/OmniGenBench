@@ -32,6 +32,32 @@ from ... import __version__ as omnigenome_version
 
 
 class AutoBench:
+    """
+    AutoBench is a class for automatically benchmarking genomic foundation models.
+    
+    This class provides a comprehensive framework for evaluating genomic models
+    across multiple benchmarks and tasks. It handles loading benchmarks, models,
+    tokenizers, and running evaluations with proper metric tracking and result
+    visualization.
+    
+    AutoBench supports various evaluation scenarios including:
+    - Single model evaluation across multiple benchmarks
+    - Multi-seed evaluation for robustness testing
+    - Different trainer backends (native, accelerate, huggingface)
+    - Automatic metric visualization and result tracking
+    
+    Attributes:
+        benchmark (str): The name or path of the benchmark to use.
+        model_name_or_path (str): The name or path of the model to evaluate.
+        tokenizer: The tokenizer to use for evaluation.
+        autocast (str): The autocast precision to use ('fp16', 'bf16', etc.).
+        overwrite (bool): Whether to overwrite existing evaluation results.
+        trainer (str): The trainer to use ('native', 'accelerate', 'hf_trainer').
+        mv_path (str): Path to the metric visualizer file.
+        mv (MetricVisualizer): The metric visualizer instance.
+        bench_metadata: Metadata about the benchmark configuration.
+    """
+
     def __init__(
         self,
         benchmark,
@@ -39,6 +65,29 @@ class AutoBench:
         tokenizer=None,
         **kwargs,
     ):
+        """
+        Initializes the AutoBench instance.
+
+        Args:
+            benchmark (str): The name or path of the benchmark to use.
+            model_name_or_path (str): The name or path of the model to evaluate.
+            tokenizer: The tokenizer to use. If None, it will be loaded from the model path.
+            **kwargs: Additional keyword arguments.
+                - autocast (str): The autocast precision to use ('fp16', 'bf16', etc.). 
+                  Defaults to 'fp16'.
+                - overwrite (bool): Whether to overwrite existing evaluation results. 
+                  Defaults to False.
+                - trainer (str): The trainer to use ('native', 'accelerate', 'hf_trainer'). 
+                  Defaults to 'native'.
+
+        Example:
+            >>> # Initialize with a benchmark and model
+            >>> bench = AutoBench("RGB", "model_name")
+            
+            >>> # Initialize with custom settings
+            >>> bench = AutoBench("RGB", "model_name", 
+            ...                   autocast="bf16", trainer="accelerate")
+        """
         self.benchmark = benchmark.rstrip("/")
         self.autocast = kwargs.pop("autocast", "fp16")
         self.overwrite = kwargs.pop("overwrite", False)
@@ -86,6 +135,20 @@ class AutoBench:
         self.bench_info()
 
     def bench_info(self):
+        """
+        Prints and returns information about the current benchmark setup.
+        
+        This method provides a comprehensive overview of the current
+        benchmark configuration, including benchmark details, model information,
+        and evaluation settings.
+
+        Returns:
+            str: A string containing benchmark information.
+
+        Example:
+            >>> info = bench.bench_info()
+            >>> print(info)
+        """
         info = f"Benchmark Root: {self.benchmark}\n"
         info += f"Benchmark List: {self.bench_metadata.bench_list}\n"
         info += f"Model Name or Path: {self.model_name}\n"
@@ -97,9 +160,23 @@ class AutoBench:
 
     def run(self, **kwargs):
         """
+        Runs the benchmarking process.
+        
+        This method iterates through the tasks in the benchmark, loads the corresponding
+        configurations, initializes the model, tokenizer, and datasets, and then
+        trains and evaluates the model. It supports multiple evaluation seeds and
+        various trainer backends.
 
-        :param kwargs: parameters in kwargs will be used to override the default parameters in the benchmark config
-        :return:
+        Args:
+            **kwargs: Additional keyword arguments that will override the default
+                     parameters in the benchmark configuration.
+
+        Example:
+            >>> # Run benchmarking with default settings
+            >>> bench.run()
+            
+            >>> # Run with custom parameters
+            >>> bench.run(learning_rate=1e-4, batch_size=16)
         """
         bs_scale = kwargs.pop("bs_scale", 1)
         # Import benchmark config

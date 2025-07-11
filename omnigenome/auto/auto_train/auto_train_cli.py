@@ -20,7 +20,11 @@ from omnigenome.src.misc.utils import fprint
 
 
 def train_command(args: Optional[list] = None):
-    """Entry function for BEACON benchmark testing (single model version)."""
+    """
+    Entry point for the OmniGenome auto-train command-line interface.
+
+    :param args: A list of command-line arguments. If None, `sys.argv` is used.
+    """
 
     parser = create_parser()
     parsed_args = parser.parse_args(args)
@@ -54,7 +58,11 @@ def train_command(args: Optional[list] = None):
 
 
 def create_parser() -> argparse.ArgumentParser:
-    """Create argument parser (single model version)."""
+    """
+    Creates the argument parser for the auto-train CLI.
+
+    :return: An `argparse.ArgumentParser` instance.
+    """
     parser = argparse.ArgumentParser(
         description="Genomic Foundation Model Benchmark Suite (Single Model)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -117,6 +125,10 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def run_train():
+    """
+    Wrapper function to run the auto-train command.
+    """
+
     fprint("Running AutoTraining, this may take a while, please be patient...")
     fprint("You can find the logs in the 'autobench_logs' directory.")
     fprint("You can find the metrics in the 'autobench_evaluations' directory.")

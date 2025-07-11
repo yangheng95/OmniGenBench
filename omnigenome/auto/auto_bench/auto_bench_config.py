@@ -14,13 +14,19 @@ from .config_check import config_check
 
 
 class AutoBenchConfig(PretrainedConfig):
+    """
+    A configuration class for AutoBench, extending `transformers.PretrainedConfig`.
+
+    This class holds the configuration parameters for a benchmark run. It behaves
+    like a dictionary and also tracks how many times each parameter is accessed.
+    """
+
     def __init__(self, args=None, **kwargs):
         """
-        The Config is a subclass of argparse.Namespace and based on a parameter dict.
-        It also counts the call-frequency of each parameter.
+        Initializes the AutoBenchConfig.
 
-        :param args: A parameter dict.
-        :param kwargs: Same params as Namespace.
+        :param args: A dictionary or `argparse.Namespace` of parameters.
+        :param kwargs: Additional keyword arguments for `PretrainedConfig`.
         """
         if not args:
             args = {}

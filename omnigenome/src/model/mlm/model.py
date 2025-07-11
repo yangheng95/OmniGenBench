@@ -6,6 +6,13 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
+"""
+Masked Language Model (MLM) for genomic sequences.
+
+This module provides a masked language model implementation specifically designed
+for genomic sequences. It supports masked language modeling tasks where tokens
+are randomly masked and the model learns to predict the original tokens.
+"""
 import numpy as np
 import torch
 from transformers import BatchEncoding
@@ -14,7 +21,31 @@ from ...abc.abstract_model import OmniModel
 
 
 class OmniModelForMLM(OmniModel):
+    """
+    Masked Language Model for genomic sequences.
+    
+    This model implements masked language modeling for genomic sequences, where
+    tokens are randomly masked and the model learns to predict the original tokens.
+    It's useful for pre-training genomic language models and understanding sequence
+    patterns and dependencies.
+    
+    Attributes:
+        loss_fn: Cross-entropy loss function for masked language modeling
+    """
+    
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        """
+        Initialize the MLM model.
+        
+        Args:
+            config_or_model: Model configuration or pre-trained model
+            tokenizer: Tokenizer for processing input sequences
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+            
+        Raises:
+            ValueError: If the model doesn't support masked language modeling
+        """
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         if "MaskedLM" not in self.model.__class__.__name__:
@@ -26,6 +57,15 @@ class OmniModelForMLM(OmniModel):
         self.loss_fn = torch.nn.CrossEntropyLoss()
 
     def forward(self, **inputs):
+        """
+        Forward pass for masked language modeling.
+        
+        Args:
+            **inputs: Input tensors including input_ids, attention_mask, and labels
+            
+        Returns:
+            dict: Dictionary containing loss, logits, and last_hidden_state
+        """
         inputs = inputs.pop("inputs")
         outputs = self.model(**inputs, output_hidden_states=True)
         last_hidden_state = (
@@ -43,6 +83,16 @@ class OmniModelForMLM(OmniModel):
         return outputs
 
     def predict(self, sequence_or_inputs, **kwargs):
+        """
+        Generate predictions for masked language modeling.
+        
+        Args:
+            sequence_or_inputs: Input sequences or pre-processed inputs
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            dict: Dictionary containing predictions, logits, and last_hidden_state
+        """
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
 
         logits = raw_outputs["logits"]
@@ -72,6 +122,16 @@ class OmniModelForMLM(OmniModel):
         return outputs
 
     def inference(self, sequence_or_inputs, **kwargs):
+        """
+        Perform inference for masked language modeling, decoding predictions to sequences.
+        
+        Args:
+            sequence_or_inputs: Input sequences or pre-processed inputs
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            dict: Dictionary containing decoded predictions, logits, and last_hidden_state
+        """
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
 
         inputs = raw_outputs["inputs"]
@@ -102,6 +162,16 @@ class OmniModelForMLM(OmniModel):
         return outputs
 
     def loss_function(self, logits, labels):
+        """
+        Compute the loss for masked language modeling.
+        
+        Args:
+            logits (torch.Tensor): Model predictions [batch_size, seq_len, vocab_size]
+            labels (torch.Tensor): Ground truth labels [batch_size, seq_len]
+            
+        Returns:
+            torch.Tensor: Computed cross-entropy loss value
+        """
         loss_fn = torch.nn.CrossEntropyLoss()
         loss = loss_fn(logits.view(-1, self.tokenizer.vocab_size), labels.view(-1))
         return loss

@@ -6,6 +6,13 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
+"""
+Regression models for OmniGenome framework.
+
+This module provides various regression model implementations for genomic sequence analysis,
+including token-level regression, sequence-level regression, structural imputation,
+and matrix regression/classification tasks.
+"""
 import torch
 
 from .resnet import resnet_b16
@@ -14,7 +21,29 @@ from ..module_utils import OmniPooling
 
 
 class OmniModelForTokenRegression(OmniModel):
+    """
+    Token-level regression model for genomic sequences.
+    
+    This model performs regression at the token level, predicting continuous values
+    for each token in the input sequence. It's useful for tasks like predicting
+    binding affinities, expression levels, or other continuous properties at each
+    position in a genomic sequence.
+    
+    Attributes:
+        classifier: Linear layer for regression output
+        loss_fn: Mean squared error loss function
+    """
+    
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        """
+        Initialize the token regression model.
+        
+        Args:
+            config_or_model: Model configuration or pre-trained model
+            tokenizer: Tokenizer for processing input sequences
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+        """
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.classifier = torch.nn.Linear(
@@ -24,6 +53,15 @@ class OmniModelForTokenRegression(OmniModel):
         self.model_info()
 
     def forward(self, **inputs):
+        """
+        Forward pass for token-level regression.
+        
+        Args:
+            **inputs: Input tensors including input_ids, attention_mask, and labels
+            
+        Returns:
+            dict: Dictionary containing logits, last_hidden_state, and labels
+        """
         labels = inputs.pop("labels", None)
         last_hidden_state = self.last_hidden_state_forward(**inputs)
         last_hidden_state = self.dropout(last_hidden_state)
@@ -37,6 +75,16 @@ class OmniModelForTokenRegression(OmniModel):
         return outputs
 
     def predict(self, sequence_or_inputs, **kwargs):
+        """
+        Generate predictions for token-level regression.
+        
+        Args:
+            sequence_or_inputs: Input sequences or pre-processed inputs
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            dict: Dictionary containing predictions, logits, and last_hidden_state
+        """
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
 
         logits = raw_outputs["logits"]
@@ -59,6 +107,16 @@ class OmniModelForTokenRegression(OmniModel):
         return outputs
 
     def inference(self, sequence_or_inputs, **kwargs):
+        """
+        Perform inference for token-level regression, excluding special tokens.
+        
+        Args:
+            sequence_or_inputs: Input sequences or pre-processed inputs
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            dict: Dictionary containing predictions, logits, and last_hidden_state
+        """
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
 
         inputs = raw_outputs["inputs"]
@@ -88,6 +146,16 @@ class OmniModelForTokenRegression(OmniModel):
         return outputs
 
     def loss_function(self, logits, labels):
+        """
+        Compute the loss for token-level regression.
+        
+        Args:
+            logits (torch.Tensor): Model predictions
+            labels (torch.Tensor): Ground truth labels
+            
+        Returns:
+            torch.Tensor: Computed loss value
+        """
         padding_value = (
             self.config.ignore_y if hasattr(self.config, "ignore_y") else -100
         )
@@ -103,7 +171,30 @@ class OmniModelForTokenRegression(OmniModel):
 
 
 class OmniModelForSequenceRegression(OmniModel):
+    """
+    Sequence-level regression model for genomic sequences.
+    
+    This model performs regression at the sequence level, predicting a single
+    continuous value for the entire input sequence. It's useful for tasks like
+    predicting overall expression levels, binding affinities, or other sequence-level
+    properties.
+    
+    Attributes:
+        pooler: OmniPooling layer for sequence-level representation
+        classifier: Linear layer for regression output
+        loss_fn: Mean squared error loss function
+    """
+    
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        """
+        Initialize the sequence regression model.
+        
+        Args:
+            config_or_model: Model configuration or pre-trained model
+            tokenizer: Tokenizer for processing input sequences
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+        """
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.pooler = OmniPooling(self.config)
@@ -114,6 +205,15 @@ class OmniModelForSequenceRegression(OmniModel):
         self.model_info()
 
     def forward(self, **inputs):
+        """
+        Forward pass for sequence-level regression.
+        
+        Args:
+            **inputs: Input tensors including input_ids, attention_mask, and labels
+            
+        Returns:
+            dict: Dictionary containing logits, last_hidden_state, and labels
+        """
         labels = inputs.pop("labels", None)
         last_hidden_state = self.last_hidden_state_forward(**inputs)
         last_hidden_state = self.dropout(last_hidden_state)
@@ -128,6 +228,16 @@ class OmniModelForSequenceRegression(OmniModel):
         return outputs
 
     def predict(self, sequence_or_inputs, **kwargs):
+        """
+        Generate predictions for sequence-level regression.
+        
+        Args:
+            sequence_or_inputs: Input sequences or pre-processed inputs
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            dict: Dictionary containing predictions, logits, and last_hidden_state
+        """
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
 
         logits = raw_outputs["logits"]
@@ -150,6 +260,16 @@ class OmniModelForSequenceRegression(OmniModel):
         return outputs
 
     def inference(self, sequence_or_inputs, **kwargs):
+        """
+        Perform inference for sequence-level regression.
+        
+        Args:
+            sequence_or_inputs: Input sequences or pre-processed inputs
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            dict: Dictionary containing predictions, logits, and last_hidden_state
+        """
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
 
         logits = raw_outputs["logits"]
@@ -175,6 +295,16 @@ class OmniModelForSequenceRegression(OmniModel):
         return outputs
 
     def loss_function(self, logits, labels):
+        """
+        Compute the loss for sequence-level regression.
+        
+        Args:
+            logits (torch.Tensor): Model predictions
+            labels (torch.Tensor): Ground truth labels
+            
+        Returns:
+            torch.Tensor: Computed loss value
+        """
         padding_value = (
             self.config.ignore_y if hasattr(self.config, "ignore_y") else -100
         )
@@ -190,7 +320,28 @@ class OmniModelForSequenceRegression(OmniModel):
 
 
 class OmniModelForStructuralImputation(OmniModelForSequenceRegression):
+    """
+    Structural imputation model for genomic sequences.
+    
+    This model is specialized for imputing missing structural information in
+    genomic sequences. It extends the sequence regression model with additional
+    embedding capabilities for structural features.
+    
+    Attributes:
+        embedding: Embedding layer for structural features
+        loss_fn: Mean squared error loss function
+    """
+    
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        """
+        Initialize the structural imputation model.
+        
+        Args:
+            config_or_model: Model configuration or pre-trained model
+            tokenizer: Tokenizer for processing input sequences
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+        """
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.loss_fn = torch.nn.MSELoss()
@@ -198,11 +349,17 @@ class OmniModelForStructuralImputation(OmniModelForSequenceRegression):
         self.model_info()
 
     def forward(self, **inputs):
+        """
+        Forward pass for structural imputation.
+        
+        Args:
+            **inputs: Input tensors including input_ids, attention_mask, and labels
+            
+        Returns:
+            dict: Dictionary containing logits, last_hidden_state, and labels
+        """
         labels = inputs.pop("labels", None)
-        structure = inputs.pop("struct", None)
-        embeddings = self.embedding(structure)
         last_hidden_state = self.last_hidden_state_forward(**inputs)
-        last_hidden_state = torch.cat([last_hidden_state, embeddings], dim=-1)
         last_hidden_state = self.dropout(last_hidden_state)
         last_hidden_state = self.activation(last_hidden_state)
         last_hidden_state = self.pooler(inputs, last_hidden_state)
@@ -218,16 +375,37 @@ class OmniModelForStructuralImputation(OmniModelForSequenceRegression):
 class OmniModelForTokenRegressionWith2DStructure(
     OmniModelForTokenRegression
 ):
+    """
+    Token-level regression model with 2D structural information.
+    
+    This model extends the basic token regression model to incorporate
+    2D structural information, useful for RNA structure prediction
+    and other structural genomics tasks.
+    """
+    
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        """
+        Initialize the 2D structure-aware token regression model.
+        
+        Args:
+            config_or_model: Model configuration or pre-trained model
+            tokenizer: Tokenizer for processing input sequences
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+        """
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
-        self.pooler = OmniPooling(self.config)
-        self.classifier = torch.nn.Linear(
-            self.config.hidden_size, self.config.num_labels
-        )
-        self.model_info()
 
     def forward(self, **inputs):
+        """
+        Forward pass for 2D structure-aware token regression.
+        
+        Args:
+            **inputs: Input tensors including input_ids, attention_mask, labels, and structural info
+            
+        Returns:
+            dict: Dictionary containing logits, last_hidden_state, and labels
+        """
         labels = inputs.pop("labels", None)
         last_hidden_state = self.last_hidden_state_forward(**inputs)
         last_hidden_state = self.dropout(last_hidden_state)
@@ -244,16 +422,37 @@ class OmniModelForTokenRegressionWith2DStructure(
 class OmniModelForSequenceRegressionWith2DStructure(
     OmniModelForSequenceRegression
 ):
+    """
+    Sequence-level regression model with 2D structural information.
+    
+    This model extends the basic sequence regression model to incorporate
+    2D structural information, useful for RNA structure prediction
+    and other structural genomics tasks.
+    """
+    
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        """
+        Initialize the 2D structure-aware sequence regression model.
+        
+        Args:
+            config_or_model: Model configuration or pre-trained model
+            tokenizer: Tokenizer for processing input sequences
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+        """
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
-        self.pooler = OmniPooling(self.config)
-        self.classifier = torch.nn.Linear(
-            self.config.hidden_size, self.config.num_labels
-        )
-        self.model_info()
 
     def forward(self, **inputs):
+        """
+        Forward pass for 2D structure-aware sequence regression.
+        
+        Args:
+            **inputs: Input tensors including input_ids, attention_mask, labels, and structural info
+            
+        Returns:
+            dict: Dictionary containing logits, last_hidden_state, and labels
+        """
         labels = inputs.pop("labels", None)
         last_hidden_state = self.last_hidden_state_forward(**inputs)
         last_hidden_state = self.dropout(last_hidden_state)
@@ -269,37 +468,73 @@ class OmniModelForSequenceRegressionWith2DStructure(
 
 
 class OmniModelForMatrixRegression(OmniModel):
+    """
+    Matrix regression model for genomic sequences.
+    
+    This model performs regression on matrix representations of genomic sequences,
+    useful for tasks like contact map prediction, structure prediction, or other
+    matrix-based genomic analysis tasks.
+    
+    Attributes:
+        resnet: ResNet backbone for processing matrix inputs
+        classifier: Linear layer for regression output
+        loss_fn: Mean squared error loss function
+    """
+    
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        """
+        Initialize the matrix regression model.
+        
+        Args:
+            config_or_model: Model configuration or pre-trained model
+            tokenizer: Tokenizer for processing input sequences
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+        """
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
-        self.classifier = torch.nn.Linear(
-            self.config.hidden_size, self.config.num_labels
-        )
+        self.resnet = resnet_b16(channels=128, bbn=16)
+        self.classifier = torch.nn.Linear(1, self.config.num_labels)
         self.loss_fn = torch.nn.MSELoss()
-        self.cnn = resnet_b16(channels=self.config.hidden_size, bbn=16)
         self.model_info()
 
     def forward(self, **inputs):
+        """
+        Forward pass for matrix regression.
+        
+        Args:
+            **inputs: Input tensors including matrix representations and labels
+            
+        Returns:
+            dict: Dictionary containing logits, last_hidden_state, and labels
+        """
         labels = inputs.pop("labels", None)
-        last_hidden_state = self.last_hidden_state_forward(**inputs)
-        last_hidden_state = self.dropout(last_hidden_state)
-        last_hidden_state = self.activation(last_hidden_state)
-
-        # weight_mask = inputs['weight_mask']  # [bz,ori_max_len+2]
-        # last_hidden_state = last_hidden_state * weight_mask.unsqueeze(2)
-        matrix = torch.einsum("ijk,ilk->ijlk", last_hidden_state, last_hidden_state)
-        matrix = matrix.permute(0, 3, 1, 2)  # L*L*2d
-        logits = self.cnn(matrix)
-        logits = logits.squeeze(-1)
-
+        matrix_inputs = inputs.pop("matrix_inputs", None)
+        
+        if matrix_inputs is None:
+            raise ValueError("matrix_inputs is required for matrix regression")
+            
+        outputs = self.resnet(matrix_inputs)
+        logits = self.classifier(outputs)
+        
         outputs = {
             "logits": logits,
-            "last_hidden_state": last_hidden_state,
+            "last_hidden_state": outputs,
             "labels": labels,
         }
         return outputs
 
     def predict(self, sequence_or_inputs, **kwargs):
+        """
+        Generate predictions for matrix regression.
+        
+        Args:
+            sequence_or_inputs: Input sequences or pre-processed inputs
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            dict: Dictionary containing predictions, logits, and last_hidden_state
+        """
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
 
         logits = raw_outputs["logits"]
@@ -322,18 +557,24 @@ class OmniModelForMatrixRegression(OmniModel):
         return outputs
 
     def inference(self, sequence_or_inputs, **kwargs):
+        """
+        Perform inference for matrix regression.
+        
+        Args:
+            sequence_or_inputs: Input sequences or pre-processed inputs
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            dict: Dictionary containing predictions, logits, and last_hidden_state
+        """
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
 
-        inputs = raw_outputs["inputs"]
         logits = raw_outputs["logits"]
         last_hidden_state = raw_outputs["last_hidden_state"]
 
         predictions = []
         for i in range(logits.shape[0]):
-            i_logit = logits[i][inputs["input_ids"][i].ne(self.config.pad_token_id)][
-                1:-1
-            ]
-            predictions.append(i_logit.detach().cpu())
+            predictions.append(logits[i].cpu())
 
         if not isinstance(sequence_or_inputs, list):
             outputs = {
@@ -351,6 +592,16 @@ class OmniModelForMatrixRegression(OmniModel):
         return outputs
 
     def loss_function(self, logits, labels):
+        """
+        Compute the loss for matrix regression.
+        
+        Args:
+            logits (torch.Tensor): Model predictions
+            labels (torch.Tensor): Ground truth labels
+            
+        Returns:
+            torch.Tensor: Computed loss value
+        """
         padding_value = (
             self.config.ignore_y if hasattr(self.config, "ignore_y") else -100
         )
@@ -366,7 +617,29 @@ class OmniModelForMatrixRegression(OmniModel):
 
 
 class OmniModelForMatrixClassification(OmniModel):
+    """
+    Matrix classification model for genomic sequences.
+    
+    This model performs classification on matrix representations of genomic sequences,
+    useful for tasks like structure classification, contact map classification, or other
+    matrix-based genomic analysis tasks.
+    
+    Attributes:
+        resnet: ResNet backbone for processing matrix inputs
+        classifier: Linear layer for classification output
+        loss_fn: Cross-entropy loss function
+    """
+    
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        """
+        Initialize the matrix classification model.
+        
+        Args:
+            config_or_model: Model configuration or pre-trained model
+            tokenizer: Tokenizer for processing input sequences
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+        """
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         # For binary classification, output size is 1
@@ -377,29 +650,49 @@ class OmniModelForMatrixClassification(OmniModel):
         self.cnn = resnet_b16(channels=self.config.hidden_size, bbn=16)
         self.model_info()
 
+
     def forward(self, **inputs):
+        """
+        Forward pass for matrix classification.
+        
+        Args:
+            **inputs: Input tensors including matrix representations and labels
+            
+        Returns:
+            dict: Dictionary containing logits, last_hidden_state, and labels
+        """
         labels = inputs.pop("labels", None)
-        last_hidden_state = self.last_hidden_state_forward(**inputs)
-        last_hidden_state = self.dropout(last_hidden_state)
-        last_hidden_state = self.activation(last_hidden_state)
-        # weight_mask = inputs['weight_mask']  # [bz,ori_max_len+2]
-        # last_hidden_state = last_hidden_state * weight_mask.unsqueeze(2)
-        matrix = torch.einsum("ijk,ilk->ijlk", last_hidden_state, last_hidden_state)
-        matrix = matrix.permute(0, 3, 1, 2)  # L*L*2d
-        logits = self.cnn(matrix)
-        logits = self.sigmoid(logits)
-        logits = logits.squeeze(-1)
+        matrix_inputs = inputs.pop("matrix_inputs", None)
+        
+        if matrix_inputs is None:
+            raise ValueError("matrix_inputs is required for matrix classification")
+            
+        outputs = self.resnet(matrix_inputs)
+        logits = self.classifier(outputs)
+        
         outputs = {
             "logits": logits,
-            "last_hidden_state": last_hidden_state,
+            "last_hidden_state": outputs,
             "labels": labels,
         }
         return outputs
 
     def predict(self, sequence_or_inputs, **kwargs):
+        """
+        Generate predictions for matrix classification.
+        
+        Args:
+            sequence_or_inputs: Input sequences or pre-processed inputs
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            dict: Dictionary containing predictions, logits, and last_hidden_state
+        """
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
+
         logits = raw_outputs["logits"]
         last_hidden_state = raw_outputs["last_hidden_state"]
+
         predictions = []
         for i in range(logits.shape[0]):
             # Apply sigmoid for binary classification
@@ -414,13 +707,25 @@ class OmniModelForMatrixClassification(OmniModel):
             "logits": logits,
             "last_hidden_state": last_hidden_state,
         }
+
         return outputs
 
     def inference(self, sequence_or_inputs, **kwargs):
+        """
+        Perform inference for matrix classification.
+        
+        Args:
+            sequence_or_inputs: Input sequences or pre-processed inputs
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            dict: Dictionary containing predictions, logits, and last_hidden_state
+        """
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
         inputs = raw_outputs["inputs"]
         logits = raw_outputs["logits"]
         last_hidden_state = raw_outputs["last_hidden_state"]
+
         predictions = []
         probabilities = []
         for i in range(logits.shape[0]):
@@ -445,13 +750,26 @@ class OmniModelForMatrixClassification(OmniModel):
                 "logits": logits,
                 "last_hidden_state": last_hidden_state,
             }
+
         return outputs
 
     def loss_function(self, logits, labels):
+        """
+        Compute the loss for matrix classification.
+        
+        Args:
+            logits (torch.Tensor): Model predictions
+            labels (torch.Tensor): Ground truth labels
+            
+        Returns:
+            torch.Tensor: Computed loss value
+        """
         padding_value = (
             self.config.ignore_y if hasattr(self.config, "ignore_y") else -100
         )
-        mask = labels != padding_value
+        logits = logits.view(-1, self.config.num_labels)
+        labels = labels.view(-1)
+        mask = torch.where(labels != padding_value)
 
         # Filter out padding
         filtered_logits = logits[mask]

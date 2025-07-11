@@ -1,5 +1,5 @@
 """
-OmniGenomeBench test suite.
+OmniGenBench test suite.
 
 This test suite validates functionality based on examples in the examples/ directory.
 Tests are designed to be fast and avoid heavy dependencies while ensuring

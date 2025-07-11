@@ -6,6 +6,12 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
+"""
+Module utilities for OmniGenome models.
+
+This module provides utility classes and functions for handling model inputs,
+pooling operations, and attention mechanisms used across different OmniGenome model types.
+"""
 import torch
 import torch.nn as nn
 
@@ -13,14 +19,51 @@ from transformers.models.bert.modeling_bert import BertPooler
 from transformers.tokenization_utils_base import BatchEncoding
 
 
-
 class OmniPooling(torch.nn.Module):
+    """
+    A flexible pooling layer for OmniGenome models that handles different input formats.
+    
+    This class provides a unified interface for pooling operations across different
+    model architectures, supporting both causal language models and encoder-based models.
+    It can handle various input formats including tuples, dictionaries, BatchEncoding
+    objects, and tensors.
+    
+    Attributes:
+        config: Model configuration object containing architecture and tokenizer settings
+        pooler: BertPooler instance for non-causal models, None for causal models
+    """
+    
     def __init__(self, config, *args, **kwargs):
+        """
+        Initialize the OmniPooling layer.
+        
+        Args:
+            config: Model configuration object containing architecture information
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+        """
         super().__init__(*args, **kwargs)
         self.config = config
         self.pooler = BertPooler(self.config) if not self._is_causal_lm() else None
 
     def forward(self, inputs, last_hidden_state):
+        """
+        Perform pooling operation on the last hidden state.
+        
+        This method handles different input formats and applies appropriate pooling:
+        - For causal language models: Uses the last non-padded token
+        - For encoder models: Uses the BertPooler
+        
+        Args:
+            inputs: Input data in various formats (tuple, dict, BatchEncoding, or tensor)
+            last_hidden_state (torch.Tensor): Hidden states from the model [batch_size, seq_len, hidden_size]
+            
+        Returns:
+            torch.Tensor: Pooled representation [batch_size, hidden_size]
+            
+        Raises:
+            ValueError: If input format is not supported or cannot be parsed
+        """
         if isinstance(inputs, tuple):
             input_ids = inputs[0]
             attention_mask = inputs[1] if len(inputs) > 1 else None
@@ -65,6 +108,14 @@ class OmniPooling(torch.nn.Module):
         return last_hidden_state
 
     def _is_causal_lm(self):
+        """
+        Check if the model is a causal language model.
+        
+        Determines if the model architecture is causal based on the configuration.
+        
+        Returns:
+            bool: True if the model is a causal language model, False otherwise
+        """
         if (
             hasattr(self.config, "architectures")
             and "CausalLM" in str(self.config.architectures)
@@ -122,7 +173,30 @@ class OmniPooling(torch.nn.Module):
 
 
 class InteractingAttention(nn.Module):
+    """
+    An interacting attention mechanism for sequence modeling.
+    
+    This class implements a multi-head attention mechanism with residual connections
+    and layer normalization. It's designed for processing sequences where different
+    parts of the sequence need to interact with each other.
+    
+    Attributes:
+        attention: Multi-head attention layer
+        layer_norm: Layer normalization for residual connections
+        fc_out: Output projection layer
+    """
+    
     def __init__(self, embed_size, num_heads=24):
+        """
+        Initialize the InteractingAttention module.
+        
+        Args:
+            embed_size (int): Size of the embedding dimension
+            num_heads (int): Number of attention heads (default: 24)
+            
+        Raises:
+            AssertionError: If embed_size is not divisible by num_heads
+        """
         super(InteractingAttention, self).__init__()
         assert (
             embed_size % num_heads == 0
@@ -137,6 +211,17 @@ class InteractingAttention(nn.Module):
         self.fc_out = nn.Linear(embed_size, embed_size)
 
     def forward(self, query, keys, values):
+        """
+        Forward pass through the interacting attention mechanism.
+        
+        Args:
+            query (torch.Tensor): Query tensor [batch_size, query_len, embed_size]
+            keys (torch.Tensor): Key tensor [batch_size, key_len, embed_size]
+            values (torch.Tensor): Value tensor [batch_size, value_len, embed_size]
+            
+        Returns:
+            torch.Tensor: Output tensor with same shape as query
+        """
         att_output, _ = self.attention(query, keys, values)
 
         query = self.layer_norm(att_output + query)

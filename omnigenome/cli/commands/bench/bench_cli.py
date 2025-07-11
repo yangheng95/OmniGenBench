@@ -20,8 +20,46 @@ from ..base import BaseCommand
 
 
 class BenchCommand(BaseCommand):
+    """
+    Command-line interface for running automated benchmarking of genomic foundation models.
+    
+    This class provides a CLI interface for the AutoBench functionality, allowing users
+    to easily run comprehensive evaluations of genomic models across multiple benchmarks.
+    It supports various benchmarks, models, and training configurations.
+    
+    Attributes:
+        benchmarks (list): List of available benchmarks (RGB, PGB, GUE, GB, BEACON)
+        trainers (list): List of available trainers (native, accelerate, hf_trainer)
+        
+    Example:
+        >>> # Run basic benchmark
+        >>> python -m omnigenome.cli autobench --model "model_name" --benchmark "RGB"
+        
+        >>> # Run with custom settings
+        >>> python -m omnigenome.cli autobench \
+        ...     --model "model_name" \
+        ...     --benchmark "RGB" \
+        ...     --trainer "accelerate" \
+        ...     --bs_scale 2 \
+        ...     --overwrite True
+    """
+    
     @classmethod
     def register_command(cls, subparsers):
+        """
+        Register the autobench command with the argument parser.
+        
+        This method sets up the command-line interface for the autobench functionality,
+        including all necessary arguments and their descriptions.
+        
+        Args:
+            subparsers: The subparsers object from argparse to add the command to
+            
+        Example:
+            >>> parser = argparse.ArgumentParser()
+            >>> subparsers = parser.add_subparsers()
+            >>> BenchCommand.register_command(subparsers)
+        """
         parser = subparsers.add_parser(
             "autobench",
             help="Run Auto-benchmarking for Genomic Foundation Models.",
@@ -82,6 +120,21 @@ class BenchCommand(BaseCommand):
 
     @staticmethod
     def execute(args: argparse.Namespace):
+        """
+        Execute the autobench command with the provided arguments.
+        
+        This method runs the automated benchmarking process using the AutoBench
+        class. It handles model and tokenizer loading, benchmark execution,
+        and result logging.
+        
+        Args:
+            args (argparse.Namespace): Parsed command-line arguments containing
+                                      benchmark configuration and model settings
+                                      
+        Example:
+            >>> args = parser.parse_args(['autobench', '--model', 'model_name'])
+            >>> BenchCommand.execute(args)
+        """
         fprint("Running benchmark, this may take a while, please be patient...")
         fprint("You can find the logs in the 'autobench_logs' directory.")
         fprint("You can find the metrics in the 'autobench_evaluations' directory.")
@@ -132,4 +185,18 @@ class BenchCommand(BaseCommand):
 
 
 def register_command(subparsers):
+    """
+    Register the autobench command with the CLI.
+    
+    This function is a convenience wrapper for registering the BenchCommand
+    with the argument parser.
+    
+    Args:
+        subparsers: The subparsers object from argparse to add the command to
+        
+    Example:
+        >>> parser = argparse.ArgumentParser()
+        >>> subparsers = parser.add_subparsers()
+        >>> register_command(subparsers)
+    """
     BenchCommand.register_command(subparsers)

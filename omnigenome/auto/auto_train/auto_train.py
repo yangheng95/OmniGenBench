@@ -31,6 +31,30 @@ autotrain_evaluations = "./autotrain_evaluations"
 
 
 class AutoTrain:
+    """
+    AutoTrain is a class for automatically training genomic foundation models on a given dataset.
+    
+    This class provides a comprehensive framework for training genomic models
+    on various datasets with minimal configuration. It handles dataset loading,
+    model initialization, training configuration, and result tracking.
+    
+    AutoTrain supports various training scenarios including:
+    - Single dataset training with multiple seeds
+    - Different trainer backends (native, accelerate, huggingface)
+    - Automatic metric visualization and result tracking
+    - Configurable training parameters
+    
+    Attributes:
+        dataset (str): The name or path of the dataset to use for training.
+        model_name_or_path (str): The name or path of the model to train.
+        tokenizer: The tokenizer to use for training.
+        autocast (str): The autocast precision to use ('fp16', 'bf16', etc.).
+        overwrite (bool): Whether to overwrite existing training results.
+        trainer (str): The trainer to use ('native', 'accelerate', 'hf_trainer').
+        mv_path (str): Path to the metric visualizer file.
+        mv (MetricVisualizer): The metric visualizer instance.
+    """
+
     def __init__(
         self,
         dataset,
@@ -38,6 +62,29 @@ class AutoTrain:
         tokenizer=None,
         **kwargs,
     ):
+        """
+        Initialize the AutoTrain instance.
+
+        Args:
+            dataset (str): The name or path of the dataset to use for training.
+            model_name_or_path (str): The name or path of the model to train.
+            tokenizer: The tokenizer to use. If None, it will be loaded from the model path.
+            **kwargs: Additional keyword arguments.
+                - autocast (str): The autocast precision to use ('fp16', 'bf16', etc.). 
+                  Defaults to 'fp16'.
+                - overwrite (bool): Whether to overwrite existing training results. 
+                  Defaults to False.
+                - trainer (str): The trainer to use ('native', 'accelerate', 'hf_trainer'). 
+                  Defaults to 'accelerate'.
+
+        Example:
+            >>> # Initialize with a dataset and model
+            >>> trainer = AutoTrain("dataset_name", "model_name")
+            
+            >>> # Initialize with custom settings
+            >>> trainer = AutoTrain("dataset_name", "model_name", 
+            ...                     autocast="bf16", trainer="accelerate")
+        """
         self.dataset = dataset.rstrip("/")
         self.autocast = kwargs.pop("autocast", "fp16")
         self.overwrite = kwargs.pop("overwrite", False)
@@ -69,6 +116,20 @@ class AutoTrain:
         self.bench_info()
 
     def bench_info(self):
+        """
+        Print and return information about the current training setup.
+        
+        This method provides a comprehensive overview of the current
+        training configuration, including dataset details, model information,
+        and training settings.
+
+        Returns:
+            str: A string containing training setup information.
+
+        Example:
+            >>> info = trainer.bench_info()
+            >>> print(info)
+        """
         info = f"Dataset Root: {self.dataset}\n"
         info += f"Model Name or Path: {self.model_name}\n"
         info += f"Tokenizer: {self.tokenizer}\n"
@@ -78,10 +139,24 @@ class AutoTrain:
 
     def run(self, **kwargs):
         """
+        Run the training process.
+        
+        This method loads the dataset configuration, initializes the model and
+        tokenizer, and runs training across multiple seeds. It supports various
+        training backends and automatic result tracking.
 
-        :param kwargs: parameters in kwargs will be used to override the default parameters in the dataset config
-        :return:
+        Args:
+            **kwargs: Additional keyword arguments that will override the default
+                     parameters in the dataset configuration.
+
+        Example:
+            >>> # Run training with default settings
+            >>> trainer.run()
+            
+            >>> # Run with custom parameters
+            >>> trainer.run(learning_rate=1e-4, batch_size=16)
         """
+
 
         clean_temp_checkpoint(1)  # clean temp checkpoint older than 1 day
 

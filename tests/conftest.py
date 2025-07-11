@@ -1,5 +1,5 @@
 """
-Pytest configuration and shared fixtures for OmniGenomeBench tests.
+Pytest configuration and shared fixtures for OmniGenBench tests.
 """
 import pytest
 import sys

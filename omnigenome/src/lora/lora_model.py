@@ -7,11 +7,36 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2025. All Rights Reserved.
+"""
+Low-Rank Adaptation (LoRA) models for OmniGenome.
+
+This module provides LoRA implementation for efficient fine-tuning of large
+genomic language models. LoRA reduces the number of trainable parameters
+by adding low-rank adaptation layers to existing model weights.
+"""
 import torch
 from torch import nn
 from omnigenome.src.misc.utils import fprint
 
 def find_linear_target_modules(model, keyword_filter=None, use_full_path=True):
+    """
+    Find linear modules in a model that can be targeted for LoRA adaptation.
+    
+    This function searches through a model's modules to identify linear layers
+    that can be adapted using LoRA. It supports filtering by keyword patterns
+    to target specific types of layers.
+    
+    Args:
+        model: The model to search for linear modules
+        keyword_filter (str, list, tuple, optional): Keywords to filter modules by name
+        use_full_path (bool): Whether to return full module paths or just names (default: True)
+        
+    Returns:
+        list: Sorted list of linear module names that can be targeted for LoRA
+        
+    Raises:
+        TypeError: If keyword_filter is not None, str, or a list/tuple of str
+    """
     import re
     from torch import nn
 
@@ -32,6 +57,23 @@ def find_linear_target_modules(model, keyword_filter=None, use_full_path=True):
     return sorted(linear_modules)
 
 def auto_lora_model(model, **kwargs):
+    """
+    Automatically create a LoRA-adapted model.
+    
+    This function automatically identifies suitable target modules and creates
+    a LoRA-adapted version of the input model. It handles configuration
+    setup and parameter freezing for efficient fine-tuning.
+    
+    Args:
+        model: The base model to adapt with LoRA
+        **kwargs: Additional LoRA configuration parameters
+        
+    Returns:
+        The LoRA-adapted model
+        
+    Raises:
+        AssertionError: If no target modules are found for LoRA injection
+    """
     from peft import LoraConfig, get_peft_model
     from transformers import PretrainedConfig
 
@@ -74,7 +116,31 @@ def auto_lora_model(model, **kwargs):
     return lora_model
 
 class OmniLoraModel(nn.Module):
+    """
+    LoRA-adapted model for OmniGenome.
+    
+    This class provides a wrapper around LoRA-adapted models, enabling
+    efficient fine-tuning of large genomic language models while maintaining
+    compatibility with the OmniGenome framework.
+    
+    Attributes:
+        lora_model: The underlying LoRA-adapted model
+        config: Model configuration
+        device: Device the model is running on
+        dtype: Data type of the model parameters
+    """
+    
     def __init__(self, model, **kwargs):
+        """
+        Initialize the LoRA-adapted model.
+        
+        Args:
+            model: The base model to adapt with LoRA
+            **kwargs: LoRA configuration parameters
+            
+        Raises:
+            ValueError: If no target modules are specified for LoRA injection
+        """
         super(OmniLoraModel, self).__init__()
         target_modules = kwargs.get("target_modules", None)
         if target_modules is None:
@@ -99,10 +165,19 @@ class OmniLoraModel(nn.Module):
             self.lora_model
         )
 
-
     def to(self, *args, **kwargs):
         """
-        Override the to method to ensure the lora_model is moved to the correct device and dtype.
+        Move the model to a specific device and data type.
+        
+        This method overrides the default to() method to ensure the LoRA model
+        and its components are properly moved to the target device and dtype.
+        
+        Args:
+            *args: Device specification (e.g., 'cuda', 'cpu')
+            **kwargs: Additional arguments including dtype
+            
+        Returns:
+            self: The model instance
         """
         self.lora_model.to(*args, **kwargs)
         try:
@@ -120,28 +195,100 @@ class OmniLoraModel(nn.Module):
         return self
 
     def forward(self, *args, **kwargs):
+        """
+        Forward pass through the LoRA model.
+        
+        Args:
+            *args: Positional arguments for the forward pass
+            **kwargs: Keyword arguments for the forward pass
+            
+        Returns:
+            The output from the LoRA model
+        """
         return self.lora_model(*args, **kwargs)
 
     def predict(self, *args, **kwargs):
+        """
+        Generate predictions using the LoRA model.
+        
+        Args:
+            *args: Positional arguments for prediction
+            **kwargs: Keyword arguments for prediction
+            
+        Returns:
+            Model predictions
+        """
         return self.lora_model.base_model.predict(*args, **kwargs)
 
     def save(self, *args, **kwargs):
+        """
+        Save the LoRA model.
+        
+        Args:
+            *args: Positional arguments for saving
+            **kwargs: Keyword arguments for saving
+            
+        Returns:
+            Result of the save operation
+        """
         return self.lora_model.base_model.save(*args, **kwargs)
 
     def model_info(self):
+        """
+        Get information about the LoRA model.
+        
+        Returns:
+            Model information from the base model
+        """
         return self.lora_model.base_model.model_info()
 
     def set_loss_fn(self, fn):
+        """
+        Set the loss function for the LoRA model.
+        
+        Args:
+            fn: Loss function to set
+            
+        Returns:
+            Result of setting the loss function
+        """
         return self.lora_model.base_model.set_loss_fn(fn)
 
     def last_hidden_state_forward(self, **kwargs):
+        """
+        Forward pass to get the last hidden state.
+        
+        Args:
+            **kwargs: Keyword arguments for the forward pass
+            
+        Returns:
+            Last hidden state from the base model
+        """
         return self.lora_model.base_model.last_hidden_state_forward(**kwargs)
 
     def tokenizer(self):
+        """
+        Get the tokenizer from the base model.
+        
+        Returns:
+            The tokenizer from the base model
+        """
         return self.lora_model.base_model.tokenizer
 
     def config(self):
+        """
+        Get the configuration from the base model.
+        
+        Returns:
+            The configuration from the base model
+        """
         return self.lora_model.base_model.config
 
     def model(self):
+        """
+        Get the base model.
+        
+        Returns:
+            The base model
+        """
         return self.lora_model.base_model.model

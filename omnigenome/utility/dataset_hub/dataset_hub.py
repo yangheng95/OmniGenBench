@@ -7,6 +7,14 @@
 # HuggingFace: https://huggingface.co/yangheng
 # Google Scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2025. All rights reserved.
+"""
+Dataset Hub Module
+
+This module provides utilities for loading benchmark datasets from the OmniGenome hub.
+It handles automatic downloading, configuration loading, and dataset initialization
+for various genomic benchmarks.
+"""
+
 import os
 import warnings
 
@@ -22,6 +30,49 @@ def load_benchmark_datasets(
     tokenizer: Union["OmniTokenizer", str] = None,
     **kwargs: dict,
 ):
+    """
+    Load benchmark datasets from the OmniGenome hub.
+    
+    This function automatically downloads benchmark datasets if they don't exist locally,
+    loads their configurations, and initializes train/validation/test datasets with
+    the specified tokenizer.
+    
+    Args:
+        benchmark (str): Name or path of the benchmark to load. If the benchmark
+            doesn't exist locally, it will be downloaded from the hub.
+        tokenizer (Union[OmniTokenizer, str], optional): Tokenizer to use for
+            dataset preprocessing. Can be an OmniTokenizer instance or a string
+            identifier for a pre-trained tokenizer. If None, the tokenizer will
+            be loaded from the benchmark configuration.
+        **kwargs: Additional keyword arguments to override benchmark configuration.
+            These will be passed to the dataset classes and tokenizer initialization.
+    
+    Returns:
+        dict: Dictionary containing datasets for each benchmark task, with keys
+            being benchmark names and values being dictionaries with 'train',
+            'valid', and 'test' datasets.
+    
+    Raises:
+        FileNotFoundError: If the benchmark cannot be found or downloaded.
+        ValueError: If the benchmark configuration is invalid.
+        ImportError: If required dependencies are not available.
+    
+    Example:
+        >>> from omnigenome import OmniSingleNucleotideTokenizer
+        >>> tokenizer = OmniSingleNucleotideTokenizer.from_pretrained("model_name")
+        >>> datasets = load_benchmark_datasets("RGB", tokenizer, max_length=512)
+        >>> print(f"Loaded {len(datasets)} benchmark tasks")
+        >>> for task_name, task_datasets in datasets.items():
+        ...     print(f"{task_name}: {len(task_datasets['train'])} train samples")
+    
+    Note:
+        - The function automatically handles U/T conversion and other preprocessing
+          based on the benchmark configuration.
+        - If a tokenizer string is provided, it will be loaded with the benchmark's
+          trust_remote_code setting.
+        - The function supports multiple seeds for robust evaluation.
+        - Long sequences can be dropped or truncated based on configuration.
+    """
     if not os.path.exists(benchmark):
         fprint(
             "Benchmark:",

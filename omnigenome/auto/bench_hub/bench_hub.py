@@ -9,8 +9,17 @@
 
 
 class BenchHub:
+    """
+    A hub for accessing and managing benchmarks.
+    
+    This class is intended to provide a centralized way to list, download,
+    and inspect available benchmarks for OmniGenome.
+    """
+
     def __init__(self):
+        """Initializes the BenchHub."""
         pass
 
     def run(self):
+        """Placeholder for running functionality related to the benchmark hub."""
         pass

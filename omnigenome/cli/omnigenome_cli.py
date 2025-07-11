@@ -12,6 +12,29 @@ import json
 
 
 def main():
+    """
+    The main entry point for the OmniGenome command-line interface.
+    
+    This function sets up the command-line argument parser and handles
+    the execution of different subcommands. Currently supports RNA design
+    functionality with genetic algorithm optimization.
+    
+    The CLI provides a user-friendly interface for common OmniGenome tasks
+    without requiring Python programming knowledge.
+    
+    Example:
+        >>> # Design RNA sequences from command line
+        >>> python -m omnigenome.cli.omnigenome_cli rna_design --structure "(((...)))"
+        
+        >>> # Design with custom parameters
+        >>> python -m omnigenome.cli.omnigenome_cli rna_design \
+        ...     --structure "(((...)))" \
+        ...     --model "yangheng/OmniGenome-186M" \
+        ...     --mutation-ratio 0.3 \
+        ...     --num-population 200 \
+        ...     --num-generation 150 \
+        ...     --output-file "results.json"
+    """
     parser = argparse.ArgumentParser(description="OmniGenome CLI")
     subparsers = parser.add_subparsers(
         dest="command", required=True, help="Sub-command help"

@@ -159,8 +159,8 @@ Please find more usage tutorials in [examples/tutorials](examples/tutorials).
 }
 ```
 ## License
-OmniGenomeBench is licensed under the Apache License 2.0. See the LICENSE file for more information.
+OmniGenBench is licensed under the Apache License 2.0. See the LICENSE file for more information.
 
 
 ## Contribution
-We welcome contributions to OmniGenomeBench! If you have any ideas, suggestions, or bug reports, please open an issue or submit a pull request on GitHub.
+We welcome contributions to OmniGenBench! If you have any ideas, suggestions, or bug reports, please open an issue or submit a pull request on GitHub.

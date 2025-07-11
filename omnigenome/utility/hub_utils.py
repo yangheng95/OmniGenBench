@@ -24,8 +24,19 @@ from omnigenome.src.misc.utils import fprint, default_omnigenome_repo
 def unzip_checkpoint(checkpoint_path):
     """
     Unzips a checkpoint file.
+    
+    This function extracts a zipped checkpoint file to a directory,
+    making it ready for use by the model loading functions.
 
-    :param checkpoint_path: The path to the checkpoint file.
+    Args:
+        checkpoint_path (str): The path to the checkpoint file.
+
+    Returns:
+        str: The path to the extracted checkpoint directory.
+
+    Example:
+        >>> extracted_path = unzip_checkpoint("model.zip")
+        >>> print(extracted_path)  # "model"
     """
     import zipfile
 
@@ -38,6 +49,31 @@ def unzip_checkpoint(checkpoint_path):
 def query_models_info(
     keyword: Union[list, str], repo: str = None, local_only: bool = False, **kwargs
 ) -> Dict[str, Any]:
+    """
+    Queries information about available models from the hub.
+    
+    This function retrieves model information from the OmniGenome hub,
+    either from a remote repository or from a local cache. It supports
+    filtering by keywords to find specific models.
+
+    Args:
+        keyword (Union[list, str]): A keyword or list of keywords to filter models.
+        repo (str, optional): The repository URL to query. If None, uses the default hub.
+        local_only (bool): Whether to use only local cache. Defaults to False.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing model information filtered by the keyword.
+
+    Example:
+        >>> # Query all models
+        >>> models = query_models_info("")
+        >>> print(len(models))  # Number of available models
+        
+        >>> # Query specific models
+        >>> models = query_models_info("DNA")
+        >>> print(models.keys())  # Models containing "DNA"
+    """
     if local_only:
         with open("./models_info.json", "r", encoding="utf8") as f:
             models_info = json.load(f)
@@ -70,11 +106,36 @@ def query_models_info(
 def query_pipelines_info(
     keyword: Union[list, str], repo: str = None, local_only: bool = False, **kwargs
 ) -> Dict[str, Any]:
+    """
+    Queries information about available pipelines from the hub.
+    
+    This function retrieves pipeline information from the OmniGenome hub,
+    either from a remote repository or from a local cache. It supports
+    filtering by keywords to find specific pipelines.
+
+    Args:
+        keyword (Union[list, str]): A keyword or list of keywords to filter pipelines.
+        repo (str, optional): The repository URL to query. If None, uses the default hub.
+        local_only (bool): Whether to use only local cache. Defaults to False.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing pipeline information filtered by the keyword.
+
+    Example:
+        >>> # Query all pipelines
+        >>> pipelines = query_pipelines_info("")
+        >>> print(len(pipelines))  # Number of available pipelines
+        
+        >>> # Query specific pipelines
+        >>> pipelines = query_pipelines_info("classification")
+        >>> print(pipelines.keys())  # Pipelines containing "classification"
+    """
     if local_only:
         with open("./pipelines_info.json", "r", encoding="utf8") as f:
             pipelines_info = json.load(f)
     else:
-        repo = (repo if repo else default_omnigenome_repo) + "/resolve/main/"
+        repo = (repo if repo else default_omnigenome_repo) + "resolve/main/"
         try:
             response = requests.get(repo + "pipelines_info.json")
             pipelines_info = response.json()
@@ -99,36 +160,61 @@ def query_pipelines_info(
         return pipelines_info
 
 
-def query_benchmark_info(
+def query_benchmarks_info(
     keyword: Union[list, str], repo: str = None, local_only: bool = False, **kwargs
 ) -> Dict[str, Any]:
+    """
+    Queries information about available benchmarks from the hub.
+    
+    This function retrieves benchmark information from the OmniGenome hub,
+    either from a remote repository or from a local cache. It supports
+    filtering by keywords to find specific benchmarks.
+
+    Args:
+        keyword (Union[list, str]): A keyword or list of keywords to filter benchmarks.
+        repo (str, optional): The repository URL to query. If None, uses the default hub.
+        local_only (bool): Whether to use only local cache. Defaults to False.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing benchmark information filtered by the keyword.
+
+    Example:
+        >>> # Query all benchmarks
+        >>> benchmarks = query_benchmarks_info("")
+        >>> print(len(benchmarks))  # Number of available benchmarks
+        
+        >>> # Query specific benchmarks
+        >>> benchmarks = query_benchmarks_info("RGB")
+        >>> print(benchmarks.keys())  # Benchmarks containing "RGB"
+    """
     if local_only:
-        with open("./benchmark_info.json", "r", encoding="utf8") as f:
-            benchmark_info = json.load(f)
+        with open("./benchmarks_info.json", "r", encoding="utf8") as f:
+            benchmarks_info = json.load(f)
     else:
-        repo = (repo if repo else default_omnigenome_repo) + "/resolve/main/"
+        repo = (repo if repo else default_omnigenome_repo) + "resolve/main/"
         try:
-            response = requests.get(repo + "benchmark_info.json")
-            benchmark_info = response.json()
-            with open("./benchmark_info.json", "w", encoding="utf8") as f:
-                json.dump(benchmark_info, f)
+            response = requests.get(repo + "benchmarks_info.json")
+            benchmarks_info = response.json()
+            with open("./benchmarks_info.json", "w", encoding="utf8") as f:
+                json.dump(benchmarks_info, f)
         except Exception as e:
             fprint(
                 "Fail to download datasets info from huggingface space, the error is: {}".format(
                     e
                 )
             )
-            with open("./benchmark_info.json", "r", encoding="utf8") as f:
-                benchmark_info = json.load(f)
+            with open("./benchmarks_info.json", "r", encoding="utf8") as f:
+                benchmarks_info = json.load(f)
 
     if isinstance(keyword, str):
-        filtered_benchmark_info = {}
-        for key in benchmark_info:
+        filtered_benchmarks_info = {}
+        for key in benchmarks_info:
             if keyword in key:
-                filtered_benchmark_info[key] = benchmark_info[key]
-        return filtered_benchmark_info
+                filtered_benchmarks_info[key] = benchmarks_info[key]
+        return filtered_benchmarks_info
     else:
-        return benchmark_info
+        return benchmarks_info
 
 
 def download_model(
@@ -137,11 +223,31 @@ def download_model(
     """
     Downloads a model from a given URL.
 
-    :param model_name_or_path: The name or path of the model to download.
-    :param local_only: A flag indicating whether to download the model from the local cache.
-    :param repo: The URL of the repository to download the model from.
-    :param cache_dir: The directory to cache the downloaded model.
-    :return: A string representing the path to the downloaded model.
+    This function downloads a model from the OmniGenome hub and caches it
+    locally for future use. It supports both remote and local-only modes.
+
+    Args:
+        model_name_or_path (str): The name or path of the model to download.
+        local_only (bool): A flag indicating whether to download the model from
+                          the local cache. Defaults to False.
+        repo (str, optional): The URL of the repository to download the model from.
+        cache_dir (str, optional): The directory to cache the downloaded model.
+                                 If None, uses "__OMNIGENOME_DATA__/models/".
+
+    Returns:
+        str: A string representing the path to the downloaded model.
+
+    Raises:
+        ConnectionError: If the model download fails.
+        ValueError: If the model is not found in the repository.
+
+    Example:
+        >>> # Download a model
+        >>> model_path = download_model("DNABERT-2")
+        >>> print(model_path)  # Path to the downloaded model
+
+        >>> # Download with custom cache directory
+        >>> model_path = download_model("DNABERT-2", cache_dir="./models")
     """
     cache_dir = (cache_dir if cache_dir else "__OMNIGENOME_DATA__") + "/models/"
     if not os.path.exists(cache_dir):
@@ -154,7 +260,7 @@ def download_model(
         with open("./models_info.json", "r", encoding="utf8") as f:
             models_info = json.load(f)
     else:
-        repo = (repo if repo else default_omnigenome_repo) + "/resolve/main/"
+        repo = (repo if repo else default_omnigenome_repo) + "resolve/main/"
         try:
             response = requests.get(repo + "models_info.json")
             models_info = response.json()
@@ -201,11 +307,28 @@ def download_pipeline(
     """
     Downloads a pipeline from a given URL.
 
-    :param pipeline_name_or_path: The name or path of the pipeline to download.
-    :param local_only: A flag indicating whether to download the pipeline from the local cache.
-    :param repo: The URL of the repository to download the pipeline from.
-    :param cache_dir: The directory to cache the downloaded pipeline.
-    :return: A string representing the path to the downloaded pipeline.
+    This function downloads a pipeline from the OmniGenome hub and caches it
+    locally for future use. It supports both remote and local-only modes.
+
+    Args:
+        pipeline_name_or_path (str): The name or path of the pipeline to download.
+        local_only (bool): A flag indicating whether to download the pipeline from
+                          the local cache. Defaults to False.
+        repo (str, optional): The URL of the repository to download the pipeline from.
+        cache_dir (str, optional): The directory to cache the downloaded pipeline.
+                                 If None, uses "__OMNIGENOME_DATA__/pipelines/".
+
+    Returns:
+        str: A string representing the path to the downloaded pipeline.
+
+    Raises:
+        ConnectionError: If the pipeline download fails.
+        ValueError: If the pipeline is not found in the repository.
+
+    Example:
+        >>> # Download a pipeline
+        >>> pipeline_path = download_pipeline("classification_pipeline")
+        >>> print(pipeline_path)  # Path to the downloaded pipeline
     """
     cache_dir = (cache_dir if cache_dir else "__OMNIGENOME_DATA__") + "/pipelines/"
     if not os.path.exists(cache_dir):
@@ -218,7 +341,7 @@ def download_pipeline(
         with open("./pipelines_info.json", "r", encoding="utf8") as f:
             pipelines_info = json.load(f)
     else:
-        repo = (repo if repo else default_omnigenome_repo) + "/resolve/main/"
+        repo = (repo if repo else default_omnigenome_repo) + "resolve/main/"
         try:
             response = requests.get(repo + "pipelines_info.json")
             pipelines_info = response.json()
@@ -235,7 +358,6 @@ def download_pipeline(
 
     if pipeline_name_or_path in pipelines_info:
         pipeline_info = pipelines_info[pipeline_name_or_path]
-
         try:
             pipeline_url = f'{repo}/pipelines/{pipeline_info["filename"]}'
             response = requests.get(pipeline_url, stream=True)
@@ -264,14 +386,34 @@ def download_benchmark(
     cache_dir=None,
 ) -> str:
     """
+    Downloads a benchmark from a given URL.
 
-    :param benchmark_name_or_path:
-    :param local_only:
-    :param repo:
-    :param cache_dir:
-    :return:
+    This function downloads a benchmark from the OmniGenome hub and caches it
+    locally for future use. It supports both remote and local-only modes.
+
+    Args:
+        benchmark_name_or_path (str): The name or path of the benchmark to download.
+        local_only (bool): A flag indicating whether to download the benchmark from
+                          the local cache. Defaults to False.
+        repo (str, optional): The URL of the repository to download the benchmark from.
+        cache_dir (str, optional): The directory to cache the downloaded benchmark.
+                                 If None, uses "__OMNIGENOME_DATA__/benchmarks/".
+
+    Returns:
+        str: A string representing the path to the downloaded benchmark.
+
+    Raises:
+        ConnectionError: If the benchmark download fails.
+        ValueError: If the benchmark is not found in the repository.
+
+    Example:
+        >>> # Download a benchmark
+        >>> benchmark_path = download_benchmark("RGB")
+        >>> print(benchmark_path)  # Path to the downloaded benchmark
+
+        >>> # Download with custom cache directory
+        >>> benchmark_path = download_benchmark("RGB", cache_dir="./benchmarks")
     """
-
     cache_dir = (cache_dir if cache_dir else "__OMNIGENOME_DATA__") + "/benchmarks/"
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
@@ -301,12 +443,11 @@ def download_benchmark(
                 benchmarks_info = json.load(f)
 
     if benchmark_name_or_path in benchmarks_info:
-        benchmark_info = benchmarks_info[benchmark_name_or_path]
-
+        benchmarks_info_item = benchmarks_info[benchmark_name_or_path]
         try:
-            benchmark_url = f'{repo}benchmarks/{benchmark_info["filename"]}'
+            benchmark_url = f'{repo}/benchmarks/{benchmarks_info_item["filename"]}'
             response = requests.get(benchmark_url, stream=True)
-            cache_path = os.path.join(cache_dir, f"{benchmark_info['filename']}")
+            cache_path = os.path.join(cache_dir, f"{benchmarks_info_item['filename']}")
             with open(cache_path, "wb") as f:
                 for chunk in tqdm.tqdm(
                     response.iter_content(chunk_size=1024 * 1024),
@@ -326,24 +467,51 @@ def download_benchmark(
 
 def check_version(repo: str = None) -> None:
     """
-    Checks the version of the package.
+    Checks the version compatibility between local and remote OmniGenome.
+    
+    This function compares the local OmniGenome version with the version
+    available in the remote repository to ensure compatibility.
 
-    :param repo: The URL of the repository to check the version from.
+    Args:
+        repo (str, optional): The repository URL to check. If None, uses the default hub.
+
+    Example:
+        >>> check_version()  # Check version compatibility
     """
-    repo = repo if repo else default_omnigenome_repo
+    repo = (repo if repo else default_omnigenome_repo) + "resolve/main/"
     try:
         response = requests.get(repo + "version.json")
         version_info = response.json()
-        latest_version = version_info["version"]
-        if Version(current_version) < Version(latest_version):
+        remote_version = version_info["version"]
+        if Version(current_version) < Version(remote_version):
             fprint(
                 colored(
-                    f"An updated version of the package is available. Please upgrade to version {latest_version}.",
-                    "red",
+                    f"Warning: Your local OmniGenome version ({current_version}) "
+                    f"is older than the remote version ({remote_version}). "
+                    f"Please consider updating.",
+                    "yellow",
+                )
+            )
+        elif Version(current_version) > Version(remote_version):
+            fprint(
+                colored(
+                    f"Warning: Your local OmniGenome version ({current_version}) "
+                    f"is newer than the remote version ({remote_version}). "
+                    f"This might cause compatibility issues.",
+                    "yellow",
                 )
             )
         else:
-            fprint(colored("The package is up-to-date.", "green"))
+            fprint(
+                colored(
+                    f"OmniGenome version ({current_version}) is up to date.",
+                    "green",
+                )
+            )
     except Exception as e:
-        fprint("Fail to check the version of the package: {}".format(e))
-        fprint(colored("The package is up-to-date.", "green"))
+        fprint(
+            colored(
+                f"Failed to check version: {e}",
+                "red",
+            )
+        )

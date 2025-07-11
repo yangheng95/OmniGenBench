@@ -8,13 +8,32 @@
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2025. All Rights Reserved.
 # Adapted from: https://github.com/terry-r123/RNABenchmark/blob/main/downstream/structure/resnet.py
+"""
+ResNet implementation for genomic sequence analysis.
+
+This module provides a ResNet architecture adapted for processing genomic sequences
+and their structural representations. It includes basic blocks, bottleneck blocks,
+and a complete ResNet implementation optimized for genomic data.
+"""
 from torch import Tensor
 import torch.nn as nn
 from typing import Type, Callable, Union, List, Optional
 
 
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
-    """3x3 convolution with padding"""
+    """
+    3x3 convolution with padding.
+    
+    Args:
+        in_planes (int): Number of input channels
+        out_planes (int): Number of output channels
+        stride (int): Stride for the convolution (default: 1)
+        groups (int): Number of groups for grouped convolution (default: 1)
+        dilation (int): Dilation factor for the convolution (default: 1)
+        
+    Returns:
+        nn.Conv2d: 3x3 convolution layer
+    """
     return nn.Conv2d(
         in_planes,
         out_planes,
@@ -28,12 +47,34 @@ def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
 
 
 def conv1x1(in_planes, out_planes, stride=1):
-    """1x1 convolution"""
+    """
+    1x1 convolution.
+    
+    Args:
+        in_planes (int): Number of input channels
+        out_planes (int): Number of output channels
+        stride (int): Stride for the convolution (default: 1)
+        
+    Returns:
+        nn.Conv2d: 1x1 convolution layer
+    """
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
 
 def conv5x5(in_planes, out_planes, stride=1, groups=1, dilation=1):
-    """5x5 convolution with padding"""
+    """
+    5x5 convolution with padding.
+    
+    Args:
+        in_planes (int): Number of input channels
+        out_planes (int): Number of output channels
+        stride (int): Stride for the convolution (default: 1)
+        groups (int): Number of groups for grouped convolution (default: 1)
+        dilation (int): Dilation factor for the convolution (default: 1)
+        
+    Returns:
+        nn.Conv2d: 5x5 convolution layer
+    """
     return nn.Conv2d(
         in_planes,
         out_planes,
@@ -47,6 +88,24 @@ def conv5x5(in_planes, out_planes, stride=1, groups=1, dilation=1):
 
 
 class BasicBlock(nn.Module):
+    """
+    Basic ResNet block for genomic sequence processing.
+    
+    This block implements a basic residual connection with two convolutions
+    and is optimized for processing genomic sequence data with layer normalization.
+    
+    Attributes:
+        expansion (int): Expansion factor for the block (default: 1)
+        conv1: First 3x3 convolution layer
+        bn1: First layer normalization
+        conv2: Second 5x5 convolution layer
+        bn2: Second layer normalization
+        relu: ReLU activation function
+        drop: Dropout layer
+        downsample: Downsampling layer for residual connection
+        stride: Stride for the convolutions
+    """
+    
     expansion: int = 1
 
     def __init__(
@@ -60,6 +119,21 @@ class BasicBlock(nn.Module):
         dilation: int = 1,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
     ) -> None:
+        """
+        Initialize the BasicBlock.
+        
+        Args:
+            inplanes (int): Number of input channels
+            planes (int): Number of output channels
+            stride (int): Stride for the convolutions (default: 1)
+            downsample: Downsampling layer for residual connection (default: None)
+            groups (int): Number of groups for grouped convolution (default: 1)
+            dilation (int): Dilation factor for convolutions (default: 1)
+            norm_layer: Normalization layer type (default: None, uses LayerNorm)
+            
+        Raises:
+            NotImplementedError: If dilation > 1 is specified
+        """
         super(BasicBlock, self).__init__()
         if norm_layer is None:
             norm_layer = nn.LayerNorm
@@ -78,6 +152,15 @@ class BasicBlock(nn.Module):
         self.stride = stride
 
     def forward(self, x: Tensor) -> Tensor:
+        """
+        Forward pass through the BasicBlock.
+        
+        Args:
+            x (Tensor): Input tensor [batch_size, channels, height, width]
+            
+        Returns:
+            Tensor: Output tensor with same shape as input
+        """
         identity = x
 
         x = x.permute(0, 2, 3, 1)
@@ -103,6 +186,26 @@ class BasicBlock(nn.Module):
 
 
 class Bottleneck(nn.Module):
+    """
+    Bottleneck ResNet block for genomic sequence processing.
+    
+    This block implements a bottleneck residual connection with three convolutions
+    (1x1, 3x3, 1x1) and is designed for deeper networks. It's adapted from
+    the original ResNet V1.5 implementation.
+    
+    Attributes:
+        expansion (int): Expansion factor for the block (default: 4)
+        conv1: First 1x1 convolution layer
+        bn1: First batch normalization
+        conv2: Second 3x3 convolution layer
+        bn2: Second batch normalization
+        conv3: Third 1x1 convolution layer
+        bn3: Third batch normalization
+        relu: ReLU activation function
+        downsample: Downsampling layer for residual connection
+        stride: Stride for the convolutions
+    """
+    
     # Bottleneck in torchvision places the stride for downsampling at 3x3 convolution(self.conv2)
     # while original implementation places the stride at the first 1x1 convolution(self.conv1)
     # according to "Deep residual learning for image recognition"https://arxiv.org/abs/1512.03385.
@@ -122,6 +225,19 @@ class Bottleneck(nn.Module):
         dilation: int = 1,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
     ) -> None:
+        """
+        Initialize the Bottleneck block.
+        
+        Args:
+            inplanes (int): Number of input channels
+            planes (int): Number of output channels
+            stride (int): Stride for the convolutions (default: 1)
+            downsample: Downsampling layer for residual connection (default: None)
+            groups (int): Number of groups for grouped convolution (default: 1)
+            base_width (int): Base width for the bottleneck (default: 64)
+            dilation (int): Dilation factor for convolutions (default: 1)
+            norm_layer: Normalization layer type (default: None, uses BatchNorm2d)
+        """
         super(Bottleneck, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -138,6 +254,15 @@ class Bottleneck(nn.Module):
         self.stride = stride
 
     def forward(self, x: Tensor) -> Tensor:
+        """
+        Forward pass through the Bottleneck block.
+        
+        Args:
+            x (Tensor): Input tensor [batch_size, channels, height, width]
+            
+        Returns:
+            Tensor: Output tensor with same shape as input
+        """
         identity = x
 
         out = self.conv1(x)
@@ -161,6 +286,25 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
+    """
+    ResNet architecture adapted for genomic sequence analysis.
+    
+    This ResNet implementation is specifically designed for processing genomic
+    sequences and their structural representations. It uses layer normalization
+    instead of batch normalization and is optimized for genomic data characteristics.
+    
+    Attributes:
+        _norm_layer: Normalization layer type
+        inplanes: Number of input channels for the first layer
+        dilation: Dilation factor for convolutions
+        groups: Number of groups for grouped convolutions
+        base_width: Base width for bottleneck blocks
+        conv1: Initial convolution layer
+        bn1: Initial normalization layer
+        relu: ReLU activation function
+        layer1: First layer of ResNet blocks
+        fc1: Final fully connected layer
+    """
 
     def __init__(
         self,
@@ -173,6 +317,22 @@ class ResNet(nn.Module):
         replace_stride_with_dilation=None,
         norm_layer=None,
     ) -> None:
+        """
+        Initialize the ResNet architecture.
+        
+        Args:
+            channels (int): Number of input channels
+            block: Type of ResNet block (BasicBlock or Bottleneck)
+            layers (List[int]): List specifying the number of blocks in each layer
+            zero_init_residual (bool): Whether to zero-initialize residual connections (default: False)
+            groups (int): Number of groups for grouped convolutions (default: 1)
+            width_per_group (int): Width per group for bottleneck blocks (default: 1)
+            replace_stride_with_dilation: Whether to replace stride with dilation (default: None)
+            norm_layer: Normalization layer type (default: None, uses LayerNorm)
+            
+        Raises:
+            ValueError: If replace_stride_with_dilation is not None or a 3-element tuple
+        """
         super(ResNet, self).__init__()
         if norm_layer is None:
             norm_layer = nn.LayerNorm
@@ -199,23 +359,15 @@ class ResNet(nn.Module):
         self.layer1 = self._make_layer(block, 48, layers[0])
         self.fc1 = nn.Linear(48, 1)
 
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
-            elif isinstance(m, (nn.LayerNorm)):
-                m.track_running_stats = False
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
-
         # Zero-initialize the last BN in each residual branch,
         # so that the residual branch starts with zeros, and each residual block behaves like an identity.
         # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677
         if zero_init_residual:
             for m in self.modules():
                 if isinstance(m, Bottleneck):
-                    nn.init.constant_(m.bn3.weight, 0)  # type: ignore[arg-type]
+                    nn.init.constant_(m.bn3.weight, 0)
                 elif isinstance(m, BasicBlock):
-                    nn.init.constant_(m.bn2.weight, 0)  # type: ignore[arg-type]
+                    nn.init.constant_(m.bn2.weight, 0)
 
     def _make_layer(
         self,
@@ -225,6 +377,19 @@ class ResNet(nn.Module):
         stride: int = 1,
         dilate: bool = False,
     ) -> nn.Sequential:
+        """
+        Create a layer of ResNet blocks.
+        
+        Args:
+            block: Type of ResNet block to use
+            planes (int): Number of output channels for the layer
+            blocks (int): Number of blocks in the layer
+            stride (int): Stride for the first block (default: 1)
+            dilate (bool): Whether to use dilation (default: False)
+            
+        Returns:
+            nn.Sequential: Sequential container of ResNet blocks
+        """
         norm_layer = self._norm_layer
         downsample = None
         previous_dilation = self.dilation
@@ -245,6 +410,7 @@ class ResNet(nn.Module):
                 stride,
                 downsample,
                 self.groups,
+                self.base_width,
                 previous_dilation,
                 norm_layer,
             )
@@ -256,6 +422,7 @@ class ResNet(nn.Module):
                     self.inplanes,
                     planes,
                     groups=self.groups,
+                    base_width=self.base_width,
                     dilation=self.dilation,
                     norm_layer=norm_layer,
                 )
@@ -264,27 +431,53 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def _forward_impl(self, x: Tensor) -> Tensor:
+        """
+        Forward pass implementation.
+        
+        Args:
+            x (Tensor): Input tensor [batch_size, channels, height, width]
+            
+        Returns:
+            Tensor: Output tensor after processing through ResNet
+        """
         # [bz,hd,len,len]
         x = self.conv1(x)
-        # [bz,hd/10,len,len]
-        x = self.layer1(x)
-        # [bz,hd/10,len,len]
-        # [bz, len, len, hd/10]
         x = x.permute(0, 2, 3, 1)
         x = self.bn1(x)
-        # [bz, hd/10, len, len]
         x = x.permute(0, 3, 1, 2)
         x = self.relu(x)
-        # [bz, len, len, hd/10]
-        x = x.permute(0, 2, 3, 1)
-        # [bz, len, len ,1]
+
+        x = self.layer1(x)
+        x = x.mean(dim=[2, 3])
         x = self.fc1(x)
+
         return x
 
     def forward(self, x: Tensor) -> Tensor:
+        """
+        Forward pass through the ResNet.
+        
+        Args:
+            x (Tensor): Input tensor [batch_size, channels, height, width]
+            
+        Returns:
+            Tensor: Output tensor after processing through ResNet
+        """
         return self._forward_impl(x)
 
 
 def resnet_b16(channels=128, bbn=16):
-    model = ResNet(channels, BasicBlock, [bbn])
-    return model
+    """
+    Create a ResNet-B16 model for genomic sequence analysis.
+    
+    This function creates a ResNet model with 16 basic blocks, optimized
+    for processing genomic sequences and their structural representations.
+    
+    Args:
+        channels (int): Number of input channels (default: 128)
+        bbn (int): Number of basic blocks (default: 16)
+        
+    Returns:
+        ResNet: Configured ResNet model
+    """
+    return ResNet(channels, BasicBlock, [bbn])

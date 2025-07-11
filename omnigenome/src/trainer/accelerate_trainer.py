@@ -19,6 +19,20 @@ from ..misc.utils import env_meta_info, fprint, seed_everything
 
 
 def _infer_optimization_direction(metrics, prev_metrics):
+    """
+    Infer the optimization direction based on metric values.
+    
+    This function analyzes the trend of metric values to determine whether
+    larger values are better (e.g., accuracy) or smaller values are better
+    (e.g., loss).
+    
+    Args:
+        metrics (dict): Current metric values
+        prev_metrics (list): Previous metric values
+        
+    Returns:
+        str: Either 'larger_is_better' or 'smaller_is_better'
+    """
     larger_is_better_metrics = [
         "accuracy",
         "f1",
@@ -75,6 +89,41 @@ def _infer_optimization_direction(metrics, prev_metrics):
 
 
 class AccelerateTrainer:
+    """
+    A distributed training trainer using HuggingFace Accelerate.
+    
+    This trainer provides distributed training capabilities with automatic mixed precision,
+    gradient accumulation, and early stopping. It supports both single and multi-GPU
+    training with seamless integration with HuggingFace Accelerate.
+    
+    Attributes:
+        model: The model to train
+        train_loader: DataLoader for training data
+        eval_loader: DataLoader for validation data
+        test_loader: DataLoader for test data
+        epochs: Number of training epochs
+        patience: Early stopping patience
+        gradient_accumulation_steps: Number of steps for gradient accumulation
+        optimizer: The optimizer for training
+        loss_fn: Loss function
+        compute_metrics: List of metric functions to compute
+        accelerator: HuggingFace Accelerate instance
+        metrics: Dictionary to store training metrics
+        predictions: Dictionary to store predictions
+        
+    Example:
+        >>> from omnigenome.src.trainer import AccelerateTrainer
+        >>> trainer = AccelerateTrainer(
+        ...     model=model,
+        ...     train_dataset=train_dataset,
+        ...     eval_dataset=eval_dataset,
+        ...     epochs=10,
+        ...     batch_size=32,
+        ...     optimizer=optimizer
+        ... )
+        >>> metrics = trainer.train()
+    """
+
     def __init__(
         self,
         model,
@@ -92,7 +141,25 @@ class AccelerateTrainer:
         autocast: str = "float16",
         **kwargs,
     ):
-
+        """
+        Initialize the AccelerateTrainer.
+        
+        Args:
+            model: The model to train
+            train_dataset (torch.utils.data.Dataset, optional): Training dataset
+            eval_dataset (torch.utils.data.Dataset, optional): Validation dataset
+            test_dataset (torch.utils.data.Dataset, optional): Test dataset
+            epochs (int, optional): Number of training epochs. Defaults to 3
+            batch_size (int, optional): Batch size for training. Defaults to 8
+            patience (int, optional): Early stopping patience. Defaults to -1 (no early stopping)
+            gradient_accumulation_steps (int, optional): Number of steps for gradient accumulation. Defaults to 1
+            optimizer (torch.optim.Optimizer, optional): Optimizer for training
+            loss_fn (torch.nn.Module, optional): Loss function
+            compute_metrics (list | str, optional): List of metric functions or single metric function
+            seed (int, optional): Random seed for reproducibility. Defaults to 42
+            autocast (str, optional): Mixed precision type. Options: 'float16', 'bfloat16', 'no'. Defaults to 'float16'
+            **kwargs: Additional keyword arguments
+        """
         self.model = model
 
         # DataLoaders
@@ -224,6 +291,20 @@ class AccelerateTrainer:
         self.predictions = {}
 
     def evaluate(self):
+        """
+        Evaluate the model on the validation dataset.
+        
+        This method runs the model in evaluation mode and computes metrics
+        on the validation dataset. It handles distributed evaluation and
+        gathers results from all processes.
+        
+        Returns:
+            dict: Dictionary containing evaluation metrics
+            
+        Example:
+            >>> metrics = trainer.evaluate()
+            >>> print(f"Validation accuracy: {metrics['accuracy']:.4f}")
+        """
         self.model.eval()
         all_truth = []
         all_preds = []
@@ -281,6 +362,20 @@ class AccelerateTrainer:
         return valid_metrics
 
     def test(self):
+        """
+        Test the model on the test dataset.
+        
+        This method runs the model in evaluation mode and computes metrics
+        on the test dataset. It handles distributed testing and gathers
+        results from all processes.
+        
+        Returns:
+            dict: Dictionary containing test metrics
+            
+        Example:
+            >>> metrics = trainer.test()
+            >>> print(f"Test accuracy: {metrics['accuracy']:.4f}")
+        """
         self.model.eval()
         all_truth = []
         all_preds = []
@@ -334,6 +429,24 @@ class AccelerateTrainer:
         return test_metrics
 
     def train(self, path_to_save=None, **kwargs):
+        """
+        Train the model using distributed training.
+        
+        This method performs the complete training loop with validation,
+        early stopping, and model checkpointing. It handles distributed
+        training across multiple GPUs and processes.
+        
+        Args:
+            path_to_save (str, optional): Path to save the trained model
+            **kwargs: Additional keyword arguments for model saving
+            
+        Returns:
+            dict: Dictionary containing training metrics
+            
+        Example:
+            >>> metrics = trainer.train(path_to_save="./checkpoints/model")
+            >>> print(f"Best validation accuracy: {metrics['best_valid']['accuracy']:.4f}")
+        """
         seed_everything(self.seed)
         # 在所有进程上创建早停标志
         early_stop_flag = torch.tensor(0, device=self.accelerator.device)
@@ -470,6 +583,16 @@ class AccelerateTrainer:
         return self.metrics
 
     def _is_metric_better(self, metrics, stage="valid"):
+        """
+        Check if the current metrics are better than the best metrics so far.
+        
+        Args:
+            metrics (dict): Current metrics
+            stage (str): Stage of evaluation ('valid' or 'test')
+            
+        Returns:
+            bool: True if current metrics are better, False otherwise
+        """
         # 只在主进程中进行metric比较
         if not self.accelerator.is_main_process:
             return False
@@ -518,23 +641,59 @@ class AccelerateTrainer:
         return False
 
     def predict(self, data_loader):
+        """
+        Make predictions using the trained model.
+        
+        Args:
+            data_loader: DataLoader containing data to predict on
+            
+        Returns:
+            dict: Dictionary containing predictions
+        """
         return self.accelerator.unwrap_model(self.model).predict(data_loader)
 
     def get_model(self, **kwargs):
+        """
+        Get the trained model.
+        
+        Args:
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            The trained model
+        """
         return self.model
 
     def compute_metrics(self):
+        """
+        Compute metrics for evaluation.
+        
+        This method should be implemented by subclasses to provide specific
+        metric computation logic.
+        
+        Raises:
+            NotImplementedError: If compute_metrics method is not implemented
+        """
         raise NotImplementedError(
             "The compute_metrics() function should be implemented for your model."
             " It should return a dictionary of metrics."
         )
 
     def save_model(self, path, overwrite=False, **kwargs):
+        """
+        Save the trained model.
+        
+        Args:
+            path (str): Path to save the model
+            overwrite (bool, optional): Whether to overwrite existing files. Defaults to False
+            **kwargs: Additional keyword arguments for model saving
+        """
         # Make certain only one process saves, if you're in distributed mode
         if self.accelerator.is_main_process:
             self.accelerator.unwrap_model(self.model).save(path, overwrite, **kwargs)
 
     def _load_state_dict(self):
+        """Load the best model state dictionary."""
         if hasattr(self, "_model_state_dict_path") and os.path.exists(
             self._model_state_dict_path
         ):
@@ -542,6 +701,7 @@ class AccelerateTrainer:
             self.accelerator.unwrap_model(self.model).load_state_dict(weights)
 
     def _save_state_dict(self):
+        """Save the current model state dictionary."""
         if not hasattr(self, "_model_state_dict_path"):
             from hashlib import sha256
 
@@ -564,6 +724,7 @@ class AccelerateTrainer:
             )
 
     def _remove_state_dict(self):
+        """Remove the temporary model state dictionary file."""
         if not hasattr(self, "_model_state_dict_path"):
             from hashlib import sha256
 
