@@ -47,7 +47,18 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # -- Options for HTML output -------------------------------------------------
 
-html_theme = 'sphinx_rtd_theme'
+# html_theme = 'sphinx_rtd_theme'
+# html_theme = 'furo'
+# html_theme = 'sphinx_nefertiti'
+# html_theme = 'pydata_sphinx_theme'
+# html_theme = 'sphinx_book_theme'
+
+# html_permalinks_icon = '<span>#</span>'
+# html_theme = 'sphinxawesome_theme'
+
+extensions.append("sphinx_wagtail_theme")
+html_theme = 'sphinx_wagtail_theme'
+
 
 # Add custom CSS for better styling
 html_static_path = ['_static']
@@ -58,14 +69,9 @@ html_static_path = ['_static']
 # ]
 
 html_theme_options = {
-    "navigation_depth": 4,
-    "collapse_navigation": False,
-    "sticky_navigation": True,
-    "includehidden": True,
-    "titles_only": False,
-    "github_url": "https://github.com/COLA-Laboratory/OmniGenBench",
-    "display_github": True,
-    "display_version": True,
+    "logo": "og_favicon.png",
+    "project_name": "OmniGenBench Documentation",
+    "header_links": "Home|https://cola-szhou.github.io/OmniGenBench_web/,GitHub|https://github.com/COLA-Laboratory/OmniGenBench",
 }
 
 # Version configuration for ReadTheDocs theme
@@ -78,7 +84,7 @@ html_context = {
     "source_suffix": ".rst",
     "github_url": "https://github.com/COLA-Laboratory/OmniGenBench",
     "github_banner": True,
-    "display_version": True,
+    "display_version": False,
 }
 
 # -- Napoleon settings -------------------------------------------------------

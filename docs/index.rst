@@ -41,7 +41,7 @@ OmniGenBench Documentation
    </div>
    <div style="background: white; padding: 1.5em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
    <h4 style="margin-top: 0; color: #3498db;">🔍 Interpretability</h4>
-   <p style="margin-bottom: 0; color: #666;">Comprehensive explanation methods including attention visualization and motif discovery.</p>
+   <p style="margin-bottom: 0; color: #666;">Explanation methods including attention visualization and motif discovery.</p>
    </div>
    </div>
    </div>
