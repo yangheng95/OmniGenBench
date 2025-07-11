@@ -4,6 +4,10 @@
 
 <div align="center">
 
+  <a href="https://omnigenbenchdoc.readthedocs.io/en/latest/">
+    <img src="https://img.shields.io/readthedocs/omnigenbench?logo=readthedocs&logoColor=white" alt="Documentation Status" />
+  </a>
+
   <a href="https://pypi.org/project/omnigenome/">
     <img src="https://img.shields.io/pypi/v/omnigenome?color=blue&label=PyPI" alt="PyPI" />
   </a>
