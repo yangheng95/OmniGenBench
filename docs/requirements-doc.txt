@@ -1,4 +1,5 @@
 sphinx
 furo
 sphinx_rtd_theme
+sphinx-wagtail-theme
 omnigenome
