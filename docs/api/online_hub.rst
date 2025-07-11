@@ -1,5 +1,5 @@
-Utility Modules
-==============
+Online Hubs
+===========
 
 Dataset Hub
 -----------
@@ -32,16 +32,6 @@ Pipeline Hub
     :noindex:
 
 .. automodule:: omnigenome.utility.pipeline_hub.pipeline
-    :members:
-    :undoc-members:
-    :inherited-members:
-    :show-inheritance:
-    :noindex:
-
-Ensemble
---------
-
-.. automodule:: omnigenome.utility.ensemble
     :members:
     :undoc-members:
     :inherited-members:

@@ -1,13 +1,29 @@
-Source Modules
-=============
+Low-level Modules
+=================
+
+This section documents the low-level, fine-grained modules of OmniGenomeBench, including models, datasets, metrics, tokenizers, and trainers. These modules provide the building blocks for custom development and advanced usage.
+
+**Overview:**
+- Low-level modules expose the core functionality and implementation details of OmniGenomeBench.
+- Users can explore these modules to understand the internal design, extend functionality, or troubleshoot specific issues.
+- Each module is documented with its classes, functions, and usage examples.
+
+**Categories:**
+- Models: Classification, regression, and specialized genomic models.
+- Datasets: Classes for handling various genomic data formats.
+- Metrics: Evaluation metrics for classification, regression, and ranking tasks.
+- Tokenizers: Sequence representation and preprocessing tools.
+- Trainers: Training utilities for different frameworks and workflows.
+
+Refer to the documentation below for details on each module, including available classes, methods, and extension options.
 
 Models
 ------
 
 Classification Models
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.model.classiifcation.model
+.. automodule:: omnigenome.src.model.classification.model
     :members:
     :undoc-members:
     :inherited-members:
@@ -15,7 +31,7 @@ Classification Models
     :noindex:
 
 Regression Models
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 .. automodule:: omnigenome.src.model.regression.model
     :members:
@@ -32,7 +48,7 @@ Regression Models
     :noindex:
 
 Embedding Models
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 .. automodule:: omnigenome.src.model.embedding.model
     :members:
@@ -62,7 +78,7 @@ RNA Design Models
     :noindex:
 
 Sequence-to-Sequence Models
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: omnigenome.src.model.seq2seq.model
     :members:
@@ -72,7 +88,7 @@ Sequence-to-Sequence Models
     :noindex:
 
 Augmentation Models
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: omnigenome.src.model.augmentation.model
     :members:
@@ -82,7 +98,7 @@ Augmentation Models
     :noindex:
 
 Model Utilities
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 .. automodule:: omnigenome.src.model.module_utils
     :members:
@@ -95,7 +111,7 @@ Metrics
 -------
 
 Base Metrics
-~~~~~~~~~~~
+~~~~~~~~~~~~
 
 .. automodule:: omnigenome.src.metric.metric
     :members:
@@ -105,7 +121,7 @@ Base Metrics
     :noindex:
 
 Classification Metrics
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: omnigenome.src.metric.classification_metric
     :members:
@@ -115,7 +131,7 @@ Classification Metrics
     :noindex:
 
 Regression Metrics
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 .. automodule:: omnigenome.src.metric.regression_metric
     :members:
@@ -125,7 +141,7 @@ Regression Metrics
     :noindex:
 
 Ranking Metrics
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 .. automodule:: omnigenome.src.metric.ranking_metric
     :members:
@@ -158,7 +174,7 @@ K-mers Tokenizer
     :noindex:
 
 Single Nucleotide Tokenizer
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: omnigenome.src.tokenizer.single_nucleotide_tokenizer
     :members:
@@ -171,7 +187,7 @@ Trainers
 --------
 
 Base Trainer
-~~~~~~~~~~~
+~~~~~~~~~~~~
 
 .. automodule:: omnigenome.src.trainer.trainer
     :members:
@@ -191,7 +207,7 @@ HuggingFace Trainer
     :noindex:
 
 Accelerate Trainer
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 .. automodule:: omnigenome.src.trainer.accelerate_trainer
     :members:
@@ -211,4 +227,4 @@ Utilities
     :undoc-members:
     :inherited-members:
     :show-inheritance:
-    :noindex: 
+    :noindex:

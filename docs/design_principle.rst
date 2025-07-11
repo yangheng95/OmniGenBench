@@ -1,5 +1,115 @@
-Miscellaneous Concepts
-================
+Design Principles of OmniGenomeBench
+=====================
+
+
+OmniGenomeBench is designed to provide a unified, extensible, and robust framework for genomic foundation models. The core philosophy centers on abstraction, modularity, and interoperability, enabling users to build, extend, and integrate genomic models and data pipelines with minimal friction.
+
+Definitions of Abstract Classes
+-------------------------
+Abstract base classes are fundamental to OmniGenomeBench's architecture. They define clear contracts for models, datasets, tokenizers, and metrics, ensuring that all components follow consistent interfaces. This approach offers several advantages:
+
+- **Consistency**: All implementations adhere to the same interface, reducing bugs and confusion.
+- **Extensibility**: Users can easily extend functionality by subclassing abstract classes.
+- **Interoperability**: Components can be swapped or combined without breaking the workflow.
+- **Maintainability**: Code is easier to maintain and update as new features are added.
+
+How to Extend Abstract Classes
+------------------------------
+To add new functionality, simply subclass the relevant abstract class and implement the required methods. This allows you to create custom models, datasets, tokenizers, or metrics tailored to your specific needs.
+
+**Example: Custom Model Extension**
+.. code-block:: python
+
+    from omnigenome import OmniModel
+    import torch
+
+    class CustomGenomicModel(OmniModel):
+        def __init__(self, config_or_model, tokenizer, **kwargs):
+            super().__init__(config_or_model, tokenizer, **kwargs)
+            self.custom_layer = torch.nn.Linear(self.config.hidden_size, self.num_labels)
+
+        def forward(self, **inputs):
+            outputs = self.last_hidden_state_forward(**inputs)
+            logits = self.custom_layer(outputs.last_hidden_state)
+            if 'labels' in inputs:
+                loss = self.compute_loss(logits, inputs['labels'])
+                return type(outputs)(loss=loss, logits=logits)
+            return type(outputs)(logits=logits)
+
+**Example: Custom Dataset Extension**
+.. code-block:: python
+
+    from omnigenome import OmniDatasetForSequenceClassification
+
+    class CustomGenomicDataset(OmniDatasetForSequenceClassification):
+        def __init__(self, data_path, tokenizer, **kwargs):
+            super().__init__(data_path, tokenizer, **kwargs)
+
+        def _load_data(self, data_path):
+            data = self._load_json(data_path)
+            return self._process_data(data)
+
+        def _process_data(self, data):
+            processed_data = []
+            for item in data:
+                processed_item = self._process_item(item)
+                processed_data.append(processed_item)
+            return processed_data
+
+**Example: Custom Tokenizer Extension**
+.. code-block:: python
+
+    from omnigenome import OmniTokenizer
+
+    class CustomGenomicTokenizer(OmniTokenizer):
+        def __init__(self, base_tokenizer, **kwargs):
+            super().__init__(base_tokenizer, **kwargs)
+
+        def tokenize(self, sequence, **kwargs):
+            tokens = self._custom_tokenize(sequence)
+            return [tokens]
+
+        def _custom_tokenize(self, sequence):
+            k = self.k if hasattr(self, 'k') else 3
+            return [sequence[i:i+k] for i in range(len(sequence) - k + 1)]
+
+**Example: Custom Metric Extension**
+.. code-block:: python
+
+    from omnigenome import OmniMetric
+    from sklearn.metrics import custom_metric
+
+    class CustomGenomicMetric(OmniMetric):
+        def __init__(self, ignore_y=None, **kwargs):
+            super().__init__(ignore_y=ignore_y, **kwargs)
+            self.metric_name = "custom_metric"
+
+        def compute_metric(self, y_true, y_pred, **kwargs):
+            mask = y_true != self.ignore_y
+            y_true_filtered = y_true[mask]
+            y_pred_filtered = y_pred[mask]
+            score = custom_metric(y_true_filtered, y_pred_filtered)
+            return {self.metric_name: score}
+
+Core Concepts and Patterns
+-------------------------
+- **Model-Data Integration**: Abstract classes are designed to work together seamlessly, enabling easy integration of models, datasets, tokenizers, and metrics.
+- **Configuration Management**: All components support flexible configuration via keyword arguments and config dictionaries.
+- **Error Handling**: Robust error handling is built into the abstract classes, providing meaningful messages for invalid inputs.
+- **Performance**: The framework supports memory-efficient data handling, caching, parallelization, and GPU utilization.
+- **Extension Points**: Users can override loss functions, preprocessing, metrics, tokenization, and data formats for custom workflows.
+
+Best Practices
+--------------
+1. Always inherit from the appropriate abstract base class.
+2. Implement all required abstract methods.
+3. Provide comprehensive docstrings and examples.
+4. Write unit tests for custom implementations.
+5. Follow established patterns and conventions for consistency.
+
+Summary
+-------
+OmniGenomeBench's design principles ensure that the framework is easy to use, extend, and maintain. By leveraging abstract classes and modular design, users can build powerful genomic analysis pipelines that are both robust and flexible.
 
 Overview
 --------
@@ -365,9 +475,6 @@ All components support flexible configuration:
     # Dataset configuration
     dataset_config = {
         'max_length': 512,
-        'padding': True,
-        'truncation': True,
-        'label_column': 'label'
     }
     
     # Tokenizer configuration
@@ -426,4 +533,4 @@ The abstract classes provide several extension points for customization:
 4. **Custom Tokenization**: Implement new tokenization strategies
 5. **Custom Data Formats**: Add support for new data formats
 
-This modular design allows for easy extension while maintaining consistency across the framework. 
+This modular design allows for easy extension while maintaining consistency across the framework.

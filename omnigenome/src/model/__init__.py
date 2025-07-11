@@ -10,7 +10,7 @@
 This package contains model definitions for various tasks.
 """
 
-from .classiifcation.model import *
+from .classification.model import *
 from .mlm.model import *
 from .regression.model import *
 from .seq2seq.model import *
