@@ -19,7 +19,7 @@ OmniGenomeBench provides a set of abstract base classes that define the core int
 Refer to the API documentation below for details on each abstract class, including their methods and usage examples.
 
 Main Package Entry Point
------------
+------------------------
 
 .. automodule:: omnigenome
     :members:
@@ -29,7 +29,7 @@ Main Package Entry Point
     :noindex:
 
 Abstract Base Classes
---------------------
+---------------------
 
 .. automodule:: omnigenome.src.abc.abstract_dataset
     :members:
