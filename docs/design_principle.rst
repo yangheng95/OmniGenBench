@@ -20,7 +20,7 @@ To add new functionality, simply subclass the relevant abstract class and implem
 **Example: Custom Model Extension**
 .. code-block:: python
 
-    from omnigenome import OmniModel
+    from omnigenbench import OmniModel
     import torch
 
     class CustomGenomicModel(OmniModel):
@@ -39,7 +39,7 @@ To add new functionality, simply subclass the relevant abstract class and implem
 **Example: Custom Dataset Extension**
 .. code-block:: python
 
-    from omnigenome import OmniDatasetForSequenceClassification
+    from omnigenbench import OmniDatasetForSequenceClassification
 
     class CustomGenomicDataset(OmniDatasetForSequenceClassification):
         def __init__(self, data_path, tokenizer, **kwargs):
@@ -59,7 +59,7 @@ To add new functionality, simply subclass the relevant abstract class and implem
 **Example: Custom Tokenizer Extension**
 .. code-block:: python
 
-    from omnigenome import OmniTokenizer
+    from omnigenbench import OmniTokenizer
 
     class CustomGenomicTokenizer(OmniTokenizer):
         def __init__(self, base_tokenizer, **kwargs):
@@ -76,7 +76,7 @@ To add new functionality, simply subclass the relevant abstract class and implem
 **Example: Custom Metric Extension**
 .. code-block:: python
 
-    from omnigenome import OmniMetric
+    from omnigenbench import OmniMetric
     from sklearn.metrics import custom_metric
 
     class CustomGenomicMetric(OmniMetric):
@@ -145,7 +145,7 @@ The ``OmniModel`` abstract base class serves as the foundation for all models in
 
 .. code-block:: python
 
-    from omnigenome import OmniModelForSequenceClassification
+    from omnigenbench import OmniModelForSequenceClassification
     
     # Initialize model
     model = OmniModelForSequenceClassification("model_path", tokenizer)
@@ -191,7 +191,7 @@ The ``OmniDataset`` abstract base class provides a standardized interface for ge
 
 .. code-block:: python
 
-    from omnigenome import OmniDatasetForSequenceClassification
+    from omnigenbench import OmniDatasetForSequenceClassification
     
     # Initialize dataset
     dataset = OmniDatasetForSequenceClassification(
@@ -243,7 +243,7 @@ The ``OmniTokenizer`` abstract base class provides a unified interface for token
 
 .. code-block:: python
 
-    from omnigenome import OmniSingleNucleotideTokenizer
+    from omnigenbench import OmniSingleNucleotideTokenizer
     
     # Initialize tokenizer
     tokenizer = OmniSingleNucleotideTokenizer.from_pretrained("model_name")
@@ -287,7 +287,7 @@ The ``OmniMetric`` abstract base class provides a standardized interface for eva
 
 .. code-block:: python
 
-    from omnigenome import ClassificationMetric
+    from omnigenbench import ClassificationMetric
     
     # Initialize metric
     metric = ClassificationMetric(ignore_y=-100)
@@ -315,7 +315,7 @@ When implementing a new model, inherit from the appropriate abstract base class:
 
 .. code-block:: python
 
-    from omnigenome import OmniModel
+    from omnigenbench import OmniModel
     
     class CustomGenomicModel(OmniModel):
         def __init__(self, config_or_model, tokenizer, **kwargs):
@@ -347,7 +347,7 @@ For custom datasets, inherit from the appropriate dataset base class:
 
 .. code-block:: python
 
-    from omnigenome import OmniDatasetForSequenceClassification
+    from omnigenbench import OmniDatasetForSequenceClassification
     
     class CustomGenomicDataset(OmniDatasetForSequenceClassification):
         def __init__(self, data_path, tokenizer, **kwargs):
@@ -375,7 +375,7 @@ Custom tokenizers should inherit from the abstract tokenizer:
 
 .. code-block:: python
 
-    from omnigenome import OmniTokenizer
+    from omnigenbench import OmniTokenizer
     
     class CustomGenomicTokenizer(OmniTokenizer):
         def __init__(self, base_tokenizer, **kwargs):
@@ -403,7 +403,7 @@ Custom metrics should follow the abstract metric pattern:
 
 .. code-block:: python
 
-    from omnigenome import OmniMetric
+    from omnigenbench import OmniMetric
     from sklearn.metrics import custom_metric
     
     class CustomGenomicMetric(OmniMetric):

@@ -16,7 +16,7 @@ The base class for all models in OmniGenome. It provides:
 - Model persistence and loading capabilities
 
 ```python
-from omnigenome import OmniModel
+from omnigenbench import OmniModel
 
 # Initialize from pre-trained model
 model = OmniModelForSequenceClassification("model_path", tokenizer)
@@ -36,7 +36,7 @@ Abstract base class for all datasets in OmniGenome. Features:
 - PyTorch-compatible dataset interface
 
 ```python
-from omnigenome import OmniDatasetForSequenceClassification
+from omnigenbench import OmniDatasetForSequenceClassification
 
 # Initialize dataset
 dataset = OmniDatasetForSequenceClassification("data.json", tokenizer, max_length=512)
@@ -54,7 +54,7 @@ Wrapper class for tokenizers providing:
 - Sequence preprocessing options (U/T conversion, whitespace addition)
 
 ```python
-from omnigenome import OmniSingleNucleotideTokenizer
+from omnigenbench import OmniSingleNucleotideTokenizer
 
 # Initialize tokenizer
 tokenizer = OmniSingleNucleotideTokenizer.from_pretrained("model_name")
@@ -72,7 +72,7 @@ Abstract base class for evaluation metrics. Features:
 - Compatibility with Hugging Face evaluation protocols
 
 ```python
-from omnigenome import ClassificationMetric
+from omnigenbench import ClassificationMetric
 
 # Initialize metric
 metric = ClassificationMetric(ignore_y=-100)
@@ -159,7 +159,7 @@ Automated benchmarking framework:
 - Multiple trainer backends (native, accelerate, huggingface)
 
 ```python
-from omnigenome import AutoBench
+from omnigenbench import AutoBench
 
 # Initialize benchmarking
 bench = AutoBench("RGB", "model_name")
@@ -179,7 +179,7 @@ Automated training framework:
 - Integration with different trainer backends
 
 ```python
-from omnigenome import AutoTrain
+from omnigenbench import AutoTrain
 
 # Initialize training
 trainer = AutoTrain("RGB", "model_name")
@@ -231,7 +231,7 @@ Benchmark repository:
 ### Basic Model Usage
 
 ```python
-from omnigenome import (
+from omnigenbench import (
     OmniModelForSequenceClassification,
     OmniSingleNucleotideTokenizer,
     OmniDatasetForSequenceClassification
@@ -243,7 +243,7 @@ model = OmniModelForSequenceClassification("model_path", tokenizer)
 dataset = OmniDatasetForSequenceClassification("data.json", tokenizer)
 
 # Training
-from omnigenome import Trainer
+from omnigenbench import Trainer
 trainer = Trainer(model, train_dataset=dataset)
 trainer.train()
 
@@ -256,7 +256,7 @@ print(results['confidence'])   # Confidence score
 ### Automated Benchmarking
 
 ```python
-from omnigenome import AutoBench
+from omnigenbench import AutoBench
 
 # Initialize benchmarking
 bench = AutoBench("RGB", "DNABERT-2")
@@ -271,7 +271,7 @@ bench.mv.summary(round=4)
 ### Custom Model Development
 
 ```python
-from omnigenome import OmniModel
+from omnigenbench import OmniModel
 
 class CustomGenomicModel(OmniModel):
     def __init__(self, config_or_model, tokenizer, **kwargs):
@@ -289,7 +289,7 @@ class CustomGenomicModel(OmniModel):
 ### Custom Tokenizer
 
 ```python
-from omnigenome import OmniTokenizer
+from omnigenbench import OmniTokenizer
 
 class CustomTokenizer(OmniTokenizer):
     def tokenize(self, sequence, **kwargs):

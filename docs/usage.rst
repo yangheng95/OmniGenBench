@@ -8,7 +8,7 @@ Automatic Benchmarking
 
 .. code-block:: python
 
-   from omnigenome import AutoBench
+   from omnigenbench import AutoBench
    bench = AutoBench("RGB", "yangheng/OmniGenome-186M")
    bench.run()
 
@@ -17,7 +17,7 @@ Model Training
 
 .. code-block:: python
 
-   from omnigenome import AutoTrain
+   from omnigenbench import AutoTrain
    trainer = AutoTrain("Dataset", "yangheng/OmniGenome-186M")
    trainer.run()
 
@@ -26,7 +26,7 @@ Model Inference
 
 .. code-block:: python
 
-   from omnigenome import OmniModelForSequenceClassification
+   from omnigenbench import OmniModelForSequenceClassification
    model = OmniModelForSequenceClassification("yangheng/OmniGenome-186M")
    result = model.predict("ACGUAGGUAUCGUAGA")
    print(result)
@@ -36,7 +36,7 @@ Downloading Benchmarks (Datasets)
 
 .. code-block:: python
 
-   from omnigenome.utility.hub_utils import download_model, download_benchmark
+   from omnigenbench.utility.hub_utils import download_model, download_benchmark
    download_model("OmniGenome-186M-SSP")
    download_benchmark("RGB")
 

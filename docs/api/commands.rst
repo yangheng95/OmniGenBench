@@ -17,15 +17,15 @@ This section provides detailed documentation for the command-line interface (CLI
 **Auto-Pipeline CLI Example:**
 .. code-block:: bash
 
-    omnigenome bench --model model_name --dataset dataset_name
-    omnigenome train --model model_name --dataset dataset_name
+    omnigenbench bench --model model_name --dataset dataset_name
+    omnigenbench train --model model_name --dataset dataset_name
 
 Refer to the API documentation below for details on each CLI command, including available options and usage instructions。
 
 Base Commands
 -------------
 
-.. automodule:: omnigenome.cli.commands.base
+.. automodule:: omnigenbench.cli.commands.base
     :members:
     :undoc-members:
     :inherited-members:
@@ -35,7 +35,7 @@ Base Commands
 Main CLI
 --------
 
-.. automodule:: omnigenome.cli.omnigenome_cli
+.. automodule:: omnigenbench.cli.omnigenome_cli
     :members:
     :undoc-members:
     :inherited-members:
@@ -45,7 +45,7 @@ Main CLI
 Bench Commands
 --------------
 
-.. automodule:: omnigenome.cli.commands.bench.bench_cli
+.. automodule:: omnigenbench.cli.commands.bench.bench_cli
     :members:
     :undoc-members:
     :inherited-members:
@@ -55,7 +55,7 @@ Bench Commands
 RNA Commands
 ------------
 
-.. automodule:: omnigenome.cli.commands.rna.rna_design
+.. automodule:: omnigenbench.cli.commands.rna.rna_design
     :members:
     :undoc-members:
     :inherited-members:

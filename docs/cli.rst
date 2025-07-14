@@ -35,7 +35,7 @@ Example:
 
 .. code-block:: bash
 
-   $ omnigenome autobench --model yangheng/OmniGenome-186M --benchmark RGB
+   $ omnigenbench autobench --model yangheng/OmniGenome-186M --benchmark RGB
 
 Arguments:
 
@@ -64,7 +64,7 @@ Example:
 
 .. code-block:: bash
 
-   $ omnigenome rna_design --structure "(((...)))" --model yangheng/OmniGenome-186M
+   $ omnigenbench rna_design --structure "(((...)))" --model yangheng/OmniGenome-186M
 
 Arguments:
 
@@ -90,4 +90,4 @@ For more commands and options:
 
 .. code-block:: bash
 
-   $ omnigenome --help
+   $ omnigenbench --help

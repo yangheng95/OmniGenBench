@@ -4,7 +4,7 @@ Online Hubs
 Dataset Hub
 -----------
 
-.. automodule:: omnigenome.utility.dataset_hub.dataset_hub
+.. automodule:: omnigenbench.utility.dataset_hub.dataset_hub
     :members:
     :undoc-members:
     :inherited-members:
@@ -14,7 +14,7 @@ Dataset Hub
 Model Hub
 ---------
 
-.. automodule:: omnigenome.utility.model_hub.model_hub
+.. automodule:: omnigenbench.utility.model_hub.model_hub
     :members:
     :undoc-members:
     :inherited-members:
@@ -24,14 +24,14 @@ Model Hub
 Pipeline Hub
 ------------
 
-.. automodule:: omnigenome.utility.pipeline_hub.pipeline_hub
+.. automodule:: omnigenbench.utility.pipeline_hub.pipeline_hub
     :members:
     :undoc-members:
     :inherited-members:
     :show-inheritance:
     :noindex:
 
-.. automodule:: omnigenome.utility.pipeline_hub.pipeline
+.. automodule:: omnigenbench.utility.pipeline_hub.pipeline
     :members:
     :undoc-members:
     :inherited-members:
@@ -41,7 +41,7 @@ Pipeline Hub
 Hub Utilities
 -------------
 
-.. automodule:: omnigenome.utility.hub_utils
+.. automodule:: omnigenbench.utility.hub_utils
     :members:
     :undoc-members:
     :inherited-members:

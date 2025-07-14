@@ -25,7 +25,7 @@ Models for Downstream Genomic Tasks
 Classification Models
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.model.classification.model
+.. automodule:: omnigenbench.src.model.classification.model
     :members:
     :undoc-members:
     :inherited-members:
@@ -35,14 +35,14 @@ Classification Models
 Regression Models
 ~~~~~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.model.regression.model
+.. automodule:: omnigenbench.src.model.regression.model
     :members:
     :undoc-members:
     :inherited-members:
     :show-inheritance:
     :noindex:
 
-.. automodule:: omnigenome.src.model.regression.resnet
+.. automodule:: omnigenbench.src.model.regression.resnet
     :members:
     :undoc-members:
     :inherited-members:
@@ -52,7 +52,7 @@ Regression Models
 Embedding Models
 ~~~~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.model.embedding.model
+.. automodule:: omnigenbench.src.model.embedding.model
     :members:
     :undoc-members:
     :inherited-members:
@@ -62,7 +62,7 @@ Embedding Models
 MLM Models
 ~~~~~~~~~~
 
-.. automodule:: omnigenome.src.model.mlm.model
+.. automodule:: omnigenbench.src.model.mlm.model
     :members:
     :undoc-members:
     :inherited-members:
@@ -72,7 +72,7 @@ MLM Models
 RNA Design Models
 ~~~~~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.model.rna_design.model
+.. automodule:: omnigenbench.src.model.rna_design.model
     :members:
     :undoc-members:
     :inherited-members:
@@ -82,7 +82,7 @@ RNA Design Models
 Sequence-to-Sequence Models
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.model.seq2seq.model
+.. automodule:: omnigenbench.src.model.seq2seq.model
     :members:
     :undoc-members:
     :inherited-members:
@@ -92,7 +92,7 @@ Sequence-to-Sequence Models
 Augmentation Models
 ~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.model.augmentation.model
+.. automodule:: omnigenbench.src.model.augmentation.model
     :members:
     :undoc-members:
     :inherited-members:
@@ -102,7 +102,7 @@ Augmentation Models
 Model Utilities
 ~~~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.model.module_utils
+.. automodule:: omnigenbench.src.model.module_utils
     :members:
     :undoc-members:
     :inherited-members:
@@ -115,7 +115,7 @@ Metrics
 Base Metrics
 ~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.metric.metric
+.. automodule:: omnigenbench.src.metric.metric
     :members:
     :undoc-members:
     :inherited-members:
@@ -125,7 +125,7 @@ Base Metrics
 Classification Metrics
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.metric.classification_metric
+.. automodule:: omnigenbench.src.metric.classification_metric
     :members:
     :undoc-members:
     :inherited-members:
@@ -135,7 +135,7 @@ Classification Metrics
 Regression Metrics
 ~~~~~~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.metric.regression_metric
+.. automodule:: omnigenbench.src.metric.regression_metric
     :members:
     :undoc-members:
     :inherited-members:
@@ -145,7 +145,7 @@ Regression Metrics
 Ranking Metrics
 ~~~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.metric.ranking_metric
+.. automodule:: omnigenbench.src.metric.ranking_metric
     :members:
     :undoc-members:
     :inherited-members:
@@ -158,7 +158,7 @@ Tokenizers
 BPE Tokenizer
 ~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.tokenizer.bpe_tokenizer
+.. automodule:: omnigenbench.src.tokenizer.bpe_tokenizer
     :members:
     :undoc-members:
     :inherited-members:
@@ -168,7 +168,7 @@ BPE Tokenizer
 K-mers Tokenizer
 ~~~~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.tokenizer.kmers_tokenizer
+.. automodule:: omnigenbench.src.tokenizer.kmers_tokenizer
     :members:
     :undoc-members:
     :inherited-members:
@@ -178,7 +178,7 @@ K-mers Tokenizer
 Single Nucleotide Tokenizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.tokenizer.single_nucleotide_tokenizer
+.. automodule:: omnigenbench.src.tokenizer.single_nucleotide_tokenizer
     :members:
     :undoc-members:
     :inherited-members:
@@ -191,7 +191,7 @@ Trainers
 Base Trainer
 ~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.trainer.trainer
+.. automodule:: omnigenbench.src.trainer.trainer
     :members:
     :undoc-members:
     :inherited-members:
@@ -201,7 +201,7 @@ Base Trainer
 HuggingFace Trainer
 ~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.trainer.hf_trainer
+.. automodule:: omnigenbench.src.trainer.hf_trainer
     :members:
     :undoc-members:
     :inherited-members:
@@ -211,7 +211,7 @@ HuggingFace Trainer
 Accelerate Trainer
 ~~~~~~~~~~~~~~~~~~
 
-.. automodule:: omnigenome.src.trainer.accelerate_trainer
+.. automodule:: omnigenbench.src.trainer.accelerate_trainer
     :members:
     :undoc-members:
     :inherited-members:
@@ -224,7 +224,7 @@ Miscellaneous
 Utilities
 ~~~~~~~~~
 
-.. automodule:: omnigenome.src.misc.utils
+.. automodule:: omnigenbench.src.misc.utils
     :members:
     :undoc-members:
     :inherited-members:

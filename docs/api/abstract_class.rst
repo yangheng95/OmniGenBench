@@ -23,28 +23,28 @@ Refer to the API documentation below for details on each abstract class, includi
 Abstract Base Classes
 ---------------------
 
-.. automodule:: omnigenome.src.abc.abstract_dataset
+.. automodule:: omnigenbench.src.abc.abstract_dataset
     :members:
     :undoc-members:
     :inherited-members:
     :show-inheritance:
     :noindex:
 
-.. automodule:: omnigenome.src.abc.abstract_metric
+.. automodule:: omnigenbench.src.abc.abstract_metric
     :members:
     :undoc-members:
     :inherited-members:
     :show-inheritance:
     :noindex:
 
-.. automodule:: omnigenome.src.abc.abstract_model
+.. automodule:: omnigenbench.src.abc.abstract_model
     :members:
     :undoc-members:
     :inherited-members:
     :show-inheritance:
     :noindex:
 
-.. automodule:: omnigenome.src.abc.abstract_tokenizer
+.. automodule:: omnigenbench.src.abc.abstract_tokenizer
     :members:
     :undoc-members:
     :inherited-members:
@@ -54,7 +54,7 @@ Abstract Base Classes
 Dataset
 -------
 
-.. automodule:: omnigenome.src.dataset.omni_dataset
+.. automodule:: omnigenbench.src.dataset.omni_dataset
     :members:
     :undoc-members:
     :inherited-members:
@@ -64,7 +64,7 @@ Dataset
 LoRA
 ----
 
-.. automodule:: omnigenome.src.lora.lora_model
+.. automodule:: omnigenbench.src.lora.lora_model
     :members:
     :undoc-members:
     :inherited-members:

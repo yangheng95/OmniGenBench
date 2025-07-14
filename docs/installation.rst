@@ -32,7 +32,7 @@ We recommend installing via `pip`:
 
 .. code-block:: bash
 
-   pip install omnigenome
+   pip install omnigenbench
 
 
 Development Installation

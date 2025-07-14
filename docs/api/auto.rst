@@ -18,7 +18,7 @@ OmniGenBench's auto-pipelines offer:
 **Example Usage:**
 .. code-block:: python
 
-    from omnigenome import AutoBench, AutoTrain
+    from omnigenbench import AutoBench, AutoTrain
 
     # Run automated benchmarking
     bench = AutoBench("RGB", "model_name")
@@ -33,28 +33,28 @@ Refer to the API documentation below for details on each auto-pipeline component
 Auto Bench
 ----------
 
-.. automodule:: omnigenome.auto.auto_bench.auto_bench
+.. automodule:: omnigenbench.auto.auto_bench.auto_bench
     :members:
     :undoc-members:
     :inherited-members:
     :show-inheritance:
     :noindex:
 
-.. automodule:: omnigenome.auto.auto_bench.auto_bench_cli
+.. automodule:: omnigenbench.auto.auto_bench.auto_bench_cli
     :members:
     :undoc-members:
     :inherited-members:
     :show-inheritance:
     :noindex:
 
-.. automodule:: omnigenome.auto.auto_bench.auto_bench_config
+.. automodule:: omnigenbench.auto.auto_bench.auto_bench_config
     :members:
     :undoc-members:
     :inherited-members:
     :show-inheritance:
     :noindex:
 
-.. automodule:: omnigenome.auto.auto_bench.config_check
+.. automodule:: omnigenbench.auto.auto_bench.config_check
     :members:
     :undoc-members:
     :inherited-members:
@@ -64,14 +64,14 @@ Auto Bench
 Auto Train
 ----------
 
-.. automodule:: omnigenome.auto.auto_train.auto_train
+.. automodule:: omnigenbench.auto.auto_train.auto_train
     :members:
     :undoc-members:
     :inherited-members:
     :show-inheritance:
     :noindex:
 
-.. automodule:: omnigenome.auto.auto_train.auto_train_cli
+.. automodule:: omnigenbench.auto.auto_train.auto_train_cli
     :members:
     :undoc-members:
     :inherited-members:
@@ -81,7 +81,7 @@ Auto Train
 Bench Hub
 ---------
 
-.. automodule:: omnigenome.auto.bench_hub.bench_hub
+.. automodule:: omnigenbench.auto.bench_hub.bench_hub
     :members:
     :undoc-members:
     :inherited-members:
