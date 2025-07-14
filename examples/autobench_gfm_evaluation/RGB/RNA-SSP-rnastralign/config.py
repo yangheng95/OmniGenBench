@@ -10,7 +10,7 @@
 
 import os
 
-from omnigenome import (
+from omnigenbench import (
     ClassificationMetric,
     AutoBenchConfig,
     OmniDatasetForTokenClassification,

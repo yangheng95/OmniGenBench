@@ -4,7 +4,7 @@ Basic Usage
 This page introduces common usage patterns of **OmniGenBench**, including automatic benchmarking, model training, inference, and resource downloads.
 
 Automatic Benchmarking
------------------------
+----------------------
 
 .. code-block:: python
 
@@ -32,7 +32,7 @@ Model Inference
    print(result)
 
 Downloading Benchmarks (Datasets)
--------------------------------
+---------------------------------
 
 .. code-block:: python
 

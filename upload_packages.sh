@@ -1,7 +1,7 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
 # file: upload_packages.sh
-# Upload both omnigenome and omnigenbench packages to PyPI
+# Upload both omnigenbench and omnigenbench packages to PyPI
 
 set -e  # Exit on any error
 
@@ -29,7 +29,7 @@ upload_package() {
     echo "✅ $package_name uploaded successfully!"
 }
 
-# Upload omnigenome package
+# Upload omnigenbench package
 upload_package "setup_omnigenome.py" "omnigenome"
 
 # Upload omnigenbench package

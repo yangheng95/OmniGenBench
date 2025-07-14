@@ -1,7 +1,7 @@
 @echo off
 REM -*- coding: utf-8 -*-
 REM file: upload_packages.bat
-REM Upload both omnigenome and omnigenbench packages to PyPI
+REM Upload both omnigenbench and omnigenbench packages to PyPI
 
 echo 🚀 Starting package upload process...
 

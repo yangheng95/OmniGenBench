@@ -12,7 +12,7 @@ __source__ = ""
 __author__ = ""
 __version__ = "1.0.0"
 __time__ = "12:22 31/01/2025"
-__omnigenome_version__ = "0.2.0alpha"
+__omnigenbench_version__ = "0.2.0alpha"
 
 bench_list = [
     "RNA-mRNA",

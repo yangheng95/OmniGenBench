@@ -14,11 +14,11 @@ class TestDatasetPatterns:
     def test_dataset_imports(self):
         """Test dataset class imports as shown in examples."""
         try:
-            from omnigenome import (
-                OmniGenomeDatasetForSequenceClassification,
-                OmniGenomeDatasetForSequenceRegression,
-                OmniGenomeDatasetForTokenClassification,
-                OmniGenomeDatasetForTokenRegression,
+            from omnigenbench import (
+                OmniDatasetForSequenceClassification,
+                OmniDatasetForSequenceRegression,
+                OmniDatasetForTokenClassification,
+                OmniDatasetForTokenRegression,
             )
             assert True
         except ImportError:
@@ -186,18 +186,18 @@ class TestDatasetPatterns:
     def test_dataset_initialization_pattern(self):
         """Test dataset initialization pattern from examples."""
         try:
-            from omnigenome import OmniGenomeDatasetForSequenceClassification
+            from omnigenbench import OmniDatasetForSequenceClassification
         except ImportError:
             pytest.skip("omnigenome not available")
             
-        with patch("omnigenome.OmniGenomeDatasetForSequenceClassification") as mock_dataset:
+        with patch("omnigenome.OmniDatasetForSequenceClassification") as mock_dataset:
             mock_dataset.return_value = MagicMock()
             
             # Create a single mock tokenizer instance to use in both call and assertion
             mock_tokenizer_instance = MagicMock()
             
             # Pattern from examples
-            dataset = OmniGenomeDatasetForSequenceClassification(
+            dataset = OmniDatasetForSequenceClassification(
                 train_file="path/to/train.json",
                 test_file="path/to/test.json",
                 tokenizer=mock_tokenizer_instance,

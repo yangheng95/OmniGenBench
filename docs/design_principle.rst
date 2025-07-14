@@ -5,7 +5,7 @@ Design Principles
 OmniGenBench is designed to provide a unified, extensible, and robust framework for genomic foundation models. The core philosophy centers on abstraction, modularity, and interoperability, enabling users to build, extend, and integrate genomic models and data pipelines with minimal friction.
 
 Definitions of Abstract Classes
--------------------------
+-------------------------------
 Abstract base classes are fundamental to OmniGenBench's architecture. They define clear contracts for models, datasets, tokenizers, and metrics, ensuring that all components follow consistent interfaces. This approach offers several advantages:
 
 - **Consistency**: All implementations adhere to the same interface, reducing bugs and confusion.
@@ -92,7 +92,7 @@ To add new functionality, simply subclass the relevant abstract class and implem
             return {self.metric_name: score}
 
 Core Concepts and Patterns
--------------------------
+--------------------------
 - **Model-Data Integration**: Abstract classes are designed to work together seamlessly, enabling easy integration of models, datasets, tokenizers, and metrics.
 - **Configuration Management**: All components support flexible configuration via keyword arguments and config dictionaries.
 - **Error Handling**: Robust error handling is built into the abstract classes, providing meaningful messages for invalid inputs.
@@ -114,15 +114,15 @@ OmniGenBench's design principles ensure that the framework is easy to use, exten
 Overview
 --------
 
-OmniGenome is built around a set of core abstract base classes that provide a unified interface for working with genomic data and models. These abstract classes define the contract that all implementations must follow, ensuring consistency and interoperability across the framework.
+OmniGenBench is built around a set of core abstract base classes that provide a unified interface for working with genomic data and models. These abstract classes define the contract that all implementations must follow, ensuring consistency and interoperability across the framework.
 
 Core Abstract Classes
---------------------
+---------------------
 
 Abstract Model
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
-The ``OmniModel`` abstract base class serves as the foundation for all models in OmniGenome. It provides a unified interface for model initialization, forward passes, and inference operations.
+The ``OmniModel`` abstract base class serves as the foundation for all models in OmniGenBench. It provides a unified interface for model initialization, forward passes, and inference operations.
 
 **Key Features:**
 
@@ -160,7 +160,7 @@ The ``OmniModel`` abstract base class serves as the foundation for all models in
     print(predictions['confidence'])   # Confidence scores
 
 Abstract Dataset
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 The ``OmniDataset`` abstract base class provides a standardized interface for genomic datasets. It handles data loading, preprocessing, and provides a PyTorch-compatible dataset interface.
 
@@ -212,7 +212,7 @@ The ``OmniDataset`` abstract base class provides a standardized interface for ge
     print(f"Labels: {dataset.get_labels()}")
 
 Abstract Tokenizer
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 The ``OmniTokenizer`` abstract base class provides a unified interface for tokenizing genomic sequences. It wraps different tokenization strategies and provides consistent preprocessing options.
 
@@ -258,7 +258,7 @@ The ``OmniTokenizer`` abstract base class provides a unified interface for token
     print(decoded)  # "ATCGATCG"
 
 Abstract Metric
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 The ``OmniMetric`` abstract base class provides a standardized interface for evaluation metrics. It integrates with scikit-learn metrics and provides consistent result formatting.
 
@@ -306,10 +306,10 @@ The ``OmniMetric`` abstract base class provides a standardized interface for eva
     # }
 
 Implementation Patterns
----------------------
+-----------------------
 
 Model Implementation
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 When implementing a new model, inherit from the appropriate abstract base class:
 
@@ -341,7 +341,7 @@ When implementing a new model, inherit from the appropriate abstract base class:
             return type(outputs)(logits=logits)
 
 Dataset Implementation
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 For custom datasets, inherit from the appropriate dataset base class:
 
@@ -397,7 +397,7 @@ Custom tokenizers should inherit from the abstract tokenizer:
             return tokens
 
 Metric Implementation
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 Custom metrics should follow the abstract metric pattern:
 
@@ -423,7 +423,7 @@ Custom metrics should follow the abstract metric pattern:
             return {self.metric_name: score}
 
 Best Practices
--------------
+--------------
 
 1. **Inheritance**: Always inherit from the appropriate abstract base class
 2. **Method Implementation**: Implement all required abstract methods
@@ -433,10 +433,10 @@ Best Practices
 6. **Consistency**: Follow the established patterns and conventions
 
 Common Patterns
---------------
+---------------
 
 Model-Data Integration
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 The abstract classes are designed to work together seamlessly:
 
@@ -459,7 +459,7 @@ The abstract classes are designed to work together seamlessly:
     results = metric.compute_metric(y_true, predictions['predictions'])
 
 Configuration Management
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 All components support flexible configuration:
 
@@ -491,7 +491,7 @@ All components support flexible configuration:
     }
 
 Error Handling
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 Robust error handling is built into the abstract classes:
 
@@ -514,7 +514,7 @@ Robust error handling is built into the abstract classes:
         print(f"Invalid inputs for metric computation: {e}")
 
 Performance Considerations
-------------------------
+--------------------------
 
 1. **Memory Efficiency**: Use appropriate data types and batch sizes
 2. **Caching**: Implement caching for expensive operations
@@ -523,7 +523,7 @@ Performance Considerations
 5. **Profiling**: Monitor performance bottlenecks and optimize accordingly
 
 Extension Points
----------------
+----------------
 
 The abstract classes provide several extension points for customization:
 

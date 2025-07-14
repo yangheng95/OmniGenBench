@@ -29,13 +29,13 @@ OmniGenBench provides a rich set of command-line tools for batch evaluation, tra
 
 
 Automatic Benchmarking Command
------------------------------
+------------------------------
 
 Example:
 
 .. code-block:: bash
 
-   $ omnigenbench autobench --model yangheng/OmniGenome-186M --benchmark RGB
+   $ omnigenbench autobench --model yangheng/OmniGenBench-186M --benchmark RGB
 
 Arguments:
 
@@ -58,7 +58,7 @@ Arguments:
     Batch size scaling factor
 
 RNA Structure Design Command
----------------------------
+----------------------------
 
 Example:
 

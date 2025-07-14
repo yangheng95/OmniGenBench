@@ -9,7 +9,7 @@
 
 from pathlib import Path
 from setuptools import setup, find_packages
-from omnigenome import __version__
+from omnigenbench import __version__
 
 cwd = Path(__file__).parent
 long_description = (cwd / "README.MD").read_text(encoding="utf8")

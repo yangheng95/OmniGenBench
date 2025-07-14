@@ -13,7 +13,7 @@ import json
 import numpy as np
 import gradio as gr
 import RNA
-from omnigenome import ModelHub
+from omnigenbench import ModelHub
 
 # 加载模型
 print("Available files:", os.listdir('..'))

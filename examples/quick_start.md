@@ -28,7 +28,7 @@ OmniGenBench is a comprehensive toolkit for genomic foundation models (GFMs) tha
 
 ```bash
 # Install from PyPI
-pip install omnigenome -U
+pip install omnigenbench -U
 
 # Or install from source
 git clone https://github.com/yangheng95/OmniGenBench.git
@@ -39,7 +39,7 @@ pip install -e .
 ### Verify Installation
 
 ```python
-import omnigenome
+import omnigenbench
 print(omnigenome.__version__)
 ```
 
@@ -48,7 +48,7 @@ print(omnigenome.__version__)
 ### 1. Basic Model Loading
 
 ```python
-from omnigenome import OmniModelForSequenceClassification
+from omnigenbench import OmniModelForSequenceClassification
 from transformers import AutoTokenizer
 
 # Load a pre-trained model
@@ -69,7 +69,7 @@ predictions = model(**inputs)
 ### 2. Sequence Classification
 
 ```python
-from omnigenome import OmniModelForSequenceClassification, OmniDatasetForSequenceClassification
+from omnigenbench import OmniModelForSequenceClassification, OmniDatasetForSequenceClassification
 
 # Load dataset
 dataset = OmniDatasetForSequenceClassification(
@@ -80,7 +80,7 @@ dataset = OmniDatasetForSequenceClassification(
 )
 
 # Train model
-from omnigenome import Trainer
+from omnigenbench import Trainer
 trainer = Trainer(
     model=model,
     train_dataset=dataset.train_dataset,
@@ -110,7 +110,7 @@ autobench --model_name_or_path "yangheng/OmniGenome-186M" --benchmark "RGB" --tr
 ### Python API
 
 ```python
-from omnigenome import AutoBench
+from omnigenbench import AutoBench
 import autocuda
 
 # Initialize AutoBench
@@ -146,7 +146,7 @@ auto_bench.run(
 
 ```python
 # For token-level regression (e.g., RNA degradation prediction)
-from omnigenome import OmniModelForTokenRegression, OmniDatasetForTokenRegression
+from omnigenbench import OmniModelForTokenRegression, OmniDatasetForTokenRegression
 
 model = OmniModelForTokenRegression(
     config_or_model=model_name,
@@ -162,7 +162,7 @@ dataset = OmniDatasetForTokenRegression(
 )
 
 # For sequence-level classification
-from omnigenome import OmniModelForSequenceClassification, OmniDatasetForSequenceClassification
+from omnigenbench import OmniModelForSequenceClassification, OmniDatasetForSequenceClassification
 
 model = OmniModelForSequenceClassification(
     config_or_model=model_name,
@@ -174,7 +174,7 @@ model = OmniModelForSequenceClassification(
 ### 2. Custom Model Definition
 
 ```python
-from omnigenome import OmniModel, OmniPooling
+from omnigenbench import OmniModel, OmniPooling
 import torch
 
 class CustomClassificationModel(OmniModel):
@@ -208,7 +208,7 @@ class CustomClassificationModel(OmniModel):
 ### 3. Custom Tokenizer
 
 ```python
-from omnigenome import OmniSingleNucleotideTokenizer
+from omnigenbench import OmniSingleNucleotideTokenizer
 from transformers import AutoTokenizer
 
 class CustomTokenizer(OmniSingleNucleotideTokenizer):
@@ -232,7 +232,7 @@ class CustomTokenizer(OmniSingleNucleotideTokenizer):
 ### 1. RNA Secondary Structure Prediction
 
 ```python
-from omnigenome import OmniModelForStructuralImputation
+from omnigenbench import OmniModelForStructuralImputation
 
 # Load model for structure prediction
 model = OmniModelForStructuralImputation(
@@ -249,7 +249,7 @@ print(f"Predicted structure: {structure}")
 ### 2. RNA Sequence Design
 
 ```python
-from omnigenome import OmniModelForRNADesign
+from omnigenbench import OmniModelForRNADesign
 
 # Initialize RNA design model
 model = OmniModelForRNADesign(
@@ -287,7 +287,7 @@ omnigenome rna_design \
 ### 1. LoRA Fine-tuning
 
 ```python
-from omnigenome import OmniLoraModel
+from omnigenbench import OmniLoraModel
 
 # Create LoRA model for efficient fine-tuning
 lora_model = OmniLoraModel(
@@ -304,7 +304,7 @@ lora_model = OmniLoraModel(
 ### 2. Model Hub Integration
 
 ```python
-from omnigenome import ModelHub
+from omnigenbench import ModelHub
 
 # Download models from OmniGenBench hub
 model_hub = ModelHub()
@@ -318,7 +318,7 @@ model_path = model_hub.download_model("yangheng/OmniGenome-186M")
 ### 3. Pipeline Hub
 
 ```python
-from omnigenome import PipelineHub
+from omnigenbench import PipelineHub
 
 # Use pre-built pipelines
 pipeline_hub = PipelineHub()
@@ -331,7 +331,7 @@ result = pipeline("AUGGCCUAA")
 ### 4. Data Augmentation
 
 ```python
-from omnigenome import OmniModelForAugmentation
+from omnigenbench import OmniModelForAugmentation
 
 # Initialize augmentation model
 aug_model = OmniModelForAugmentation(
@@ -443,7 +443,7 @@ Learn automated benchmarking in [AutoBench_Tutorial.ipynb](examples/autobench_gf
 3. **Tokenizer Compatibility**
    ```python
    # Create custom tokenizer wrapper if needed
-   from omnigenome import OmniSingleNucleotideTokenizer
+   from omnigenbench import OmniSingleNucleotideTokenizer
    custom_tokenizer = OmniSingleNucleotideTokenizer(base_tokenizer)
    ```
 

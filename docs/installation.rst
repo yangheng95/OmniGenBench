@@ -36,7 +36,7 @@ We recommend installing via `pip`:
 
 
 Development Installation
------------------------
+------------------------
 
 Python 3.10 or higher is recommended.
 

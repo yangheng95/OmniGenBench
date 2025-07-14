@@ -38,7 +38,7 @@ class TestModelLoading:
     def test_model_import_structure(self):
         """Test that model classes can be imported as shown in examples."""
         try:
-            from omnigenome import (
+            from omnigenbench import (
                 OmniModelForSequenceClassification,
                 OmniModelForTokenClassification,
                 OmniModelForSequenceRegression,
@@ -52,7 +52,7 @@ class TestModelLoading:
     def test_embedding_model_import(self):
         """Test embedding model import as shown in RNA_Embedding_Tutorial.ipynb."""
         try:
-            from omnigenome import OmniGenomeModelForEmbedding
+            from omnigenbench import OmniModelForEmbedding
             assert True
         except ImportError:
             pytest.skip("omnigenome not available or missing dependencies")
@@ -60,7 +60,7 @@ class TestModelLoading:
     def test_pooling_import(self):
         """Test pooling import as shown in classification.ipynb."""
         try:
-            from omnigenome import OmniModel, OmniPooling
+            from omnigenbench import OmniModel, OmniPooling
             assert True
         except ImportError:
             pytest.skip("omnigenome not available or missing dependencies")
@@ -94,17 +94,17 @@ class TestModelLoading:
             pytest.skip("torch not available")
             
         try:
-            from omnigenome import OmniGenomeModelForEmbedding
+            from omnigenbench import OmniModelForEmbedding
         except ImportError:
             pytest.skip("omnigenome not available")
             
-        with patch('omnigenome.OmniGenomeModelForEmbedding') as mock_embedding_model:
+        with patch('omnigenome.OmniModelForEmbedding') as mock_embedding_model:
             mock_instance = MagicMock()
             mock_instance.to.return_value = mock_instance
             mock_embedding_model.return_value = mock_instance
 
             model_name = "yangheng/OmniGenome-52M"
-            embedding_model = OmniGenomeModelForEmbedding(model_name, trust_remote_code=True).to(torch.device("cuda:0")).to(torch.float16)
+            embedding_model = OmniModelForEmbedding(model_name, trust_remote_code=True).to(torch.device("cuda:0")).to(torch.float16)
 
             # Verify initialization pattern
             mock_embedding_model.assert_called_once_with(model_name, trust_remote_code=True)
@@ -129,7 +129,7 @@ class TestModelLoading:
     def test_classification_model_initialization_pattern(self, mock_tokenizer):
         """Test classification model init pattern from examples."""
         try:
-            from omnigenome import OmniModelForSequenceClassification
+            from omnigenbench import OmniModelForSequenceClassification
         except ImportError:
             pytest.skip("omnigenome not available")
             

@@ -11,7 +11,7 @@ class TestTrainingPatterns:
     def test_trainer_imports(self):
         """Test trainer imports as shown in quick_start.md."""
         try:
-            from omnigenome import Trainer
+            from omnigenbench import Trainer
             assert True
         except ImportError:
             pytest.skip("omnigenome not available or missing dependencies")
@@ -19,7 +19,7 @@ class TestTrainingPatterns:
     def test_autobench_imports(self):
         """Test AutoBench imports from examples."""
         try:
-            from omnigenome import AutoBench
+            from omnigenbench import AutoBench
             assert True
         except ImportError:
             pytest.skip("omnigenome not available or missing dependencies")
@@ -42,7 +42,7 @@ class TestTrainingPatterns:
         mock_instance = MagicMock()
         mock_autobench.return_value = mock_instance
         
-        from omnigenome import AutoBench
+        from omnigenbench import AutoBench
         
         # Pattern from quick_start.md
         auto_bench = AutoBench(
@@ -83,7 +83,7 @@ class TestTrainingPatterns:
         """Test Trainer initialization pattern from quick_start.md."""
         mock_trainer.return_value = MagicMock()
         
-        from omnigenome import Trainer
+        from omnigenbench import Trainer
         
         # Mock training arguments
         mock_args = MagicMock()

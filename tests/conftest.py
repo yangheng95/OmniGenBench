@@ -145,9 +145,9 @@ def examples_dir():
 
 @pytest.fixture
 def skip_if_no_omnigenome():
-    """Skip test if omnigenome package is not available."""
+    """Skip test if omnigenbench package is not available."""
     try:
-        import omnigenome
+        import omnigenbench
         return False
     except ImportError:
         pytest.skip("omnigenome package not available")

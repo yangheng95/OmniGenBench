@@ -1,6 +1,6 @@
 ![favicon.png](asset/favicon.png)
 
-<h3 align="center">OmniGenBench is a modular benchmarking platform for evaluating genomic foundation models (GFMs) across diverse tasks like RNA structure prediction, gene function classification, and multi-species generalization.</h3>
+<h3 align="center">OmniGenBench offers an all-in-one solution for genomic foundation model finetuning, inference, deployment and automated benchmarking, designed for research and applications in genomics.</h3>
 
 <div align="center">
 
@@ -50,15 +50,15 @@
 ## Installation
 
 ### Requirements
-Before installing OmniGenome, you need to install the following dependencies:
+Before installing OmniGenoBench, you need to install the following dependencies:
 - Python 3.10+
 - PyTorch 2.5+
 - Transformers 4.46.0+
 
 ### PyPI Installation
-To install OmniGenome, you can use pip:
+To install OmniGenoBench, you can use pip:
 ```bash
-pip install omnigenome -U
+pip install omnigenbench -U
 ```
 
 ### Source Installation
@@ -82,7 +82,7 @@ You can find a visualization of AutoBench [here](asset/AutoBench.gif).
 ### Auto-benchmark via Python API
 Or you can use the following python code to run the auto-benchmark:
 ```python
-from omnigenome import AutoBench
+from omnigenbench import AutoBench
 gfm = 'LongSafari/hyenadna-medium-160k-seqlen-hf'
 # benchmark could be "RGB", "GB", "PGB", "GUE", which will be downloaded from the Hugging Face model hub
 benchmark = "RGB"
@@ -131,7 +131,7 @@ OmniGenBench supports five curated benchmark suites covering both **sequence-lev
 ### RNA Design
 RNA design is a fundamental problem in synthetic biology,
 where the goal is to design RNA sequences that fold into a target structure.
-In this demo, we show how to use OmniGenome to design RNA sequences 
+In this demo, we show how to use OmniGenoBench to design RNA sequences 
 that fold into a target structure using a pre-trained model.
 The tutorials of RNA Design Demo can be found in [RNA_Design_Tutorial.ipynb](examples/rna_design/RNA_Design_Tutorial.ipynb).
 
@@ -141,7 +141,7 @@ You can find a visual example of RNA Design [here](asset/RNA_Design.gif).
 
 RNA secondary structure prediction is a fundamental problem in computational biology,
 where the goal is to predict the secondary structure of an RNA sequence.
-In this demo, we show how to use OmniGenome to predict the secondary structure of RNA sequences using a pre-trained model.
+In this demo, we show how to use OmniGenoBench to predict the secondary structure of RNA sequences using a pre-trained model.
 The tutorials of RNA Secondary Structure Prediction can be found in
 [Secondary_Structure_Prediction_Tutorial.ipynb](examples/rna_secondary_structure_prediction/Secondary_Structure_Prediction_Tutorial.ipynb).
 

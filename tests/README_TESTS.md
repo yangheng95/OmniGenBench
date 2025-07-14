@@ -265,7 +265,7 @@ def test_run_basic(self):
 ```python
 import pytest
 from unittest.mock import Mock, patch
-from omnigenome.src.module import ModuleClass
+from omnigenbench.src.module import ModuleClass
 
 class TestModuleClass:
     def test_some_functionality(self, mock_fixture):

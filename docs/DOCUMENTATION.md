@@ -1,15 +1,15 @@
-# OmniGenome Documentation
+# OmniGenBench Documentation
 
 ## Overview
 
-OmniGenome is a comprehensive toolkit for genomic foundation models that provides automated benchmarking, training pipelines, and a flexible framework for building custom models and tasks. The framework is designed to handle various genomic data types and tasks including sequence classification, token classification, regression, and more.
+OmniGenBench is a comprehensive toolkit for genomic foundation models that provides automated benchmarking, training pipelines, and a flexible framework for building custom models and tasks. The framework is designed to handle various genomic data types and tasks including sequence classification, token classification, regression, and more.
 
 ## Key Components
 
 ### 1. Core Abstract Classes
 
 #### OmniModel
-The base class for all models in OmniGenome. It provides:
+The base class for all models in OmniGenBench. It provides:
 - Unified interface for model initialization, forward passes, and inference
 - Support for different model types (pre-trained paths, PyTorch modules, configs)
 - Automatic loss computation and prediction methods
@@ -29,7 +29,7 @@ predictions = model.predict("ATCGATCG")
 ```
 
 #### OmniDataset
-Abstract base class for all datasets in OmniGenome. Features:
+Abstract base class for all datasets in OmniGenBench. Features:
 - Support for various data formats (CSV, JSON, Parquet, TXT)
 - Automatic tokenization and preprocessing
 - Label mapping and data validation
@@ -331,7 +331,7 @@ class CustomTokenizer(OmniTokenizer):
 
 ## Contributing
 
-When contributing to OmniGenome:
+When contributing to OmniGenBench:
 
 1. **Follow the existing code structure** and inherit from appropriate base classes
 2. **Add comprehensive docstrings** for all public methods and classes
@@ -350,4 +350,4 @@ For questions and support:
 
 ## License
 
-OmniGenome is licensed under the Apache-2.0 License. See the LICENSE file for details. 
+OmniGenBench is licensed under the Apache-2.0 License. See the LICENSE file for details. 

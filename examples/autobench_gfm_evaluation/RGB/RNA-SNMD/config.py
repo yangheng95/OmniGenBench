@@ -13,7 +13,7 @@ import os
 import numpy as np
 import torch
 
-from omnigenome import (
+from omnigenbench import (
     ClassificationMetric,
     AutoBenchConfig,
     OmniDatasetForTokenClassification,

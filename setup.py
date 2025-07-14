@@ -9,7 +9,7 @@
 
 from pathlib import Path
 from setuptools import setup, find_packages
-from omnigenome import __version__
+from omnigenbench import __version__
 
 cwd = Path(__file__).parent
 long_description = (cwd / "README.MD").read_text(encoding="utf8")
@@ -21,12 +21,12 @@ extras = {
     ]
 }
 
-# This is the main setup.py - it will build omnigenome by default
+# This is the main setup.py - it will build omnigenbench by default
 # Use setup_omnigenome.py and setup_omnigenbench.py for separate builds
 setup(
     name="omnigenome",
     version=__version__,
-    description="OmniGenome: A comprehensive toolkit for genome analysis.",
+    description="OmniGenoBench: A comprehensive toolkit for genome analysis.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/yangheng95/OmniGenBench",
