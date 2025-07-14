@@ -20,20 +20,20 @@ from ..abc.abstract_metric import OmniMetric
 def mcrmse(y_true, y_pred):
     """
     Compute Mean Column Root Mean Square Error (MCRMSE).
-    
+
     MCRMSE is a multi-target regression metric that computes the RMSE for each target
     column and then takes the mean across all targets.
-    
+
     Args:
         y_true (np.ndarray): Ground truth values with shape (n_samples, n_targets)
         y_pred (np.ndarray): Predicted values with shape (n_samples, n_targets)
-        
+
     Returns:
         float: Mean Column Root Mean Square Error
-        
+
     Raises:
         ValueError: If y_true and y_pred have different shapes
-        
+
     Example:
         >>> y_true = np.array([[1, 2], [3, 4], [5, 6]])
         >>> y_pred = np.array([[1.1, 2.1], [2.9, 4.1], [5.2, 5.8]])
@@ -57,18 +57,18 @@ class Metric(OmniMetric):
     """
     A flexible metric class that provides access to all scikit-learn metrics
     and custom metrics for evaluation.
-    
+
     This class dynamically wraps scikit-learn metrics and provides a unified
     interface for computing various evaluation metrics. It handles different
     input formats including HuggingFace trainer outputs and supports
     custom metric functions.
-    
+
     Attributes:
         metric_func: Custom metric function if provided
         ignore_y: Value to ignore in predictions and true values
         kwargs: Additional keyword arguments for metric computation
         metrics: Dictionary of available metrics including custom ones
-        
+
     Example:
         >>> from omnigenome.src.metric import Metric
         >>> metric = Metric(ignore_y=-100)
@@ -82,7 +82,7 @@ class Metric(OmniMetric):
     def __init__(self, metric_func=None, ignore_y=-100, *args, **kwargs):
         """
         Initialize the Metric class.
-        
+
         Args:
             metric_func (callable, optional): Custom metric function to use
             ignore_y (int, optional): Value to ignore in predictions and true values. Defaults to -100
@@ -98,14 +98,14 @@ class Metric(OmniMetric):
     def __getattribute__(self, name):
         """
         Dynamically create metric computation methods.
-        
+
         This method intercepts attribute access and creates wrapper functions
         for scikit-learn metrics, handling different input formats and
         preprocessing the data appropriately.
-        
+
         Args:
             name (str): Name of the metric to access
-            
+
         Returns:
             callable: Wrapper function for the requested metric
         """
@@ -119,20 +119,20 @@ class Metric(OmniMetric):
             def wrapper(y_true=None, y_score=None, *args, **kwargs):
                 """
                 Compute the metric, based on the true and predicted values.
-                
+
                 This wrapper handles different input formats including HuggingFace
                 trainer outputs and performs necessary preprocessing.
-                
+
                 Args:
                     y_true: The true values or HuggingFace EvalPrediction object
                     y_score: The predicted values
                     ignore_y: The value to ignore in the predictions and true values in corresponding positions
                     *args: Additional positional arguments for the metric
                     **kwargs: Additional keyword arguments for the metric
-                    
+
                 Returns:
                     dict: Dictionary containing the metric name and computed value
-                    
+
                 Raises:
                     ValueError: If neither y_true nor y_score is provided
                 """
@@ -176,16 +176,16 @@ class Metric(OmniMetric):
     def compute(self, y_true, y_score, *args, **kwargs):
         """
         Compute the metric, based on the true and predicted values.
-        
+
         Args:
             y_true: The true values
             y_score: The predicted values
             *args: Additional positional arguments for the metric
             **kwargs: Additional keyword arguments for the metric
-            
+
         Returns:
             The computed metric value
-            
+
         Raises:
             NotImplementedError: If no metric function is provided and compute is not implemented
         """

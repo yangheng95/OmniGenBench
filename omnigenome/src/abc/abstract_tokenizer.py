@@ -16,15 +16,15 @@ from ..misc.utils import env_meta_info, load_module_from_path
 class OmniTokenizer:
     """
     A wrapper class for tokenizers to provide a consistent interface within OmniGenome.
-    
+
     This class provides a unified interface for tokenizers in the OmniGenome framework.
     It wraps underlying tokenizers (typically from Hugging Face) and provides
     additional functionality for genomic sequence processing.
-    
+
     The class handles various tokenization strategies and provides compatibility
     with different model architectures. It also supports custom tokenizer wrappers
     for specialized genomic tasks.
-    
+
     Attributes:
         base_tokenizer: The underlying tokenizer instance (e.g., from Hugging Face).
         max_length (int): The default maximum sequence length.
@@ -52,7 +52,7 @@ class OmniTokenizer:
             >>> from transformers import AutoTokenizer
             >>> base_tokenizer = AutoTokenizer.from_pretrained("model_name")
             >>> tokenizer = OmniTokenizer(base_tokenizer, max_length=512)
-            
+
             >>> # Initialize with sequence conversion
             >>> tokenizer = OmniTokenizer(base_tokenizer, u2t=True)
         """
@@ -87,9 +87,9 @@ class OmniTokenizer:
         Example:
             >>> # Load from a pre-trained model
             >>> tokenizer = OmniTokenizer.from_pretrained("model_name")
-            
+
             >>> # Load with custom parameters
-            >>> tokenizer = OmniTokenizer.from_pretrained("model_name", 
+            >>> tokenizer = OmniTokenizer.from_pretrained("model_name",
             ...                                          trust_remote_code=True)
         """
         wrapper_path = f"{model_name_or_path.rstrip('/')}/omnigenome_wrapper.py"
@@ -104,7 +104,9 @@ class OmniTokenizer:
             warnings.warn(
                 f"No tokenizer wrapper found in {wrapper_path} -> Exception: {e}"
             )
-            kwargs.pop("num_labels", None) # Remove num_labels if it exists, as it may not be applicable
+            kwargs.pop(
+                "num_labels", None
+            )  # Remove num_labels if it exists, as it may not be applicable
 
             tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
 

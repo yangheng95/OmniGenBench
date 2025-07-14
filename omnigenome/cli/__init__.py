@@ -10,4 +10,3 @@
 """
 This package contains modules for the command-line interface.
 """
-

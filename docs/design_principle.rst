@@ -1,12 +1,12 @@
-Design Principles of OmniGenomeBench
+Design Principles
 =====================
 
 
-OmniGenomeBench is designed to provide a unified, extensible, and robust framework for genomic foundation models. The core philosophy centers on abstraction, modularity, and interoperability, enabling users to build, extend, and integrate genomic models and data pipelines with minimal friction.
+OmniGenBench is designed to provide a unified, extensible, and robust framework for genomic foundation models. The core philosophy centers on abstraction, modularity, and interoperability, enabling users to build, extend, and integrate genomic models and data pipelines with minimal friction.
 
 Definitions of Abstract Classes
 -------------------------
-Abstract base classes are fundamental to OmniGenomeBench's architecture. They define clear contracts for models, datasets, tokenizers, and metrics, ensuring that all components follow consistent interfaces. This approach offers several advantages:
+Abstract base classes are fundamental to OmniGenBench's architecture. They define clear contracts for models, datasets, tokenizers, and metrics, ensuring that all components follow consistent interfaces. This approach offers several advantages:
 
 - **Consistency**: All implementations adhere to the same interface, reducing bugs and confusion.
 - **Extensibility**: Users can easily extend functionality by subclassing abstract classes.
@@ -109,7 +109,7 @@ Best Practices
 
 Summary
 -------
-OmniGenomeBench's design principles ensure that the framework is easy to use, extend, and maintain. By leveraging abstract classes and modular design, users can build powerful genomic analysis pipelines that are both robust and flexible.
+OmniGenBench's design principles ensure that the framework is easy to use, extend, and maintain. By leveraging abstract classes and modular design, users can build powerful genomic analysis pipelines that are both robust and flexible.
 
 Overview
 --------

@@ -1,9 +1,9 @@
 Abstract Classes
 ================
 
-This page explains how OmniGenomeBench organizes its main concepts and how to use abstract classes to extend functionality.
+This page explains how OmniGenBench organizes its main concepts and how to use abstract classes to extend functionality.
 
-OmniGenomeBench provides a set of abstract base classes that define the core interfaces for datasets, models, metrics, and tokenizers. These abstract classes are designed to be subclassed, allowing users to implement custom logic for new data formats, model architectures, evaluation metrics, or sequence representations.
+OmniGenBench provides a set of abstract base classes that define the core interfaces for datasets, models, metrics, and tokenizers. These abstract classes are designed to be subclassed, allowing users to implement custom logic for new data formats, model architectures, evaluation metrics, or sequence representations.
 
 **How to Use Abstract Classes:**
 

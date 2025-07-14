@@ -54,13 +54,13 @@ class RNADesignCommand(BaseCommand):
     def register_command(cls, subparsers):
         """
         Register the RNA design command with the argument parser.
-        
+
         This method sets up the command-line interface for RNA sequence design,
         including all necessary arguments and their descriptions.
-        
+
         Args:
             subparsers: The subparsers object from argparse to add the command to
-            
+
         Example:
             >>> parser = argparse.ArgumentParser()
             >>> subparsers = parser.add_subparsers()
@@ -109,18 +109,18 @@ class RNADesignCommand(BaseCommand):
     def execute(args: argparse.Namespace):
         """
         Execute the RNA design command with the provided arguments.
-        
+
         This method runs the RNA sequence design process using genetic algorithms.
         It validates parameters, loads the model, runs the design optimization,
         and outputs or saves the results.
-        
+
         Args:
             args (argparse.Namespace): Parsed command-line arguments containing
                                       design parameters and model settings
-                                      
+
         Raises:
             ValueError: If mutation_ratio is not between 0.0 and 1.0
-            
+
         Example:
             >>> args = parser.parse_args(['design', '--structure', '(((...)))'])
             >>> RNADesignCommand.execute(args)
@@ -162,17 +162,16 @@ class RNADesignCommand(BaseCommand):
 def register_command(subparsers):
     """
     Register the RNA design command with the CLI.
-    
+
     This function is a convenience wrapper for registering the RNADesignCommand
     with the argument parser.
-    
+
     Args:
         subparsers: The subparsers object from argparse to add the command to
-        
+
     Example:
         >>> parser = argparse.ArgumentParser()
         >>> subparsers = parser.add_subparsers()
         >>> register_command(subparsers)
     """
     RNADesignCommand.register_command(subparsers)
-

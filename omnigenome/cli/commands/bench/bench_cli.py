@@ -43,18 +43,18 @@ class BenchCommand(BaseCommand):
         ...     --bs_scale 2 \
         ...     --overwrite True
     """
-    
+
     @classmethod
     def register_command(cls, subparsers):
         """
         Register the autobench command with the argument parser.
-        
+
         This method sets up the command-line interface for the autobench functionality,
         including all necessary arguments and their descriptions.
-        
+
         Args:
             subparsers: The subparsers object from argparse to add the command to
-            
+
         Example:
             >>> parser = argparse.ArgumentParser()
             >>> subparsers = parser.add_subparsers()
@@ -122,15 +122,15 @@ class BenchCommand(BaseCommand):
     def execute(args: argparse.Namespace):
         """
         Execute the autobench command with the provided arguments.
-        
+
         This method runs the automated benchmarking process using the AutoBench
         class. It handles model and tokenizer loading, benchmark execution,
         and result logging.
-        
+
         Args:
             args (argparse.Namespace): Parsed command-line arguments containing
                                       benchmark configuration and model settings
-                                      
+
         Example:
             >>> args = parser.parse_args(['autobench', '--model', 'model_name'])
             >>> BenchCommand.execute(args)
@@ -187,13 +187,13 @@ class BenchCommand(BaseCommand):
 def register_command(subparsers):
     """
     Register the autobench command with the CLI.
-    
+
     This function is a convenience wrapper for registering the BenchCommand
     with the argument parser.
-    
+
     Args:
         subparsers: The subparsers object from argparse to add the command to
-        
+
     Example:
         >>> parser = argparse.ArgumentParser()
         >>> subparsers = parser.add_subparsers()

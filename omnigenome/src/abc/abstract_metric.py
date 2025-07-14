@@ -15,17 +15,17 @@ from ..misc.utils import env_meta_info
 class OmniMetric:
     """
     Abstract base class for all metrics in OmniGenome, based on scikit-learn.
-    
+
     This class provides a unified interface for evaluation metrics in the OmniGenome
     framework. It integrates with scikit-learn's metric functions and provides
     additional functionality for handling genomic data evaluation.
-    
+
     The class automatically exposes all scikit-learn metrics as attributes,
     making them easily accessible for evaluation tasks.
-    
+
     Attributes:
         metric_func (callable): A callable metric function from `sklearn.metrics`.
-        ignore_y (any): A value in the ground truth labels to be ignored during 
+        ignore_y (any): A value in the ground truth labels to be ignored during
                        metric computation.
         metadata (dict): Metadata about the metric including version info.
     """
@@ -35,10 +35,10 @@ class OmniMetric:
         Initializes the metric.
 
         Args:
-            metric_func (callable, optional): A callable metric function from 
+            metric_func (callable, optional): A callable metric function from
                                             `sklearn.metrics`. If None, subclasses
                                             should implement their own compute method.
-            ignore_y (any, optional): A value in the ground truth labels to be 
+            ignore_y (any, optional): A value in the ground truth labels to be
                                     ignored during metric computation.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
@@ -46,7 +46,7 @@ class OmniMetric:
         Example:
             >>> # Initialize with a specific metric function
             >>> metric = OmniMetric(metrics.accuracy_score)
-            
+
             >>> # Initialize with ignore value
             >>> metric = OmniMetric(ignore_y=-100)
         """

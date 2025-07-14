@@ -20,16 +20,16 @@ from ..abc.abstract_metric import OmniMetric
 class RankingMetric(OmniMetric):
     """
     A specialized metric class for ranking tasks and evaluation.
-    
+
     This class provides access to ranking-specific metrics from scikit-learn
     and handles different input formats including HuggingFace trainer outputs.
     It dynamically wraps scikit-learn metrics and provides a unified interface
     for computing various ranking evaluation metrics.
-    
+
     Attributes:
         metric_func: Custom metric function if provided
         ignore_y: Value to ignore in predictions and true values
-        
+
     Example:
         >>> from omnigenome.src.metric import RankingMetric
         >>> metric = RankingMetric(ignore_y=-100)
@@ -43,7 +43,7 @@ class RankingMetric(OmniMetric):
     def __init__(self, *args, **kwargs):
         """
         Initialize the RankingMetric class.
-        
+
         Args:
             *args: Additional positional arguments passed to parent class
             **kwargs: Additional keyword arguments passed to parent class
@@ -53,17 +53,17 @@ class RankingMetric(OmniMetric):
     def __getattr__(self, name):
         """
         Dynamically create ranking metric computation methods.
-        
+
         This method intercepts attribute access and creates wrapper functions
         for scikit-learn ranking metrics, handling different input formats and
         preprocessing the data appropriately.
-        
+
         Args:
             name (str): Name of the ranking metric to access
-            
+
         Returns:
             callable: Wrapper function for the requested ranking metric
-            
+
         Raises:
             AttributeError: If the requested metric is not found
         """
@@ -74,17 +74,17 @@ class RankingMetric(OmniMetric):
             def wrapper(y_true=None, y_score=None, *args, **kwargs):
                 """
                 Compute the ranking metric, based on the true and predicted values.
-                
+
                 This wrapper handles different input formats including HuggingFace
                 trainer outputs and performs necessary preprocessing for ranking tasks.
-                
+
                 Args:
                     y_true: The true values or HuggingFace EvalPrediction object
                     y_score: The predicted values (scores for ranking)
                     ignore_y: The value to ignore in the predictions and true values in corresponding positions
                     *args: Additional positional arguments for the metric
                     **kwargs: Additional keyword arguments for the metric
-                    
+
                 Returns:
                     dict: Dictionary containing the metric name and computed value
                 """
@@ -121,19 +121,19 @@ class RankingMetric(OmniMetric):
     def compute(self, y_true, y_score, *args, **kwargs):
         """
         Compute the ranking metric, based on the true and predicted values.
-        
+
         This method should be implemented by subclasses to provide specific
         ranking metric computation logic.
-        
+
         Args:
             y_true: The true values
             y_score: The predicted values (scores for ranking)
             *args: Additional positional arguments for the metric
             **kwargs: Additional keyword arguments for the metric
-            
+
         Returns:
             The computed ranking metric value
-            
+
         Raises:
             NotImplementedError: If compute method is not implemented in the child class
         """

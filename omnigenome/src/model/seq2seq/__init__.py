@@ -9,4 +9,3 @@
 """
 This package contains modules for sequence-to-sequence models.
 """
-

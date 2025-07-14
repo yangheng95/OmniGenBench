@@ -47,14 +47,14 @@ def count_parameters(model):
 class OmniModel(torch.nn.Module):
     """
     Abstract base class for all models in OmniGenome.
-    
+
     This class provides a unified interface for all genomic models in the OmniGenome
     framework. It handles model initialization, forward passes, loss computation,
     prediction, inference, and model persistence.
-    
+
     The class is designed to work with various types of genomic data and tasks,
     including sequence classification, token classification, regression, and more.
-    
+
     Attributes:
         model (torch.nn.Module): The underlying PyTorch model.
         config: The model configuration.
@@ -76,16 +76,16 @@ class OmniModel(torch.nn.Module):
         - From a configuration object
 
         Args:
-            config_or_model: A model configuration, a pre-trained model path (str), 
+            config_or_model: A model configuration, a pre-trained model path (str),
                            or a `torch.nn.Module` instance.
             tokenizer: The tokenizer associated with the model.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
                 - label2id (dict): Mapping from class labels to IDs.
                 - num_labels (int): The number of labels.
-                - trust_remote_code (bool): Whether to trust remote code when loading 
+                - trust_remote_code (bool): Whether to trust remote code when loading
                   from Hugging Face Hub. Defaults to True.
-                - ignore_mismatched_sizes (bool): Whether to ignore size mismatches 
+                - ignore_mismatched_sizes (bool): Whether to ignore size mismatches
                   when loading pre-trained weights. Defaults to False.
                 - dropout (float): Dropout rate. Defaults to 0.0.
 
@@ -97,7 +97,7 @@ class OmniModel(torch.nn.Module):
         Example:
             >>> # Initialize from a pre-trained model
             >>> model = OmniModelForSequenceClassification("model_path", tokenizer)
-            
+
             >>> # Initialize from a configuration
             >>> config = AutoConfig.from_pretrained("model_path")
             >>> model = OmniModelForSequenceClassification(config, tokenizer)
@@ -202,7 +202,9 @@ class OmniModel(torch.nn.Module):
             )
             self.config.num_labels = len(self.config.id2label)
 
-        assert len(self.config.label2id) == num_labels, f"Expected {num_labels} labels, but got {len(self.config.label2id)} in label2id dictionary."
+        assert (
+            len(self.config.label2id) == num_labels
+        ), f"Expected {num_labels} labels, but got {len(self.config.label2id)} in label2id dictionary."
 
         # The metadata of the model
         self.metadata = env_meta_info()
@@ -240,7 +242,7 @@ class OmniModel(torch.nn.Module):
         model architectures by mapping input parameters appropriately.
 
         Args:
-            **inputs: The inputs to the model, compatible with the base model's 
+            **inputs: The inputs to the model, compatible with the base model's
                      forward method. Typically includes 'input_ids', 'attention_mask',
                      and other model-specific parameters.
 
@@ -386,7 +388,7 @@ class OmniModel(torch.nn.Module):
         predictions for further processing.
 
         Args:
-            sequence_or_inputs: A sequence (str), list of sequences, or 
+            sequence_or_inputs: A sequence (str), list of sequences, or
                                tokenized inputs (dict/tuple).
             **kwargs: Additional arguments for tokenization and inference.
 
@@ -398,7 +400,7 @@ class OmniModel(torch.nn.Module):
         Example:
             >>> # Predict on a single sequence
             >>> outputs = model.predict("ATCGATCG")
-            
+
             >>> # Predict on multiple sequences
             >>> outputs = model.predict(["ATCGATCG", "GCTAGCTA"])
         """
@@ -416,7 +418,7 @@ class OmniModel(torch.nn.Module):
         to class labels or probabilities.
 
         Args:
-            sequence_or_inputs: A sequence (str), list of sequences, or 
+            sequence_or_inputs: A sequence (str), list of sequences, or
                                tokenized inputs (dict/tuple).
             **kwargs: Additional arguments for tokenization and inference.
 
@@ -429,7 +431,7 @@ class OmniModel(torch.nn.Module):
             >>> # Inference on a single sequence
             >>> results = model.inference("ATCGATCG")
             >>> print(results['predictions'])  # Class labels
-            
+
             >>> # Inference on multiple sequences
             >>> results = model.inference(["ATCGATCG", "GCTAGCTA"])
         """
@@ -686,4 +688,3 @@ class OmniModel(torch.nn.Module):
         info += f"Model Config: {self.config}\n"
         fprint(info)
         return info
-

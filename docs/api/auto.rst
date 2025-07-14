@@ -1,9 +1,9 @@
 Auto-Pipelines
 ==============
 
-This section documents the automated pipelines provided by OmniGenomeBench, which include AutoBench and AutoTrain. These tools are designed to streamline benchmarking and training workflows for genomic foundation models, making it easy for users to evaluate and train models with minimal manual setup.
+This section documents the automated pipelines provided by OmniGenBench, which include AutoBench and AutoTrain. These tools are designed to streamline benchmarking and training workflows for genomic foundation models, making it easy for users to evaluate and train models with minimal manual setup.
 
-OmniGenomeBench's auto-pipelines offer:
+OmniGenBench's auto-pipelines offer:
 - Automated benchmarking of genomic models using standardized protocols and datasets.
 - Automated training workflows with flexible configuration options.
 - Integration with model, dataset, and pipeline hubs for easy access to resources.

@@ -1,4 +1,4 @@
-# Test dependencies for OmniGenomeBench
+# Test dependencies for OmniGenBench
 # Install with: pip install -r requirements-test.txt
 
 # Core testing framework

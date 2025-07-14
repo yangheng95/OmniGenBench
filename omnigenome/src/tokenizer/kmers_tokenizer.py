@@ -16,18 +16,18 @@ warnings.filterwarnings("once")
 class OmniKmersTokenizer(OmniTokenizer):
     """
     A k-mer based tokenizer for genomic sequences.
-    
+
     This tokenizer breaks genomic sequences into overlapping k-mers and uses
     a base tokenizer to convert them into token IDs. It supports various
     k-mer sizes and overlap configurations for different genomic applications.
-    
+
     Attributes:
         base_tokenizer: The underlying tokenizer for converting k-mers to IDs
         k: Size of k-mers
         overlap: Number of overlapping positions between consecutive k-mers
         max_length: Maximum sequence length for tokenization
         metadata: Dictionary containing tokenizer metadata
-        
+
     Example:
         >>> from omnigenome.src.tokenizer import OmniKmersTokenizer
         >>> from transformers import AutoTokenizer
@@ -42,7 +42,7 @@ class OmniKmersTokenizer(OmniTokenizer):
     def __init__(self, base_tokenizer=None, k=3, overlap=0, max_length=512, **kwargs):
         """
         Initialize the OmniKmersTokenizer.
-        
+
         Args:
             base_tokenizer: The base tokenizer for converting k-mers to token IDs
             k (int, optional): Size of k-mers. Defaults to 3
@@ -59,18 +59,18 @@ class OmniKmersTokenizer(OmniTokenizer):
     def __call__(self, sequence, **kwargs):
         """
         Tokenize a sequence or list of sequences into tokenized inputs.
-        
+
         This method processes the input sequence(s) by first converting them to k-mers,
         then using the base tokenizer to convert k-mers to token IDs. It handles
         sequence preprocessing (U/T conversion) and adds special tokens.
-        
+
         Args:
             sequence (str or list): Input sequence(s) to tokenize
             **kwargs: Additional keyword arguments including max_length
-            
+
         Returns:
             dict: Dictionary containing tokenized inputs with keys 'input_ids' and 'attention_mask'
-            
+
         Example:
             >>> sequence = "ACGUAGGUAUCGUAGA"
             >>> tokenized = tokenizer(sequence)
@@ -126,14 +126,14 @@ class OmniKmersTokenizer(OmniTokenizer):
     def from_pretrained(model_name_or_path, **kwargs):
         """
         Create a k-mers tokenizer from a pre-trained model.
-        
+
         Args:
             model_name_or_path (str): Name or path of the pre-trained model
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             OmniKmersTokenizer: Initialized k-mers tokenizer
-            
+
         Example:
             >>> tokenizer = OmniKmersTokenizer.from_pretrained("facebook/esm2_t12_35M_UR50D")
             >>> print(type(tokenizer))
@@ -149,17 +149,17 @@ class OmniKmersTokenizer(OmniTokenizer):
     def tokenize(self, sequence, **kwargs):
         """
         Convert sequence(s) into k-mers.
-        
+
         This method breaks the input sequence(s) into overlapping k-mers based on
         the configured k-mer size and overlap parameters.
-        
+
         Args:
             sequence (str or list): Input sequence(s) to convert to k-mers
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             list: List of k-mer lists for each input sequence
-            
+
         Example:
             >>> sequence = "ACGUAGGUAUCGUAGA"
             >>> k_mers = tokenizer.tokenize(sequence)
@@ -184,11 +184,11 @@ class OmniKmersTokenizer(OmniTokenizer):
     def encode(self, input_ids, **kwargs):
         """
         Encode input IDs using the base tokenizer.
-        
+
         Args:
             input_ids: Input IDs to encode
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             Encoded input IDs
         """
@@ -197,11 +197,11 @@ class OmniKmersTokenizer(OmniTokenizer):
     def decode(self, input_ids, **kwargs):
         """
         Decode input IDs using the base tokenizer.
-        
+
         Args:
             input_ids: Input IDs to decode
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             Decoded sequence
         """
@@ -210,13 +210,13 @@ class OmniKmersTokenizer(OmniTokenizer):
     def encode_plus(self, sequence, **kwargs):
         """
         Encode a sequence with additional information.
-        
+
         This method is not yet implemented for k-mers tokenizer.
-        
+
         Args:
             sequence: Input sequence
             **kwargs: Additional keyword arguments
-            
+
         Raises:
             NotImplementedError: This method is not implemented yet
         """

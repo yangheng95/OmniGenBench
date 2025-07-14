@@ -23,21 +23,21 @@ from ..module_utils import OmniPooling
 class OmniModelForTokenRegression(OmniModel):
     """
     Token-level regression model for genomic sequences.
-    
+
     This model performs regression at the token level, predicting continuous values
     for each token in the input sequence. It's useful for tasks like predicting
     binding affinities, expression levels, or other continuous properties at each
     position in a genomic sequence.
-    
+
     Attributes:
         classifier: Linear layer for regression output
         loss_fn: Mean squared error loss function
     """
-    
+
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         """
         Initialize the token regression model.
-        
+
         Args:
             config_or_model: Model configuration or pre-trained model
             tokenizer: Tokenizer for processing input sequences
@@ -55,10 +55,10 @@ class OmniModelForTokenRegression(OmniModel):
     def forward(self, **inputs):
         """
         Forward pass for token-level regression.
-        
+
         Args:
             **inputs: Input tensors including input_ids, attention_mask, and labels
-            
+
         Returns:
             dict: Dictionary containing logits, last_hidden_state, and labels
         """
@@ -77,11 +77,11 @@ class OmniModelForTokenRegression(OmniModel):
     def predict(self, sequence_or_inputs, **kwargs):
         """
         Generate predictions for token-level regression.
-        
+
         Args:
             sequence_or_inputs: Input sequences or pre-processed inputs
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             dict: Dictionary containing predictions, logits, and last_hidden_state
         """
@@ -109,11 +109,11 @@ class OmniModelForTokenRegression(OmniModel):
     def inference(self, sequence_or_inputs, **kwargs):
         """
         Perform inference for token-level regression, excluding special tokens.
-        
+
         Args:
             sequence_or_inputs: Input sequences or pre-processed inputs
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             dict: Dictionary containing predictions, logits, and last_hidden_state
         """
@@ -148,11 +148,11 @@ class OmniModelForTokenRegression(OmniModel):
     def loss_function(self, logits, labels):
         """
         Compute the loss for token-level regression.
-        
+
         Args:
             logits (torch.Tensor): Model predictions
             labels (torch.Tensor): Ground truth labels
-            
+
         Returns:
             torch.Tensor: Computed loss value
         """
@@ -173,22 +173,22 @@ class OmniModelForTokenRegression(OmniModel):
 class OmniModelForSequenceRegression(OmniModel):
     """
     Sequence-level regression model for genomic sequences.
-    
+
     This model performs regression at the sequence level, predicting a single
     continuous value for the entire input sequence. It's useful for tasks like
     predicting overall expression levels, binding affinities, or other sequence-level
     properties.
-    
+
     Attributes:
         pooler: OmniPooling layer for sequence-level representation
         classifier: Linear layer for regression output
         loss_fn: Mean squared error loss function
     """
-    
+
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         """
         Initialize the sequence regression model.
-        
+
         Args:
             config_or_model: Model configuration or pre-trained model
             tokenizer: Tokenizer for processing input sequences
@@ -207,10 +207,10 @@ class OmniModelForSequenceRegression(OmniModel):
     def forward(self, **inputs):
         """
         Forward pass for sequence-level regression.
-        
+
         Args:
             **inputs: Input tensors including input_ids, attention_mask, and labels
-            
+
         Returns:
             dict: Dictionary containing logits, last_hidden_state, and labels
         """
@@ -230,11 +230,11 @@ class OmniModelForSequenceRegression(OmniModel):
     def predict(self, sequence_or_inputs, **kwargs):
         """
         Generate predictions for sequence-level regression.
-        
+
         Args:
             sequence_or_inputs: Input sequences or pre-processed inputs
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             dict: Dictionary containing predictions, logits, and last_hidden_state
         """
@@ -262,11 +262,11 @@ class OmniModelForSequenceRegression(OmniModel):
     def inference(self, sequence_or_inputs, **kwargs):
         """
         Perform inference for sequence-level regression.
-        
+
         Args:
             sequence_or_inputs: Input sequences or pre-processed inputs
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             dict: Dictionary containing predictions, logits, and last_hidden_state
         """
@@ -297,11 +297,11 @@ class OmniModelForSequenceRegression(OmniModel):
     def loss_function(self, logits, labels):
         """
         Compute the loss for sequence-level regression.
-        
+
         Args:
             logits (torch.Tensor): Model predictions
             labels (torch.Tensor): Ground truth labels
-            
+
         Returns:
             torch.Tensor: Computed loss value
         """
@@ -322,20 +322,20 @@ class OmniModelForSequenceRegression(OmniModel):
 class OmniModelForStructuralImputation(OmniModelForSequenceRegression):
     """
     Structural imputation model for genomic sequences.
-    
+
     This model is specialized for imputing missing structural information in
     genomic sequences. It extends the sequence regression model with additional
     embedding capabilities for structural features.
-    
+
     Attributes:
         embedding: Embedding layer for structural features
         loss_fn: Mean squared error loss function
     """
-    
+
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         """
         Initialize the structural imputation model.
-        
+
         Args:
             config_or_model: Model configuration or pre-trained model
             tokenizer: Tokenizer for processing input sequences
@@ -351,10 +351,10 @@ class OmniModelForStructuralImputation(OmniModelForSequenceRegression):
     def forward(self, **inputs):
         """
         Forward pass for structural imputation.
-        
+
         Args:
             **inputs: Input tensors including input_ids, attention_mask, and labels
-            
+
         Returns:
             dict: Dictionary containing logits, last_hidden_state, and labels
         """
@@ -372,21 +372,19 @@ class OmniModelForStructuralImputation(OmniModelForSequenceRegression):
         return outputs
 
 
-class OmniModelForTokenRegressionWith2DStructure(
-    OmniModelForTokenRegression
-):
+class OmniModelForTokenRegressionWith2DStructure(OmniModelForTokenRegression):
     """
     Token-level regression model with 2D structural information.
-    
+
     This model extends the basic token regression model to incorporate
     2D structural information, useful for RNA structure prediction
     and other structural genomics tasks.
     """
-    
+
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         """
         Initialize the 2D structure-aware token regression model.
-        
+
         Args:
             config_or_model: Model configuration or pre-trained model
             tokenizer: Tokenizer for processing input sequences
@@ -399,10 +397,10 @@ class OmniModelForTokenRegressionWith2DStructure(
     def forward(self, **inputs):
         """
         Forward pass for 2D structure-aware token regression.
-        
+
         Args:
             **inputs: Input tensors including input_ids, attention_mask, labels, and structural info
-            
+
         Returns:
             dict: Dictionary containing logits, last_hidden_state, and labels
         """
@@ -419,21 +417,19 @@ class OmniModelForTokenRegressionWith2DStructure(
         return outputs
 
 
-class OmniModelForSequenceRegressionWith2DStructure(
-    OmniModelForSequenceRegression
-):
+class OmniModelForSequenceRegressionWith2DStructure(OmniModelForSequenceRegression):
     """
     Sequence-level regression model with 2D structural information.
-    
+
     This model extends the basic sequence regression model to incorporate
     2D structural information, useful for RNA structure prediction
     and other structural genomics tasks.
     """
-    
+
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         """
         Initialize the 2D structure-aware sequence regression model.
-        
+
         Args:
             config_or_model: Model configuration or pre-trained model
             tokenizer: Tokenizer for processing input sequences
@@ -446,10 +442,10 @@ class OmniModelForSequenceRegressionWith2DStructure(
     def forward(self, **inputs):
         """
         Forward pass for 2D structure-aware sequence regression.
-        
+
         Args:
             **inputs: Input tensors including input_ids, attention_mask, labels, and structural info
-            
+
         Returns:
             dict: Dictionary containing logits, last_hidden_state, and labels
         """
@@ -470,21 +466,21 @@ class OmniModelForSequenceRegressionWith2DStructure(
 class OmniModelForMatrixRegression(OmniModel):
     """
     Matrix regression model for genomic sequences.
-    
+
     This model performs regression on matrix representations of genomic sequences,
     useful for tasks like contact map prediction, structure prediction, or other
     matrix-based genomic analysis tasks.
-    
+
     Attributes:
         resnet: ResNet backbone for processing matrix inputs
         classifier: Linear layer for regression output
         loss_fn: Mean squared error loss function
     """
-    
+
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         """
         Initialize the matrix regression model.
-        
+
         Args:
             config_or_model: Model configuration or pre-trained model
             tokenizer: Tokenizer for processing input sequences
@@ -501,22 +497,22 @@ class OmniModelForMatrixRegression(OmniModel):
     def forward(self, **inputs):
         """
         Forward pass for matrix regression.
-        
+
         Args:
             **inputs: Input tensors including matrix representations and labels
-            
+
         Returns:
             dict: Dictionary containing logits, last_hidden_state, and labels
         """
         labels = inputs.pop("labels", None)
         matrix_inputs = inputs.pop("matrix_inputs", None)
-        
+
         if matrix_inputs is None:
             raise ValueError("matrix_inputs is required for matrix regression")
-            
+
         outputs = self.resnet(matrix_inputs)
         logits = self.classifier(outputs)
-        
+
         outputs = {
             "logits": logits,
             "last_hidden_state": outputs,
@@ -527,11 +523,11 @@ class OmniModelForMatrixRegression(OmniModel):
     def predict(self, sequence_or_inputs, **kwargs):
         """
         Generate predictions for matrix regression.
-        
+
         Args:
             sequence_or_inputs: Input sequences or pre-processed inputs
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             dict: Dictionary containing predictions, logits, and last_hidden_state
         """
@@ -559,11 +555,11 @@ class OmniModelForMatrixRegression(OmniModel):
     def inference(self, sequence_or_inputs, **kwargs):
         """
         Perform inference for matrix regression.
-        
+
         Args:
             sequence_or_inputs: Input sequences or pre-processed inputs
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             dict: Dictionary containing predictions, logits, and last_hidden_state
         """
@@ -594,11 +590,11 @@ class OmniModelForMatrixRegression(OmniModel):
     def loss_function(self, logits, labels):
         """
         Compute the loss for matrix regression.
-        
+
         Args:
             logits (torch.Tensor): Model predictions
             labels (torch.Tensor): Ground truth labels
-            
+
         Returns:
             torch.Tensor: Computed loss value
         """
@@ -619,21 +615,21 @@ class OmniModelForMatrixRegression(OmniModel):
 class OmniModelForMatrixClassification(OmniModel):
     """
     Matrix classification model for genomic sequences.
-    
+
     This model performs classification on matrix representations of genomic sequences,
     useful for tasks like structure classification, contact map classification, or other
     matrix-based genomic analysis tasks.
-    
+
     Attributes:
         resnet: ResNet backbone for processing matrix inputs
         classifier: Linear layer for classification output
         loss_fn: Cross-entropy loss function
     """
-    
+
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         """
         Initialize the matrix classification model.
-        
+
         Args:
             config_or_model: Model configuration or pre-trained model
             tokenizer: Tokenizer for processing input sequences
@@ -650,26 +646,25 @@ class OmniModelForMatrixClassification(OmniModel):
         self.cnn = resnet_b16(channels=self.config.hidden_size, bbn=16)
         self.model_info()
 
-
     def forward(self, **inputs):
         """
         Forward pass for matrix classification.
-        
+
         Args:
             **inputs: Input tensors including matrix representations and labels
-            
+
         Returns:
             dict: Dictionary containing logits, last_hidden_state, and labels
         """
         labels = inputs.pop("labels", None)
         matrix_inputs = inputs.pop("matrix_inputs", None)
-        
+
         if matrix_inputs is None:
             raise ValueError("matrix_inputs is required for matrix classification")
-            
+
         outputs = self.resnet(matrix_inputs)
         logits = self.classifier(outputs)
-        
+
         outputs = {
             "logits": logits,
             "last_hidden_state": outputs,
@@ -680,11 +675,11 @@ class OmniModelForMatrixClassification(OmniModel):
     def predict(self, sequence_or_inputs, **kwargs):
         """
         Generate predictions for matrix classification.
-        
+
         Args:
             sequence_or_inputs: Input sequences or pre-processed inputs
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             dict: Dictionary containing predictions, logits, and last_hidden_state
         """
@@ -713,11 +708,11 @@ class OmniModelForMatrixClassification(OmniModel):
     def inference(self, sequence_or_inputs, **kwargs):
         """
         Perform inference for matrix classification.
-        
+
         Args:
             sequence_or_inputs: Input sequences or pre-processed inputs
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             dict: Dictionary containing predictions, logits, and last_hidden_state
         """
@@ -756,11 +751,11 @@ class OmniModelForMatrixClassification(OmniModel):
     def loss_function(self, logits, labels):
         """
         Compute the loss for matrix classification.
-        
+
         Args:
             logits (torch.Tensor): Model predictions
             labels (torch.Tensor): Ground truth labels
-            
+
         Returns:
             torch.Tensor: Computed loss value
         """

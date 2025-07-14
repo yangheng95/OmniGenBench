@@ -24,19 +24,19 @@ from ... import __version__ as omnigenome_version
 class HFTrainer(Trainer):
     """
     HuggingFace trainer wrapper for OmniGenome models.
-    
+
     This class extends the HuggingFace Trainer to include OmniGenome-specific
     metadata and functionality while maintaining full compatibility with the
     HuggingFace training ecosystem.
-    
+
     Attributes:
         metadata: Dictionary containing OmniGenome library information
     """
-    
+
     def __init__(self, *args, **kwargs):
         """
         Initialize the HuggingFace trainer wrapper.
-        
+
         Args:
             *args: Positional arguments passed to the parent Trainer
             **kwargs: Keyword arguments passed to the parent Trainer
@@ -51,19 +51,19 @@ class HFTrainer(Trainer):
 class HFTrainingArguments(TrainingArguments):
     """
     HuggingFace training arguments wrapper for OmniGenome models.
-    
+
     This class extends the HuggingFace TrainingArguments to include
     OmniGenome-specific metadata while maintaining full compatibility
     with the HuggingFace training ecosystem.
-    
+
     Attributes:
         metadata: Dictionary containing OmniGenome library information
     """
-    
+
     def __init__(self, *args, **kwargs):
         """
         Initialize the HuggingFace training arguments wrapper.
-        
+
         Args:
             *args: Positional arguments passed to the parent TrainingArguments
             **kwargs: Keyword arguments passed to the parent TrainingArguments

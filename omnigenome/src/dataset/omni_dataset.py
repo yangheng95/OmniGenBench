@@ -27,11 +27,11 @@ from ... import __name__, __version__
 class OmniDatasetForTokenClassification(OmniDataset):
     """
     Dataset class specifically designed for token classification tasks in genomics.
-    
+
     This class extends `OmniDataset` to provide functionalities for preparing input sequences
     and their corresponding token-level labels. It's designed for tasks where each token
     in a sequence needs to be classified independently.
-    
+
     Attributes:
         metadata: Dictionary containing dataset metadata including library information
         label2id: Mapping from label strings to integer IDs
@@ -68,7 +68,7 @@ class OmniDatasetForTokenClassification(OmniDataset):
     def prepare_input(self, instance, **kwargs):
         """
         Prepare a single data instance for token classification.
-        
+
         This method handles both string sequences and dictionary instances
         containing sequence and label information. It tokenizes the input
         sequence and prepares token-level labels for classification.
@@ -138,11 +138,11 @@ class OmniDatasetForTokenClassification(OmniDataset):
 class OmniDatasetForSequenceClassification(OmniDataset):
     """
     Dataset class for sequence classification tasks in genomics.
-    
+
     This class extends `OmniDataset` to prepare input sequences and their corresponding
     sequence-level labels. It's designed for tasks where the entire sequence needs
     to be classified into one of several categories.
-    
+
     Attributes:
         metadata: Dictionary containing dataset metadata including library information
         label2id: Mapping from label strings to integer IDs
@@ -179,7 +179,7 @@ class OmniDatasetForSequenceClassification(OmniDataset):
     def prepare_input(self, instance, **kwargs):
         """
         Prepare a single data instance for sequence classification.
-        
+
         This method handles both string sequences and dictionary instances
         containing sequence and label information. It tokenizes the input
         sequence and prepares sequence-level labels for classification.
@@ -238,11 +238,11 @@ class OmniDatasetForSequenceClassification(OmniDataset):
 class OmniDatasetForTokenRegression(OmniDataset):
     """
     Dataset class for token regression tasks in genomics.
-    
+
     This class extends `OmniDataset` to prepare input sequences and their corresponding
     token-level regression targets. It's designed for tasks where each token in a
     sequence needs to be assigned a continuous value.
-    
+
     Attributes:
         metadata: Dictionary containing dataset metadata including library information
     """
@@ -278,7 +278,7 @@ class OmniDatasetForTokenRegression(OmniDataset):
     def prepare_input(self, instance, **kwargs):
         """
         Prepare a single data instance for token regression.
-        
+
         This method handles both string sequences and dictionary instances
         containing sequence and regression target information. It tokenizes
         the input sequence and prepares token-level regression targets.
@@ -330,7 +330,9 @@ class OmniDatasetForTokenRegression(OmniDataset):
             # Handle token-level regression labels
             if isinstance(labels, (list, tuple)):
                 # Ensure labels match sequence length
-                labels = list(labels)[:self.max_length - 2]  # Account for special tokens
+                labels = list(labels)[
+                    : self.max_length - 2
+                ]  # Account for special tokens
                 labels = [-100] + labels + [-100]  # Add padding for special tokens
             else:
                 # Single value for the entire sequence
@@ -343,11 +345,11 @@ class OmniDatasetForTokenRegression(OmniDataset):
 class OmniDatasetForSequenceRegression(OmniDataset):
     """
     Dataset class for sequence regression tasks in genomics.
-    
+
     This class extends `OmniDataset` to prepare input sequences and their corresponding
     sequence-level regression targets. It's designed for tasks where the entire
     sequence needs to be assigned a continuous value.
-    
+
     Attributes:
         metadata: Dictionary containing dataset metadata including library information
     """
@@ -383,7 +385,7 @@ class OmniDatasetForSequenceRegression(OmniDataset):
     def prepare_input(self, instance, **kwargs):
         """
         Prepare a single data instance for sequence regression.
-        
+
         This method handles both string sequences and dictionary instances
         containing sequence and regression target information. It tokenizes
         the input sequence and prepares sequence-level regression targets.

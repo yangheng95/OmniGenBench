@@ -17,9 +17,10 @@ import torch
 
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 import ViennaRNA
 from scipy.spatial.distance import hamming
+import warnings
 
 def random_bp_span(bp_span):
     # bp = random.choices([bp_span, bp_span - random.randint(0, 20)], k=1)[0]
@@ -268,11 +269,55 @@ def non_dominated_sorting(scores, mfe_values):
 
 
 def evaluate_structure_fitness(sequences, structure):
-
+    """
+    Evaluate the fitness of RNA sequences by comparing their predicted structures with the target structure.
+    
+    Args:
+        sequences (list): List of (sequence, bp_span) tuples to evaluate
+        structure (str): Target RNA structure
+        
+    Returns:
+        list: Sorted population with fitness scores and MFE values
+    """
     structures_mfe = []
-    with ProcessPoolExecutor() as executor:
-        for sequence, bp_span in sequences:
-            structures_mfe += list(executor.map(predict_structure_single, [sequence], [bp_span]))
+    
+    # Use multiprocessing for structure prediction
+    try:
+        # Determine number of workers
+        max_workers = min(os.cpu_count(), len(sequences), 8)  # Limit to 8 workers
+        
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all tasks
+            future_to_seq = {
+                executor.submit(predict_structure_single, seq, bp_span): (seq, bp_span)
+                for seq, bp_span in sequences
+            }
+            
+            # Collect results in order
+            results = []
+            for future in as_completed(future_to_seq):
+                try:
+                    result = future.result()
+                    results.append(result)
+                except Exception as e:
+                    seq, bp_span = future_to_seq[future]
+                    warnings.warn(f"Failed to process sequence {seq}: {e}")
+                    # Fallback to dot structure
+                    results.append(("." * len(seq), 0.0))
+            
+            structures_mfe = results
+            
+    except Exception as e:
+        warnings.warn(f"Parallel processing failed, falling back to sequential: {e}")
+        # Fallback to sequential processing
+        for seq, bp_span in sequences:
+            try:
+                result = predict_structure_single(seq, bp_span)
+                structures_mfe.append(result)
+            except Exception as e:
+                warnings.warn(f"Failed to fold sequence {seq}: {e}")
+                structures_mfe.append(("." * len(seq), 0.0))
+    
     mfe_values = []
     sorted_population = []
     for (seq, bp_span), (ss, mfe) in zip(sequences, structures_mfe):
@@ -280,21 +325,15 @@ def evaluate_structure_fitness(sequences, structure):
         score = hamming(list(structure), list(ss))
         sorted_population.append((seq, bp_span, score, mfe))
 
-    # sorted_population = sorted(sorted_population, key=lambda x: x[3])[:2*len(sequences)]
-    # sorted_population = sorted(sorted_population, key=lambda x: x[2])[:len(sequences)]
-
     # Perform non-dominated sorting
     fronts = non_dominated_sorting(
         [x[2] for x in sorted_population],
         [x[3] for x in sorted_population],
     )
-    # print(structure)
 
     sorted_population = select_next_generation(sorted_population, fronts)
     sorted_population = sorted(sorted_population, key=lambda x: x[2])
 
-    # print(np.mean([x[1] for x in sorted_population]))
-    # print(np.mean([x[2] for x in sorted_population]))
     return sorted_population
 
 

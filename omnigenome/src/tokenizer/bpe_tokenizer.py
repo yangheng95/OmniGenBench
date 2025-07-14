@@ -17,17 +17,17 @@ warnings.filterwarnings("once")
 def is_bpe_tokenization(tokens, threshold=0.1):
     """
     Check if the tokenization is BPE-based by analyzing token characteristics.
-    
+
     This function examines the tokens to determine if they follow BPE tokenization
     patterns by analyzing token length distributions and special token patterns.
-    
+
     Args:
         tokens (list): List of tokens to analyze
         threshold (float, optional): Threshold for determining BPE tokenization. Defaults to 0.1
-        
+
     Returns:
         bool: True if tokens appear to be BPE-based, False otherwise
-        
+
     Example:
         >>> tokens = ["▁hello", "▁world", "▁how", "▁are", "▁you"]
         >>> is_bpe = is_bpe_tokenization(tokens)
@@ -52,15 +52,15 @@ def is_bpe_tokenization(tokens, threshold=0.1):
 class OmniBPETokenizer(OmniTokenizer):
     """
     A Byte Pair Encoding (BPE) tokenizer for genomic sequences.
-    
+
     This tokenizer uses BPE tokenization for genomic sequences and provides
     validation to ensure the base tokenizer is BPE-based. It supports sequence
     preprocessing and handles various input formats.
-    
+
     Attributes:
         base_tokenizer: The underlying BPE tokenizer
         metadata: Dictionary containing tokenizer metadata
-        
+
     Example:
         >>> from omnigenome.src.tokenizer import OmniBPETokenizer
         >>> from transformers import AutoTokenizer
@@ -75,7 +75,7 @@ class OmniBPETokenizer(OmniTokenizer):
     def __init__(self, base_tokenizer=None, **kwargs):
         """
         Initialize the OmniBPETokenizer.
-        
+
         Args:
             base_tokenizer: The base BPE tokenizer
             **kwargs: Additional keyword arguments passed to parent class
@@ -86,21 +86,21 @@ class OmniBPETokenizer(OmniTokenizer):
     def __call__(self, sequence, **kwargs):
         """
         Tokenize a sequence using BPE tokenization.
-        
+
         This method processes the input sequence using BPE tokenization,
         handles sequence preprocessing (U/T conversion, whitespace addition),
         and validates that the tokenization is BPE-based.
-        
+
         Args:
             sequence (str): Input sequence to tokenize
             **kwargs: Additional keyword arguments including max_length
-            
+
         Returns:
             dict: Dictionary containing tokenized inputs with keys 'input_ids' and 'attention_mask'
-            
+
         Raises:
             ValueError: If the tokenizer is not BPE-based
-            
+
         Example:
             >>> sequence = "ACGUAGGUAUCGUAGA"
             >>> tokenized = tokenizer(sequence)
@@ -136,14 +136,14 @@ class OmniBPETokenizer(OmniTokenizer):
     def from_pretrained(model_name_or_path, **kwargs):
         """
         Create a BPE tokenizer from a pre-trained model.
-        
+
         Args:
             model_name_or_path (str): Name or path of the pre-trained model
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             OmniBPETokenizer: Initialized BPE tokenizer
-            
+
         Example:
             >>> tokenizer = OmniBPETokenizer.from_pretrained("facebook/esm2_t12_35M_UR50D")
             >>> print(type(tokenizer))
@@ -159,14 +159,14 @@ class OmniBPETokenizer(OmniTokenizer):
     def tokenize(self, sequence, **kwargs):
         """
         Tokenize a sequence using the base BPE tokenizer.
-        
+
         Args:
             sequence (str): Input sequence to tokenize
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             list: List of tokens
-            
+
         Example:
             >>> sequence = "ACGUAGGUAUCGUAGA"
             >>> tokens = tokenizer.tokenize(sequence)
@@ -178,17 +178,17 @@ class OmniBPETokenizer(OmniTokenizer):
     def encode(self, sequence, **kwargs):
         """
         Encode a sequence using the base BPE tokenizer.
-        
+
         Args:
             sequence (str): Input sequence to encode
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             list: List of token IDs
-            
+
         Raises:
             AssertionError: If the base tokenizer is not BPE-based
-            
+
         Example:
             >>> sequence = "ACGUAGGUAUCGUAGA"
             >>> token_ids = tokenizer.encode(sequence)
@@ -203,17 +203,17 @@ class OmniBPETokenizer(OmniTokenizer):
     def decode(self, sequence, **kwargs):
         """
         Decode a sequence using the base BPE tokenizer.
-        
+
         Args:
             sequence: Input sequence to decode (can be token IDs or tokens)
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             str: Decoded sequence
-            
+
         Raises:
             AssertionError: If the base tokenizer is not BPE-based
-            
+
         Example:
             >>> token_ids = [1, 2, 3, 4, 5]
             >>> sequence = tokenizer.decode(token_ids)

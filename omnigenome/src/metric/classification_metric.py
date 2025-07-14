@@ -19,17 +19,17 @@ from ..abc.abstract_metric import OmniMetric
 class ClassificationMetric(OmniMetric):
     """
     Classification metric class for evaluating classification models.
-    
+
     This class provides a comprehensive interface for classification metrics
     in the OmniGenome framework. It integrates with scikit-learn's classification
     metrics and provides additional functionality for handling genomic classification
     tasks.
-    
+
     The class automatically exposes all scikit-learn classification metrics as
     callable attributes, making them easily accessible for evaluation. It also
     handles special cases like Hugging Face's EvalPrediction objects and
     provides proper handling of ignored labels.
-    
+
     Attributes:
         metric_func (callable): A callable metric function from sklearn.metrics.
         ignore_y (any): A value in the ground truth labels to be ignored during
@@ -42,10 +42,10 @@ class ClassificationMetric(OmniMetric):
         Initializes the classification metric.
 
         Args:
-            metric_func (callable, optional): A callable metric function from 
+            metric_func (callable, optional): A callable metric function from
                                             sklearn.metrics. If None, subclasses
                                             should implement their own compute method.
-            ignore_y (any, optional): A value in the ground truth labels to be 
+            ignore_y (any, optional): A value in the ground truth labels to be
                                     ignored during metric computation. Defaults to -100.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
@@ -53,7 +53,7 @@ class ClassificationMetric(OmniMetric):
         Example:
             >>> # Initialize with a specific metric function
             >>> metric = ClassificationMetric(metrics.accuracy_score)
-            
+
             >>> # Initialize with ignore value
             >>> metric = ClassificationMetric(ignore_y=-100)
         """
@@ -64,7 +64,7 @@ class ClassificationMetric(OmniMetric):
     def __getattribute__(self, name):
         """
         Custom attribute getter that provides dynamic access to scikit-learn metrics.
-        
+
         This method provides transparent access to all scikit-learn classification
         metrics. When a metric function is accessed, it returns a callable wrapper
         that handles the metric computation with proper preprocessing.
@@ -91,7 +91,7 @@ class ClassificationMetric(OmniMetric):
             def wrapper(y_true=None, y_pred=None, *args, **kwargs):
                 """
                 Compute the metric, based on the true and predicted values.
-                
+
                 This wrapper function handles various input formats including
                 Hugging Face's EvalPrediction objects and provides proper
                 preprocessing for metric computation.
@@ -99,7 +99,7 @@ class ClassificationMetric(OmniMetric):
                 Args:
                     y_true: The true values (ground truth labels).
                     y_pred: The predicted values (model predictions).
-                    ignore_y: The value to ignore in the predictions and true 
+                    ignore_y: The value to ignore in the predictions and true
                              values in corresponding positions.
                     *args: Additional positional arguments for the metric function.
                     **kwargs: Additional keyword arguments for the metric function.
@@ -111,7 +111,7 @@ class ClassificationMetric(OmniMetric):
                     >>> # Standard usage
                     >>> result = accuracy_fn(y_true, y_pred)
                     >>> print(result)  # {'accuracy_score': 0.85}
-                    
+
                     >>> # With Hugging Face EvalPrediction
                     >>> result = accuracy_fn(eval_prediction)
                     >>> print(result)  # {'accuracy_score': 0.85}
@@ -152,7 +152,7 @@ class ClassificationMetric(OmniMetric):
     def compute(self, y_true, y_pred, *args, **kwargs):
         """
         Compute the metric, based on the true and predicted values.
-        
+
         This method computes the classification metric using the provided
         metric function. It handles preprocessing and applies any additional
         keyword arguments.

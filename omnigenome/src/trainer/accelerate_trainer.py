@@ -21,15 +21,15 @@ from ..misc.utils import env_meta_info, fprint, seed_everything
 def _infer_optimization_direction(metrics, prev_metrics):
     """
     Infer the optimization direction based on metric values.
-    
+
     This function analyzes the trend of metric values to determine whether
     larger values are better (e.g., accuracy) or smaller values are better
     (e.g., loss).
-    
+
     Args:
         metrics (dict): Current metric values
         prev_metrics (list): Previous metric values
-        
+
     Returns:
         str: Either 'larger_is_better' or 'smaller_is_better'
     """
@@ -91,11 +91,11 @@ def _infer_optimization_direction(metrics, prev_metrics):
 class AccelerateTrainer:
     """
     A distributed training trainer using HuggingFace Accelerate.
-    
+
     This trainer provides distributed training capabilities with automatic mixed precision,
     gradient accumulation, and early stopping. It supports both single and multi-GPU
     training with seamless integration with HuggingFace Accelerate.
-    
+
     Attributes:
         model: The model to train
         train_loader: DataLoader for training data
@@ -110,7 +110,7 @@ class AccelerateTrainer:
         accelerator: HuggingFace Accelerate instance
         metrics: Dictionary to store training metrics
         predictions: Dictionary to store predictions
-        
+
     Example:
         >>> from omnigenome.src.trainer import AccelerateTrainer
         >>> trainer = AccelerateTrainer(
@@ -143,7 +143,7 @@ class AccelerateTrainer:
     ):
         """
         Initialize the AccelerateTrainer.
-        
+
         Args:
             model: The model to train
             train_dataset (torch.utils.data.Dataset, optional): Training dataset
@@ -293,14 +293,14 @@ class AccelerateTrainer:
     def evaluate(self):
         """
         Evaluate the model on the validation dataset.
-        
+
         This method runs the model in evaluation mode and computes metrics
         on the validation dataset. It handles distributed evaluation and
         gathers results from all processes.
-        
+
         Returns:
             dict: Dictionary containing evaluation metrics
-            
+
         Example:
             >>> metrics = trainer.evaluate()
             >>> print(f"Validation accuracy: {metrics['accuracy']:.4f}")
@@ -364,14 +364,14 @@ class AccelerateTrainer:
     def test(self):
         """
         Test the model on the test dataset.
-        
+
         This method runs the model in evaluation mode and computes metrics
         on the test dataset. It handles distributed testing and gathers
         results from all processes.
-        
+
         Returns:
             dict: Dictionary containing test metrics
-            
+
         Example:
             >>> metrics = trainer.test()
             >>> print(f"Test accuracy: {metrics['accuracy']:.4f}")
@@ -431,18 +431,18 @@ class AccelerateTrainer:
     def train(self, path_to_save=None, **kwargs):
         """
         Train the model using distributed training.
-        
+
         This method performs the complete training loop with validation,
         early stopping, and model checkpointing. It handles distributed
         training across multiple GPUs and processes.
-        
+
         Args:
             path_to_save (str, optional): Path to save the trained model
             **kwargs: Additional keyword arguments for model saving
-            
+
         Returns:
             dict: Dictionary containing training metrics
-            
+
         Example:
             >>> metrics = trainer.train(path_to_save="./checkpoints/model")
             >>> print(f"Best validation accuracy: {metrics['best_valid']['accuracy']:.4f}")
@@ -489,12 +489,20 @@ class AccelerateTrainer:
                 if "loss" not in outputs:
                     # Generally, the model should return a loss in the outputs via OmniGenBench
                     # For the Lora models, the loss is computed separately
-                    if hasattr(self.model, "loss_function") and callable(self.model.loss_function):
-                        loss = self.model.loss_function(outputs['logits'], outputs["labels"])
-                    elif (hasattr(self.model, "model")
-                          and hasattr(self.model.model, "loss_function")
-                          and callable(self.model.model.loss_function)):
-                        loss = self.model.model.loss_function(outputs['logits'], outputs["labels"])
+                    if hasattr(self.model, "loss_function") and callable(
+                        self.model.loss_function
+                    ):
+                        loss = self.model.loss_function(
+                            outputs["logits"], outputs["labels"]
+                        )
+                    elif (
+                        hasattr(self.model, "model")
+                        and hasattr(self.model.model, "loss_function")
+                        and callable(self.model.model.loss_function)
+                    ):
+                        loss = self.model.model.loss_function(
+                            outputs["logits"], outputs["labels"]
+                        )
                     else:
                         raise ValueError(
                             "The model does not have a loss function defined. "
@@ -585,11 +593,11 @@ class AccelerateTrainer:
     def _is_metric_better(self, metrics, stage="valid"):
         """
         Check if the current metrics are better than the best metrics so far.
-        
+
         Args:
             metrics (dict): Current metrics
             stage (str): Stage of evaluation ('valid' or 'test')
-            
+
         Returns:
             bool: True if current metrics are better, False otherwise
         """
@@ -643,10 +651,10 @@ class AccelerateTrainer:
     def predict(self, data_loader):
         """
         Make predictions using the trained model.
-        
+
         Args:
             data_loader: DataLoader containing data to predict on
-            
+
         Returns:
             dict: Dictionary containing predictions
         """
@@ -655,10 +663,10 @@ class AccelerateTrainer:
     def get_model(self, **kwargs):
         """
         Get the trained model.
-        
+
         Args:
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             The trained model
         """
@@ -667,10 +675,10 @@ class AccelerateTrainer:
     def compute_metrics(self):
         """
         Compute metrics for evaluation.
-        
+
         This method should be implemented by subclasses to provide specific
         metric computation logic.
-        
+
         Raises:
             NotImplementedError: If compute_metrics method is not implemented
         """
@@ -682,7 +690,7 @@ class AccelerateTrainer:
     def save_model(self, path, overwrite=False, **kwargs):
         """
         Save the trained model.
-        
+
         Args:
             path (str): Path to save the model
             overwrite (bool, optional): Whether to overwrite existing files. Defaults to False

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# file: setup.py
+# file: setup_omnigenome.py
 # time: 14:54 06/04/2024
 # author: YANG, HENG <hy345@exeter.ac.uk> (杨恒)
 # github: https://github.com/yangheng95
@@ -21,8 +21,6 @@ extras = {
     ]
 }
 
-# This is the main setup.py - it will build omnigenome by default
-# Use setup_omnigenome.py and setup_omnigenbench.py for separate builds
 setup(
     name="omnigenome",
     version=__version__,

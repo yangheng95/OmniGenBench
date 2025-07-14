@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# file: setup.py
+# file: setup_omnigenbench.py
 # time: 14:54 06/04/2024
 # author: YANG, HENG <hy345@exeter.ac.uk> (杨恒)
 # github: https://github.com/yangheng95
@@ -21,12 +21,10 @@ extras = {
     ]
 }
 
-# This is the main setup.py - it will build omnigenome by default
-# Use setup_omnigenome.py and setup_omnigenbench.py for separate builds
 setup(
-    name="omnigenome",
+    name="omnigenbench",
     version=__version__,
-    description="OmniGenome: A comprehensive toolkit for genome analysis.",
+    description="OmniGenBench: A comprehensive toolkit for genome analysis benchmarking.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/yangheng95/OmniGenBench",
@@ -37,29 +35,15 @@ setup(
     include_package_data=True,
     exclude_package_data={"": [".gitignore"]},
     license="Apache-2.0",
-    packages=find_packages(include=["omnigenome", "omnigenome.*"]),
+    packages=find_packages(include=["omnigenbench", "omnigenbench.*"]),
     entry_points={
         "console_scripts": [
-            "autobench=omnigenome:run_bench",
-            "autotrain=omnigenome:run_train",
+            "omnigenbench=omnigenbench:run_bench",
+            "omnigenbench-train=omnigenbench:run_train",
         ],
     },
     install_requires=[
-        "findfile>=2.0.0",
-        "autocuda>=0.16",
-        "metric-visualizer>=0.9.6",
-        "termcolor",
-        "gitpython",
-        "torch>=2.6.0",
-        "pandas",
-        "viennarna",
-        "scikit-learn",
-        "accelerate",
-        "transformers>=4.46.0",
-        "packaging",
-        "peft",
-        "dill",
-        "accelerate"
+        "omnigenome>=0.3.0alpha1",  # Depend on the main package
     ],
     extras_require=extras,
     classifiers=[

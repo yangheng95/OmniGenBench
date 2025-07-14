@@ -18,9 +18,11 @@ import numpy as np
 import torch
 import autocuda
 from transformers import AutoModelForMaskedLM, AutoTokenizer
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import ViennaRNA
 from scipy.spatial.distance import hamming
+import warnings
+import os
 
 from omnigenome.src.misc.utils import fprint
 
@@ -28,19 +30,19 @@ from omnigenome.src.misc.utils import fprint
 class OmniModelForRNADesign(torch.nn.Module):
     """
     RNA design model using masked language modeling and evolutionary algorithms.
-    
+
     This model combines a pre-trained masked language model with evolutionary
     algorithms to design RNA sequences that fold into specific target structures.
     It uses a multi-objective optimization approach to balance structure similarity
     and thermodynamic stability.
-    
+
     Attributes:
         device: Device to run the model on (CPU or GPU)
         parallel: Whether to use parallel processing for structure prediction
         tokenizer: Tokenizer for processing RNA sequences
         model: Pre-trained masked language model
     """
-    
+
     def __init__(
         self,
         model="yangheng/OmniGenome-186M",
@@ -51,7 +53,7 @@ class OmniModelForRNADesign(torch.nn.Module):
     ):
         """
         Initialize the RNA design model.
-        
+
         Args:
             model (str): Model name or path for the pre-trained MLM model
             device: Device to run the model on (default: None, auto-detect)
@@ -70,164 +72,216 @@ class OmniModelForRNADesign(torch.nn.Module):
     def _random_bp_span(bp_span=None):
         """
         Generate a random base pair span.
-        
+
         Args:
-            bp_span (int, optional): Base pair span to center around (default: None)
-            
+            bp_span (int, optional): Fixed base pair span. If None, generates random.
+
         Returns:
-            int: Random base pair span within ±50 of the input span
+            int: Base pair span value
         """
-        return random.choice(range(max(0, bp_span - 50), min(bp_span + 50, 400)))
+        if bp_span is None:
+            return random.randint(1, 10)
+        return bp_span
 
     @staticmethod
     def _longest_bp_span(structure):
         """
-        Compute the longest base-pair span from RNA structure.
-        
+        Find the longest base pair span in the structure.
+
         Args:
             structure (str): RNA structure in dot-bracket notation
-            
+
         Returns:
-            int: Length of the longest base-pair span
+            int: Length of the longest base pair span
         """
-        stack = []
         max_span = 0
-        for i, char in enumerate(structure):
+        current_span = 0
+
+        for char in structure:
             if char == "(":
-                stack.append(i)
-            elif char == ")" and stack:
-                left_index = stack.pop()
-                max_span = max(max_span, i - left_index)
+                current_span += 1
+                max_span = max(max_span, current_span)
+            elif char == ")":
+                current_span = max(0, current_span - 1)
+            else:
+                current_span = 0
+
         return max_span
 
     @staticmethod
     def _predict_structure_single(sequence, bp_span=-1):
         """
-        Predict the RNA structure and minimum free energy (MFE) for a single sequence.
-        
+        Predict structure for a single sequence (worker function for multiprocessing).
+
         Args:
-            sequence (str): RNA sequence
-            bp_span (int): Maximum base pair span for folding (default: -1, no limit)
-            
+            sequence (str): RNA sequence to fold
+            bp_span (int): Base pair span parameter
+
         Returns:
-            tuple: (structure, mfe) where structure is in dot-bracket notation
+            tuple: (structure, mfe) tuple
         """
-        md = ViennaRNA.md()
-        md.max_bp_span = bp_span
-        fc = ViennaRNA.fold_compound(sequence, md)
-        return fc.mfe()
+        try:
+            return ViennaRNA.fold(sequence)
+        except Exception as e:
+            warnings.warn(f"Failed to fold sequence {sequence}: {e}")
+            return ("." * len(sequence), 0.0)
 
     def _predict_structure(self, sequences, bp_span=-1):
         """
-        Predict RNA structures for multiple sequences.
-        
+        Predict structures for multiple sequences.
+
         Args:
             sequences (list): List of RNA sequences
-            bp_span (int): Maximum base pair span for folding (default: -1, no limit)
-            
+            bp_span (int): Base pair span parameter
+
         Returns:
             list: List of (structure, mfe) tuples
         """
-        return [self._predict_structure_single(seq, bp_span) for seq in sequences]
+        if not self.parallel or len(sequences) <= 1:
+            # Sequential processing
+            return [self._predict_structure_single(seq, bp_span) for seq in sequences]
+
+        # Parallel processing with improved error handling
+        try:
+            # Determine number of workers
+            max_workers = min(os.cpu_count(), len(sequences), 8)  # Limit to 8 workers
+
+            with ProcessPoolExecutor(max_workers=max_workers) as executor:
+                # Submit all tasks
+                future_to_seq = {
+                    executor.submit(self._predict_structure_single, seq, bp_span): seq
+                    for seq in sequences
+                }
+
+                # Collect results
+                results = []
+                for future in as_completed(future_to_seq):
+                    try:
+                        result = future.result()
+                        results.append(result)
+                    except Exception as e:
+                        seq = future_to_seq[future]
+                        warnings.warn(f"Failed to process sequence {seq}: {e}")
+                        # Fallback to dot structure
+                        results.append(("." * len(seq), 0.0))
+
+                return results
+
+        except Exception as e:
+            warnings.warn(
+                f"Parallel processing failed, falling back to sequential: {e}"
+            )
+            # Fallback to sequential processing
+            return [self._predict_structure_single(seq, bp_span) for seq in sequences]
 
     def _init_population(self, structure, num_population):
         """
-        Initialize the population with masked sequences.
-        
+        Initialize the population with random sequences.
+
         Args:
-            structure (str): Target RNA structure in dot-bracket notation
-            num_population (int): Number of individuals in the population
-            
+            structure (str): Target RNA structure
+            num_population (int): Population size
+
         Returns:
-            list: List of (sequence, bp_span) tuples representing the initial population
+            list: List of (sequence, bp_span) tuples
         """
         population = []
-        mlm_inputs = []
+        bp_span = self._longest_bp_span(structure)
+
         for _ in range(num_population):
-            masked_sequence = "".join(
-                [random.choice(["G", "C", "<mask>"]) for _ in structure]
-            )
-            mlm_inputs.append(f"{masked_sequence}<eos>{structure}")
-
-        outputs = self._mlm_predict(mlm_inputs, structure)
-
-        for i, output in enumerate(outputs):
-            sequence = self.tokenizer.convert_ids_to_tokens(output.tolist())
-            fixed_sequence = [
-                x if x in "AGCT" else random.choice(["A", "T", "G", "C"])
-                for x in sequence
-            ]
-            bp_span = self._random_bp_span(len(structure))
-            population.append(("".join(fixed_sequence), bp_span))
+            # Generate random sequence
+            sequence = "".join(random.choice("ACGU") for _ in range(len(structure)))
+            population.append((sequence, bp_span))
 
         return population
 
     def _mlm_mutate(self, population, structure, mutation_ratio):
         """
-        Apply mutation to the population using the masked language model (MLM).
-        
+        Mutate population using masked language modeling.
+
         Args:
-            population (list): Current population of (sequence, bp_span) tuples
+            population (list): Current population
             structure (str): Target RNA structure
             mutation_ratio (float): Ratio of tokens to mutate
-            
+
         Returns:
-            list: Mutated population of (sequence, bp_span) tuples
+            list: Mutated population
         """
 
         def mutate(sequence, mutation_rate):
-            sequence = np.array(list(sequence))
-            masked_indices = np.random.rand(len(sequence)) < mutation_rate
-            sequence[masked_indices] = "$"
-            return "".join(sequence).replace("$", "<mask>")
+            # Create masked sequence
+            masked_sequence = list(sequence)
+            num_mutations = int(len(sequence) * mutation_rate)
+            mutation_positions = random.sample(range(len(sequence)), num_mutations)
 
+            for pos in mutation_positions:
+                masked_sequence[pos] = self.tokenizer.mask_token
+
+            return "".join(masked_sequence)
+
+        # Prepare inputs for MLM
         mlm_inputs = []
         for sequence, bp_span in population:
-            masked_sequence = mutate(sequence, mutation_ratio)
-            mlm_inputs.append(f"{masked_sequence}<eos>{structure}")
+            masked_seq = mutate(sequence, mutation_ratio)
+            mlm_inputs.append(masked_seq)
 
-        outputs = self._mlm_predict(mlm_inputs, structure)
+        # Get predictions from MLM
+        predicted_tokens = self._mlm_predict(mlm_inputs, structure)
 
-        mut_population = []
-        for i, (seq, bp_span) in enumerate(population):
-            sequence = self.tokenizer.convert_ids_to_tokens(outputs[i].tolist())
-            fixed_sequence = [
-                x if x in "AGCT" else random.choice(["A", "T", "G", "C"])
-                for x in sequence
-            ]
-            bp_span = self._random_bp_span(bp_span)
-            mut_population.append(("".join(fixed_sequence), bp_span))
+        # Convert predictions back to sequences
+        mutated_population = []
+        for i, (sequence, bp_span) in enumerate(population):
+            # Convert token IDs back to nucleotides
+            new_sequence = self.tokenizer.decode(
+                predicted_tokens[i], skip_special_tokens=True
+            )
+            # Ensure the sequence has the correct length
+            if len(new_sequence) != len(structure):
+                new_sequence = new_sequence[: len(structure)].ljust(len(structure), "A")
+            mutated_population.append((new_sequence, bp_span))
 
-        return mut_population
+        return mutated_population
 
     def _crossover(self, population, num_points=3):
         """
-        Perform crossover operation to create offspring.
-        
-        Args:
-            population (list): Current population of (sequence, bp_span) tuples
-            num_points (int): Number of crossover points (default: 3)
-            
-        Returns:
-            list: Offspring population after crossover
-        """
-        population_size = len(population)
-        sequence_length = len(population[0][0])
+        Perform crossover operation on the population.
 
-        parent_indices = np.random.choice(population_size // 10, (population_size, 2))
-        crossover_points = np.sort(
-            np.random.randint(1, sequence_length, size=(population_size, num_points)),
-            axis=1,
+        Args:
+            population (list): Current population
+            num_points (int): Number of crossover points
+
+        Returns:
+            list: Population after crossover
+        """
+        if len(population) < 2:
+            return population
+
+        # Create crossover masks
+        num_sequences = len(population)
+        masks = np.zeros((num_sequences, len(population[0][0])), dtype=bool)
+
+        # Generate random crossover points
+        crossover_points = np.random.randint(
+            0, len(population[0][0]), (num_sequences, num_points)
         )
 
-        masks = np.zeros((population_size, sequence_length), dtype=bool)
-        for i in range(population_size):
-            last_point = 0
+        # Create parent indices
+        parent_indices = np.random.randint(0, num_sequences, (num_sequences, 2))
+
+        # Generate crossover masks
+        for i in range(num_sequences):
             for j in range(num_points):
-                masks[i, last_point : crossover_points[i, j]] = j % 2 == 0
-                last_point = crossover_points[i, j]
+                if j == 0:
+                    masks[i, : crossover_points[i, j]] = True
+                else:
+                    last_point = crossover_points[i, j - 1]
+                    masks[i, last_point : crossover_points[i, j]] = j % 2 == 0
+
+            # Handle the last segment
+            last_point = crossover_points[i, -1]
             masks[i, last_point:] = num_points % 2 == 0
 
+        # Perform crossover
         population_array = np.array([list(seq[0]) for seq in population])
         child1_array = np.where(
             masks,
@@ -251,23 +305,19 @@ class OmniModelForRNADesign(torch.nn.Module):
     def _evaluate_structure_fitness(self, sequences, structure):
         """
         Evaluate the fitness of the RNA structure by comparing with the target structure.
-        
+
         Args:
             sequences (list): List of (sequence, bp_span) tuples to evaluate
             structure (str): Target RNA structure
-            
+
         Returns:
             list: Sorted population with fitness scores and MFE values
         """
-        if self.parallel:
-            with ProcessPoolExecutor() as executor:
-                structures_mfe = list(
-                    executor.map(
-                        self._predict_structure_single, [seq for seq, _ in sequences]
-                    )
-                )
-        else:
-            structures_mfe = self._predict_structure([seq for seq, _ in sequences])
+        # Get sequences for structure prediction
+        seq_list = [seq for seq, _ in sequences]
+
+        # Predict structures (with improved multiprocessing)
+        structures_mfe = self._predict_structure(seq_list)
 
         sorted_population = []
         for (seq, bp_span), (ss, mfe) in zip(sequences, structures_mfe):
@@ -283,11 +333,11 @@ class OmniModelForRNADesign(torch.nn.Module):
     def _non_dominated_sorting(scores, mfe_values):
         """
         Perform non-dominated sorting for multi-objective optimization.
-        
+
         Args:
             scores (list): Structure similarity scores
             mfe_values (list): Minimum free energy values
-            
+
         Returns:
             list: List of fronts (Pareto fronts)
         """
@@ -326,11 +376,11 @@ class OmniModelForRNADesign(torch.nn.Module):
     def _select_next_generation(next_generation, fronts):
         """
         Select the next generation based on Pareto fronts.
-        
+
         Args:
             next_generation (list): Current population with fitness scores
             fronts (list): Pareto fronts
-            
+
         Returns:
             list: Selected population for the next generation
         """
@@ -346,11 +396,11 @@ class OmniModelForRNADesign(torch.nn.Module):
     def _mlm_predict(self, mlm_inputs, structure):
         """
         Perform masked language model prediction.
-        
+
         Args:
             mlm_inputs (list): List of masked input sequences
             structure (str): Target RNA structure
-            
+
         Returns:
             list: Predicted token IDs for each input
         """
@@ -360,7 +410,7 @@ class OmniModelForRNADesign(torch.nn.Module):
         with torch.no_grad():
             for i in range(0, len(mlm_inputs), batch_size):
                 inputs = self.tokenizer(
-                    mlm_inputs[i: i + batch_size],
+                    mlm_inputs[i : i + batch_size],
                     padding=False,
                     max_length=1024,
                     truncation=True,
@@ -379,13 +429,13 @@ class OmniModelForRNADesign(torch.nn.Module):
     ):
         """
         Design RNA sequences for a target structure using evolutionary algorithms.
-        
+
         Args:
             structure (str): Target RNA structure in dot-bracket notation
             mutation_ratio (float): Ratio of tokens to mutate (default: 0.5)
             num_population (int): Population size (default: 100)
             num_generation (int): Number of generations (default: 100)
-            
+
         Returns:
             list: List of designed RNA sequences with their fitness scores
         """

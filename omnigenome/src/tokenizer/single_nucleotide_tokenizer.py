@@ -19,16 +19,16 @@ warnings.filterwarnings("once")
 class OmniSingleNucleotideTokenizer(OmniTokenizer):
     """
     Tokenizer for single nucleotide tokenization in genomics.
-    
+
     This tokenizer converts genomic sequences into individual nucleotide tokens,
     where each nucleotide (A, T, C, G, U) becomes a separate token. It's designed
     for genomic sequence processing where fine-grained nucleotide-level analysis
     is required.
-    
+
     The tokenizer supports various preprocessing options including U/T conversion
     and whitespace addition between nucleotides. It also handles special tokens
     like BOS (beginning of sequence) and EOS (end of sequence) tokens.
-    
+
     Attributes:
         u2t (bool): Whether to convert 'U' to 'T'.
         t2u (bool): Whether to convert 'T' to 'U'.
@@ -54,7 +54,7 @@ class OmniSingleNucleotideTokenizer(OmniTokenizer):
     def __call__(self, sequence, **kwargs):
         """
         Tokenizes sequences using single nucleotide tokenization.
-        
+
         This method converts genomic sequences into tokenized inputs suitable
         for model training and inference. It handles sequence preprocessing,
         tokenization, and padding/truncation.
@@ -76,7 +76,7 @@ class OmniSingleNucleotideTokenizer(OmniTokenizer):
             >>> # Tokenize a single sequence
             >>> inputs = tokenizer("ATCGATCG")
             >>> print(inputs['input_ids'].shape)  # torch.Size([1, seq_len])
-            
+
             >>> # Tokenize multiple sequences
             >>> inputs = tokenizer(["ATCGATCG", "GCTAGCTA"])
             >>> print(inputs['input_ids'].shape)  # torch.Size([2, seq_len])
@@ -134,7 +134,7 @@ class OmniSingleNucleotideTokenizer(OmniTokenizer):
     def from_pretrained(model_name_or_path, **kwargs):
         """
         Loads a single nucleotide tokenizer from a pre-trained model.
-        
+
         This method creates a single nucleotide tokenizer wrapper around
         a Hugging Face tokenizer loaded from a pre-trained model.
 
@@ -156,7 +156,7 @@ class OmniSingleNucleotideTokenizer(OmniTokenizer):
     def tokenize(self, sequence, **kwargs):
         """
         Converts a sequence into a list of individual nucleotide tokens.
-        
+
         This method tokenizes genomic sequences by treating each nucleotide
         as a separate token. It handles both single sequences and lists of sequences.
 
@@ -172,7 +172,7 @@ class OmniSingleNucleotideTokenizer(OmniTokenizer):
             >>> # Tokenize a single sequence
             >>> tokens = tokenizer.tokenize("ATCGATCG")
             >>> print(tokens)  # [['A', 'T', 'C', 'G', 'A', 'T', 'C', 'G']]
-            
+
             >>> # Tokenize multiple sequences
             >>> tokens = tokenizer.tokenize(["ATCGATCG", "GCTAGCTA"])
             >>> print(tokens)  # [['A', 'T', 'C', 'G', ...], ['G', 'C', 'T', 'A', ...]]
@@ -191,7 +191,7 @@ class OmniSingleNucleotideTokenizer(OmniTokenizer):
     def encode(self, sequence, **kwargs):
         """
         Converts a sequence into a list of token IDs.
-        
+
         This method encodes genomic sequences into token IDs using the
         underlying base tokenizer.
 
@@ -211,7 +211,7 @@ class OmniSingleNucleotideTokenizer(OmniTokenizer):
     def decode(self, sequence, **kwargs):
         """
         Converts a list of token IDs back into a sequence.
-        
+
         This method decodes token IDs back into genomic sequences using
         the underlying base tokenizer.
 
@@ -231,7 +231,7 @@ class OmniSingleNucleotideTokenizer(OmniTokenizer):
     def encode_plus(self, sequence, **kwargs):
         """
         Encodes a sequence with additional information.
-        
+
         This method provides enhanced encoding with additional information
         like attention masks and token type IDs.
 

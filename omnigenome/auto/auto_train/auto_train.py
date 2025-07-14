@@ -33,17 +33,17 @@ autotrain_evaluations = "./autotrain_evaluations"
 class AutoTrain:
     """
     AutoTrain is a class for automatically training genomic foundation models on a given dataset.
-    
+
     This class provides a comprehensive framework for training genomic models
     on various datasets with minimal configuration. It handles dataset loading,
     model initialization, training configuration, and result tracking.
-    
+
     AutoTrain supports various training scenarios including:
     - Single dataset training with multiple seeds
     - Different trainer backends (native, accelerate, huggingface)
     - Automatic metric visualization and result tracking
     - Configurable training parameters
-    
+
     Attributes:
         dataset (str): The name or path of the dataset to use for training.
         model_name_or_path (str): The name or path of the model to train.
@@ -70,19 +70,19 @@ class AutoTrain:
             model_name_or_path (str): The name or path of the model to train.
             tokenizer: The tokenizer to use. If None, it will be loaded from the model path.
             **kwargs: Additional keyword arguments.
-                - autocast (str): The autocast precision to use ('fp16', 'bf16', etc.). 
+                - autocast (str): The autocast precision to use ('fp16', 'bf16', etc.).
                   Defaults to 'fp16'.
-                - overwrite (bool): Whether to overwrite existing training results. 
+                - overwrite (bool): Whether to overwrite existing training results.
                   Defaults to False.
-                - trainer (str): The trainer to use ('native', 'accelerate', 'hf_trainer'). 
+                - trainer (str): The trainer to use ('native', 'accelerate', 'hf_trainer').
                   Defaults to 'accelerate'.
 
         Example:
             >>> # Initialize with a dataset and model
             >>> trainer = AutoTrain("dataset_name", "model_name")
-            
+
             >>> # Initialize with custom settings
-            >>> trainer = AutoTrain("dataset_name", "model_name", 
+            >>> trainer = AutoTrain("dataset_name", "model_name",
             ...                     autocast="bf16", trainer="accelerate")
         """
         self.dataset = dataset.rstrip("/")
@@ -118,7 +118,7 @@ class AutoTrain:
     def bench_info(self):
         """
         Print and return information about the current training setup.
-        
+
         This method provides a comprehensive overview of the current
         training configuration, including dataset details, model information,
         and training settings.
@@ -140,7 +140,7 @@ class AutoTrain:
     def run(self, **kwargs):
         """
         Run the training process.
-        
+
         This method loads the dataset configuration, initializes the model and
         tokenizer, and runs training across multiple seeds. It supports various
         training backends and automatic result tracking.
@@ -152,11 +152,10 @@ class AutoTrain:
         Example:
             >>> # Run training with default settings
             >>> trainer.run()
-            
+
             >>> # Run with custom parameters
             >>> trainer.run(learning_rate=1e-4, batch_size=16)
         """
-
 
         clean_temp_checkpoint(1)  # clean temp checkpoint older than 1 day
 

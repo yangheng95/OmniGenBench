@@ -29,14 +29,14 @@ from torch.cuda.amp import GradScaler
 def _infer_optimization_direction(metrics, prev_metrics):
     """
     Infer the optimization direction based on metric names and trends.
-    
+
     This function determines whether larger or smaller values are better for
     the given metrics by analyzing metric names and their trends over time.
-    
+
     Args:
         metrics (dict): Current metric values
         prev_metrics (list): Previous metric values from multiple epochs
-        
+
     Returns:
         str: Either "larger_is_better" or "smaller_is_better"
     """
@@ -98,11 +98,11 @@ def _infer_optimization_direction(metrics, prev_metrics):
 class Trainer:
     """
     Comprehensive trainer for OmniGenome models.
-    
+
     This trainer provides a complete training framework with automatic mixed precision,
     early stopping, metric tracking, and model checkpointing. It supports various
     training configurations and can handle different types of genomic sequence tasks.
-    
+
     Attributes:
         model: The model to be trained
         train_loader: DataLoader for training data
@@ -118,7 +118,7 @@ class Trainer:
         metrics: Dictionary to store training metrics
         predictions: Dictionary to store model predictions
     """
-    
+
     def __init__(
         self,
         model,
@@ -139,7 +139,7 @@ class Trainer:
     ):
         """
         Initialize the trainer.
-        
+
         Args:
             model: The model to be trained
             train_dataset: Training dataset
@@ -191,7 +191,9 @@ class Trainer:
         )
         self.seed = seed
         self.device = device if device else autocuda.auto_cuda()
-        self.device = torch.device(self.device) if isinstance(self.device, str) else self.device
+        self.device = (
+            torch.device(self.device) if isinstance(self.device, str) else self.device
+        )
 
         self.fast_dtype = {
             "float32": torch.float32,
@@ -218,11 +220,11 @@ class Trainer:
     def _is_metric_better(self, metrics, stage="valid"):
         """
         Check if the current metrics are better than the best metrics so far.
-        
+
         Args:
             metrics (dict): Current metric values
             stage (str): Stage name ("valid" or "test")
-            
+
         Returns:
             bool: True if current metrics are better than best metrics
         """
@@ -268,11 +270,11 @@ class Trainer:
     def train(self, path_to_save=None, **kwargs):
         """
         Train the model.
-        
+
         Args:
             path_to_save (str, optional): Path to save the best model
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             dict: Training metrics and results
         """
@@ -300,19 +302,29 @@ class Trainer:
                     self.optimizer.zero_grad()
 
                 if self.fast_dtype:
-                    with torch.autocast(device_type=self.device.type, dtype=self.fast_dtype):
+                    with torch.autocast(
+                        device_type=self.device.type, dtype=self.fast_dtype
+                    ):
                         outputs = self.model(**batch)
                 else:
                     outputs = self.model(**batch)
                 if "loss" not in outputs:
                     # Generally, the model should return a loss in the outputs via OmniGenBench
                     # For the Lora models, the loss is computed separately
-                    if hasattr(self.model, "loss_function") and callable(self.model.loss_function):
-                        loss = self.model.loss_function(outputs['logits'], outputs["labels"])
-                    elif (hasattr(self.model, "model")
-                          and hasattr(self.model.model, "loss_function")
-                          and callable(self.model.model.loss_function)):
-                        loss = self.model.model.loss_function(outputs['logits'], outputs["labels"])
+                    if hasattr(self.model, "loss_function") and callable(
+                        self.model.loss_function
+                    ):
+                        loss = self.model.loss_function(
+                            outputs["logits"], outputs["labels"]
+                        )
+                    elif (
+                        hasattr(self.model, "model")
+                        and hasattr(self.model.model, "loss_function")
+                        and callable(self.model.model.loss_function)
+                    ):
+                        loss = self.model.model.loss_function(
+                            outputs["logits"], outputs["labels"]
+                        )
                     else:
                         raise ValueError(
                             "The model does not have a loss function defined. "
@@ -480,10 +492,10 @@ class Trainer:
     def get_model(self, **kwargs):
         """
         Get the trained model.
-        
+
         Args:
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             The trained model
         """
@@ -492,7 +504,7 @@ class Trainer:
     def compute_metrics(self):
         """
         Get the metric computation functions.
-        
+
         Returns:
             list: List of metric computation functions
         """
@@ -501,10 +513,10 @@ class Trainer:
     def unwrap_model(self, model=None):
         """
         Unwrap the model from any distributed training wrappers.
-        
+
         Args:
             model: Model to unwrap (default: None, uses self.model)
-            
+
         Returns:
             The unwrapped model
         """
@@ -538,7 +550,7 @@ class Trainer:
         """
         if os.path.exists(self._model_state_dict_path):
             self.unwrap_model().load_state_dict(
-                torch.load(self._model_state_dict_path, map_location='cpu')
+                torch.load(self._model_state_dict_path, map_location="cpu")
             )
             self.unwrap_model().to(self.device)
 

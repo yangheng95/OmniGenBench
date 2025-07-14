@@ -16,16 +16,16 @@ from ..module_utils import OmniPooling
 class OmniModelForTokenClassification(OmniModel):
     """
     Model for token classification tasks in genomics.
-    
+
     This model is designed for token-level classification tasks such as
     sequence labeling, where each token in the input sequence needs to be
     classified into different categories. It extends the base OmniModel
     with token-level classification capabilities.
-    
+
     The model adds a classification head on top of the base model's hidden
     states and applies softmax to produce probability distributions over
     the label classes for each token.
-    
+
     Attributes:
         softmax (torch.nn.Softmax): Softmax layer for probability computation.
         classifier (torch.nn.Linear): Linear classification head.
@@ -57,7 +57,7 @@ class OmniModelForTokenClassification(OmniModel):
     def forward(self, **inputs):
         """
         Forward pass for token classification.
-        
+
         This method performs the forward pass through the model, computing
         logits for each token in the input sequence and applying softmax
         to produce probability distributions.
@@ -95,13 +95,13 @@ class OmniModelForTokenClassification(OmniModel):
     def predict(self, sequence_or_inputs, **kwargs):
         """
         Performs token-level prediction on raw inputs.
-        
+
         This method takes raw sequences or tokenized inputs and returns
         token-level predictions. It processes the inputs through the model
         and returns the predicted class for each token.
 
         Args:
-            sequence_or_inputs: A sequence (str), list of sequences, or 
+            sequence_or_inputs: A sequence (str), list of sequences, or
                                tokenized inputs (dict/tuple).
             **kwargs: Additional arguments for tokenization and inference.
 
@@ -115,7 +115,7 @@ class OmniModelForTokenClassification(OmniModel):
             >>> # Predict on a single sequence
             >>> outputs = model.predict("ATCGATCG")
             >>> print(outputs['predictions'].shape)  # (seq_len,)
-            
+
             >>> # Predict on multiple sequences
             >>> outputs = model.predict(["ATCGATCG", "GCTAGCTA"])
         """
@@ -142,12 +142,12 @@ class OmniModelForTokenClassification(OmniModel):
     def inference(self, sequence_or_inputs, **kwargs):
         """
         Performs token-level inference with human-readable output.
-        
+
         This method provides processed, human-readable token-level predictions.
         It converts logits to class labels and handles special tokens appropriately.
 
         Args:
-            sequence_or_inputs: A sequence (str), list of sequences, or 
+            sequence_or_inputs: A sequence (str), list of sequences, or
                                tokenized inputs (dict/tuple).
             **kwargs: Additional arguments for tokenization and inference.
 
@@ -200,7 +200,7 @@ class OmniModelForTokenClassification(OmniModel):
     def loss_function(self, logits, labels):
         """
         Calculates the cross-entropy loss for token classification.
-        
+
         This method computes the cross-entropy loss between the predicted
         logits and the ground truth labels, ignoring padding tokens.
 
@@ -221,11 +221,11 @@ class OmniModelForTokenClassification(OmniModel):
 class OmniModelForSequenceClassification(OmniModel):
     """
     Model for sequence classification tasks in genomics.
-    
+
     This model is designed for sequence-level classification tasks where
     the entire input sequence is classified into one of several categories.
     It extends the base OmniModel with sequence-level classification capabilities.
-    
+
     The model uses a pooling mechanism to aggregate token-level representations
     into a sequence-level representation, which is then classified using a
     linear classifier.
@@ -263,7 +263,7 @@ class OmniModelForSequenceClassification(OmniModel):
     def forward(self, **inputs):
         """
         Forward pass for sequence classification.
-        
+
         This method performs the forward pass through the model, computing
         sequence-level logits and applying softmax to produce probability
         distributions over the label classes.
@@ -302,13 +302,13 @@ class OmniModelForSequenceClassification(OmniModel):
     def predict(self, sequence_or_inputs, **kwargs):
         """
         Performs sequence-level prediction on raw inputs.
-        
+
         This method takes raw sequences or tokenized inputs and returns
         sequence-level predictions. It processes the inputs through the model
         and returns the predicted class for each sequence.
 
         Args:
-            sequence_or_inputs: A sequence (str), list of sequences, or 
+            sequence_or_inputs: A sequence (str), list of sequences, or
                                tokenized inputs (dict/tuple).
             **kwargs: Additional arguments for tokenization and inference.
 
@@ -322,7 +322,7 @@ class OmniModelForSequenceClassification(OmniModel):
             >>> # Predict on a single sequence
             >>> outputs = model.predict("ATCGATCG")
             >>> print(outputs['predictions'])  # tensor([0])
-            
+
             >>> # Predict on multiple sequences
             >>> outputs = model.predict(["ATCGATCG", "GCTAGCTA"])
         """
@@ -350,12 +350,12 @@ class OmniModelForSequenceClassification(OmniModel):
     def inference(self, sequence_or_inputs, **kwargs):
         """
         Performs sequence-level inference with human-readable output.
-        
+
         This method provides processed, human-readable sequence-level predictions.
         It converts logits to class labels and provides confidence scores.
 
         Args:
-            sequence_or_inputs: A sequence (str), list of sequences, or 
+            sequence_or_inputs: A sequence (str), list of sequences, or
                                tokenized inputs (dict/tuple).
             **kwargs: Additional arguments for tokenization and inference.
 
@@ -403,7 +403,7 @@ class OmniModelForSequenceClassification(OmniModel):
     def loss_function(self, logits, labels):
         """
         Calculates the cross-entropy loss for sequence classification.
-        
+
         This method computes the cross-entropy loss between the predicted
         logits and the ground truth labels.
 
@@ -421,16 +421,14 @@ class OmniModelForSequenceClassification(OmniModel):
         return loss
 
 
-class OmniModelForMultiLabelSequenceClassification(
-    OmniModelForSequenceClassification
-):
+class OmniModelForMultiLabelSequenceClassification(OmniModelForSequenceClassification):
     """
     Model for multi-label sequence classification tasks in genomics.
-    
+
     This model is designed for multi-label classification tasks where
     a single sequence can be assigned multiple labels simultaneously.
     It extends the sequence classification model with multi-label capabilities.
-    
+
     The model uses sigmoid activation instead of softmax to allow multiple
     labels per sequence and uses binary cross-entropy loss for training.
 
@@ -461,7 +459,7 @@ class OmniModelForMultiLabelSequenceClassification(
     def loss_function(self, logits, labels):
         """
         Calculates the binary cross-entropy loss for multi-label classification.
-        
+
         This method computes the binary cross-entropy loss between the predicted
         probabilities and the ground truth multi-label targets.
 
@@ -481,13 +479,13 @@ class OmniModelForMultiLabelSequenceClassification(
     def predict(self, sequence_or_inputs, **kwargs):
         """
         Performs multi-label prediction on raw inputs.
-        
+
         This method takes raw sequences or tokenized inputs and returns
         multi-label predictions. It applies a threshold to determine
         which labels are active for each sequence.
 
         Args:
-            sequence_or_inputs: A sequence (str), list of sequences, or 
+            sequence_or_inputs: A sequence (str), list of sequences, or
                                tokenized inputs (dict/tuple).
             **kwargs: Additional arguments for tokenization and inference.
 
@@ -527,12 +525,12 @@ class OmniModelForMultiLabelSequenceClassification(
     def inference(self, sequence_or_inputs, **kwargs):
         """
         Performs multi-label inference with human-readable output.
-        
+
         This method provides processed, human-readable multi-label predictions.
         It converts logits to binary labels and provides confidence scores.
 
         Args:
-            sequence_or_inputs: A sequence (str), list of sequences, or 
+            sequence_or_inputs: A sequence (str), list of sequences, or
                                tokenized inputs (dict/tuple).
             **kwargs: Additional arguments for tokenization and inference.
 
@@ -551,9 +549,7 @@ class OmniModelForMultiLabelSequenceClassification(
         return self.predict(sequence_or_inputs, **kwargs)
 
 
-class OmniModelForTokenClassificationWith2DStructure(
-    OmniModelForTokenClassification
-):
+class OmniModelForTokenClassificationWith2DStructure(OmniModelForTokenClassification):
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__

@@ -24,12 +24,12 @@ import autocuda
 class OmniModelForAugmentation(torch.nn.Module):
     """
     Data augmentation model for genomic sequences using masked language modeling.
-    
+
     This model uses a pre-trained masked language model to generate augmented
     versions of genomic sequences by randomly masking tokens and predicting
     replacements. It's useful for expanding training datasets and improving
     model generalization.
-    
+
     Attributes:
         tokenizer: Tokenizer for processing genomic sequences
         model: Pre-trained masked language model
@@ -38,7 +38,7 @@ class OmniModelForAugmentation(torch.nn.Module):
         max_length: Maximum sequence length for tokenization
         k: Number of augmented instances to generate per sequence
     """
-    
+
     def __init__(
         self,
         model_name_or_path=None,
@@ -50,7 +50,7 @@ class OmniModelForAugmentation(torch.nn.Module):
     ):
         """
         Initialize the augmentation model.
-        
+
         Args:
             model_name_or_path (str): Path or model name for loading the pre-trained model
             noise_ratio (float): The proportion of tokens to mask in each sequence for augmentation (default: 0.15)
@@ -82,10 +82,10 @@ class OmniModelForAugmentation(torch.nn.Module):
     def load_sequences_from_file(self, input_file):
         """
         Load sequences from a JSON file.
-        
+
         Args:
             input_file (str): Path to the input JSON file containing sequences
-            
+
         Returns:
             list: List of sequences loaded from the file
         """
@@ -98,10 +98,10 @@ class OmniModelForAugmentation(torch.nn.Module):
     def apply_noise_to_sequence(self, seq):
         """
         Apply noise to a single sequence by randomly masking tokens.
-        
+
         Args:
             seq (str): Input genomic sequence
-            
+
         Returns:
             str: Sequence with randomly masked tokens
         """
@@ -114,10 +114,10 @@ class OmniModelForAugmentation(torch.nn.Module):
     def augment_sequence(self, seq):
         """
         Perform augmentation on a single sequence by predicting masked tokens.
-        
+
         Args:
             seq (str): Input genomic sequence with masked tokens
-            
+
         Returns:
             str: Augmented sequence with predicted tokens replacing masked tokens
         """
@@ -145,11 +145,11 @@ class OmniModelForAugmentation(torch.nn.Module):
     def augment(self, seq, k=None):
         """
         Generate multiple augmented instances for a single sequence.
-        
+
         Args:
             seq (str): Input genomic sequence
             k (int, optional): Number of augmented instances to generate (default: None, uses self.k)
-            
+
         Returns:
             list: List of augmented sequences
         """
@@ -163,10 +163,10 @@ class OmniModelForAugmentation(torch.nn.Module):
     def augment_sequences(self, sequences):
         """
         Augment a list of sequences by applying noise and performing MLM-based predictions.
-        
+
         Args:
             sequences (list): List of genomic sequences to augment
-            
+
         Returns:
             list: List of all augmented sequences
         """
@@ -179,7 +179,7 @@ class OmniModelForAugmentation(torch.nn.Module):
     def save_augmented_sequences(self, augmented_sequences, output_file):
         """
         Save augmented sequences to a JSON file.
-        
+
         Args:
             augmented_sequences (list): List of augmented sequences to save
             output_file (str): Path to the output JSON file
@@ -191,10 +191,10 @@ class OmniModelForAugmentation(torch.nn.Module):
     def augment_from_file(self, input_file, output_file):
         """
         Main function to handle the augmentation process from a file input to a file output.
-        
+
         This method loads sequences from an input file, augments them using the MLM model,
         and saves the augmented sequences to an output file.
-        
+
         Args:
             input_file (str): Path to the input file containing sequences
             output_file (str): Path to the output file where augmented sequences will be saved

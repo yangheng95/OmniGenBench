@@ -24,7 +24,7 @@ from omnigenome.src.misc.utils import fprint, default_omnigenome_repo
 def unzip_checkpoint(checkpoint_path):
     """
     Unzips a checkpoint file.
-    
+
     This function extracts a zipped checkpoint file to a directory,
     making it ready for use by the model loading functions.
 
@@ -51,7 +51,7 @@ def query_models_info(
 ) -> Dict[str, Any]:
     """
     Queries information about available models from the hub.
-    
+
     This function retrieves model information from the OmniGenome hub,
     either from a remote repository or from a local cache. It supports
     filtering by keywords to find specific models.
@@ -69,7 +69,7 @@ def query_models_info(
         >>> # Query all models
         >>> models = query_models_info("")
         >>> print(len(models))  # Number of available models
-        
+
         >>> # Query specific models
         >>> models = query_models_info("DNA")
         >>> print(models.keys())  # Models containing "DNA"
@@ -108,7 +108,7 @@ def query_pipelines_info(
 ) -> Dict[str, Any]:
     """
     Queries information about available pipelines from the hub.
-    
+
     This function retrieves pipeline information from the OmniGenome hub,
     either from a remote repository or from a local cache. It supports
     filtering by keywords to find specific pipelines.
@@ -126,7 +126,7 @@ def query_pipelines_info(
         >>> # Query all pipelines
         >>> pipelines = query_pipelines_info("")
         >>> print(len(pipelines))  # Number of available pipelines
-        
+
         >>> # Query specific pipelines
         >>> pipelines = query_pipelines_info("classification")
         >>> print(pipelines.keys())  # Pipelines containing "classification"
@@ -165,7 +165,7 @@ def query_benchmarks_info(
 ) -> Dict[str, Any]:
     """
     Queries information about available benchmarks from the hub.
-    
+
     This function retrieves benchmark information from the OmniGenome hub,
     either from a remote repository or from a local cache. It supports
     filtering by keywords to find specific benchmarks.
@@ -183,7 +183,7 @@ def query_benchmarks_info(
         >>> # Query all benchmarks
         >>> benchmarks = query_benchmarks_info("")
         >>> print(len(benchmarks))  # Number of available benchmarks
-        
+
         >>> # Query specific benchmarks
         >>> benchmarks = query_benchmarks_info("RGB")
         >>> print(benchmarks.keys())  # Benchmarks containing "RGB"
@@ -468,7 +468,7 @@ def download_benchmark(
 def check_version(repo: str = None) -> None:
     """
     Checks the version compatibility between local and remote OmniGenome.
-    
+
     This function compares the local OmniGenome version with the version
     available in the remote repository to ensure compatibility.
 

@@ -31,12 +31,12 @@ from ...src.trainer.trainer import Trainer
 class Pipeline:
     """
     Complete machine learning pipeline combining model, tokenizer, datasets, and trainer.
-    
+
     The Pipeline class provides a unified interface for managing complete machine
     learning workflows. It handles model initialization, training, inference, and
     persistence. Pipelines can be loaded from pre-built configurations or created
     from scratch with custom components.
-    
+
     Attributes:
         model (OmniModel): The underlying model for the pipeline.
         tokenizer: Tokenizer for preprocessing input sequences.
@@ -45,7 +45,7 @@ class Pipeline:
         trainer (Trainer): Trainer instance for model training.
         device (str): Target device for model execution (CPU/GPU).
         name (str): Name identifier for the pipeline.
-    
+
     Example:
         >>> from omnigenome import Pipeline, OmniModelForSequenceClassification
         >>> # Create pipeline from model
@@ -57,14 +57,14 @@ class Pipeline:
         >>> pipeline.train(datasets)
         >>> # Save pipeline
         >>> pipeline.save("./saved_pipeline")
-    
+
     Note:
         - Pipelines automatically handle device placement and model optimization
         - Environment metadata is collected for reproducibility
         - Pipelines can be saved and loaded for easy deployment
         - Supports both local models and hub-based model loading
     """
-    
+
     model: OmniModel = None
     tokenizer = None
     dataset: dict = None
@@ -82,7 +82,7 @@ class Pipeline:
     ):
         """
         Initialize a Pipeline instance.
-        
+
         Args:
             name (str): Name identifier for the pipeline.
             model_name_or_path (Union[str, OmniModel]): Model to use in the pipeline.
@@ -97,20 +97,20 @@ class Pipeline:
                 - device (str): Target device for model execution
                 - trust_remote_code (bool): Whether to trust remote code in tokenizers
                 - Other model-specific configuration parameters
-        
+
         Raises:
             ValueError: If model initialization fails.
             ImportError: If required dependencies are not available.
             FileNotFoundError: If model path is invalid.
-        
+
         Example:
             >>> # Create from model path
-            >>> pipeline = Pipeline("rna_classification", 
+            >>> pipeline = Pipeline("rna_classification",
             ...                    model_name_or_path="yangheng/OmniGenome-186M")
             >>> # Create from model instance
             >>> model = OmniModelForSequenceClassification("model_path", tokenizer)
             >>> pipeline = Pipeline("custom_pipeline", model_name_or_path=model)
-        
+
         Note:
             - The pipeline automatically handles model loading and device placement
             - Environment metadata is collected for tracking system information
@@ -140,18 +140,18 @@ class Pipeline:
     def __call__(self, inputs, *args, **kwargs):
         """
         Call the pipeline for inference.
-        
+
         This method provides a convenient interface for running inference
         through the pipeline. It delegates to the model's inference method.
-        
+
         Args:
             inputs: Input data for inference (can be string, list, or tensor).
             *args: Additional positional arguments passed to model inference.
             **kwargs: Additional keyword arguments passed to model inference.
-        
+
         Returns:
             dict: Inference results including predictions and confidence scores.
-        
+
         Example:
             >>> pipeline = Pipeline("my_pipeline", model_name_or_path=model)
             >>> results = pipeline("ATCGATCG")
@@ -162,13 +162,13 @@ class Pipeline:
     def to(self, device):
         """
         Move the pipeline to a specific device.
-        
+
         Args:
             device (str): Target device ('cpu', 'cuda', 'cuda:0', etc.).
-        
+
         Returns:
             Pipeline: Self for method chaining.
-        
+
         Example:
             >>> pipeline = Pipeline("my_pipeline", model_name_or_path=model)
             >>> pipeline.to("cuda:0")  # Move to GPU
@@ -181,11 +181,11 @@ class Pipeline:
     def init_pipeline(self, *, model_name_or_path, tokenizer=None, **kwargs):
         """
         Initialize the pipeline components from a model path.
-        
+
         This method handles loading the model, tokenizer, and configuration
         from a model path or identifier. It tries to load from the ModelHub
         first, then falls back to HuggingFace transformers.
-        
+
         Args:
             model_name_or_path (str): Path or identifier of the model to load.
             tokenizer (optional): Tokenizer instance. If None, will be loaded
@@ -194,18 +194,18 @@ class Pipeline:
                 - trust_remote_code (bool): Whether to trust remote code
                 - device (str): Target device for the model
                 - Other model-specific parameters
-        
+
         Returns:
             Pipeline: Self for method chaining.
-        
+
         Raises:
             ValueError: If model loading fails.
             ImportError: If required dependencies are not available.
-        
+
         Example:
             >>> pipeline = Pipeline("my_pipeline")
             >>> pipeline.init_pipeline(model_name_or_path="yangheng/OmniGenome-186M")
-        
+
         Note:
             - First attempts to load from OmniGenome ModelHub
             - Falls back to HuggingFace transformers if ModelHub fails
@@ -241,11 +241,11 @@ class Pipeline:
     def train(self, datasets: dict = None, trainer=None, **kwargs):
         """
         Train the model in the pipeline.
-        
+
         This method initiates training of the model using the provided datasets
         and trainer configuration. If no trainer is provided, the pipeline's
         existing trainer will be used.
-        
+
         Args:
             datasets (dict, optional): Dictionary containing train/validation/test
                 datasets. If None, uses the pipeline's existing datasets.
@@ -253,11 +253,11 @@ class Pipeline:
             trainer (Trainer, optional): Trainer instance to use for training.
                 If None, uses the pipeline's existing trainer. Defaults to None.
             **kwargs: Additional keyword arguments passed to the trainer.
-        
+
         Raises:
             ValueError: If no trainer is available or datasets are invalid.
             RuntimeError: If training fails.
-        
+
         Example:
             >>> pipeline = Pipeline("my_pipeline", model_name_or_path=model)
             >>> # Train with existing datasets
@@ -269,7 +269,7 @@ class Pipeline:
             >>> from omnigenome import Trainer
             >>> custom_trainer = Trainer(model, train_dataset=train_data)
             >>> pipeline.train(trainer=custom_trainer)
-        
+
         Note:
             - Training uses the pipeline's current model and device
             - Progress and metrics are logged during training
@@ -284,24 +284,24 @@ class Pipeline:
     def predict(self, inputs, **kwargs):
         """
         Generate predictions for input data.
-        
+
         This method provides a high-level interface for generating predictions
         from the pipeline's model. It handles preprocessing and postprocessing
         automatically.
-        
+
         Args:
             inputs: Input data for prediction. Can be:
                 - str: Single sequence string
                 - list: List of sequence strings
                 - tensor: Preprocessed input tensors
             **kwargs: Additional keyword arguments passed to model prediction.
-        
+
         Returns:
             dict: Prediction results including:
                 - predictions: Predicted labels or values
                 - confidence: Confidence scores (if available)
                 - logits: Raw model outputs (if requested)
-        
+
         Example:
             >>> pipeline = Pipeline("my_pipeline", model_name_or_path=model)
             >>> # Single prediction
@@ -310,7 +310,7 @@ class Pipeline:
             >>> # Batch prediction
             >>> results = pipeline.predict(["ATCGATCG", "GCTAGCTA"])
             >>> print(results['predictions'])
-        
+
         Note:
             - Input preprocessing is handled automatically
             - Results are formatted consistently across different model types
@@ -321,11 +321,11 @@ class Pipeline:
     def inference(self, inputs, **kwargs):
         """
         Run full inference pipeline on input data.
-        
+
         This method provides the complete inference pipeline including
         preprocessing, model forward pass, and postprocessing. It's the
         recommended method for production inference.
-        
+
         Args:
             inputs: Input data for inference. Can be:
                 - str: Single sequence string
@@ -335,14 +335,14 @@ class Pipeline:
                 - return_attention: Whether to return attention weights
                 - return_hidden_states: Whether to return hidden states
                 - temperature: Temperature for sampling (if applicable)
-        
+
         Returns:
             dict: Complete inference results including:
                 - predictions: Final predictions
                 - confidence: Confidence scores
                 - attention: Attention weights (if requested)
                 - hidden_states: Hidden states (if requested)
-        
+
         Example:
             >>> pipeline = Pipeline("my_pipeline", model_name_or_path=model)
             >>> # Basic inference
@@ -351,7 +351,7 @@ class Pipeline:
             >>> # Inference with attention
             >>> results = pipeline.inference("ATCGATCG", return_attention=True)
             >>> print(results['attention'].shape)
-        
+
         Note:
             - This is the most comprehensive inference method
             - Handles all preprocessing and postprocessing automatically
@@ -363,10 +363,10 @@ class Pipeline:
     def load(pipeline_name_or_path, local_only=False, **kwargs):
         """
         Load a pipeline from disk or hub.
-        
+
         This static method loads a complete pipeline including model, tokenizer,
         datasets, and trainer from a saved pipeline directory or hub identifier.
-        
+
         Args:
             pipeline_name_or_path (str): Path to saved pipeline directory or
                 hub identifier for downloading.
@@ -376,16 +376,16 @@ class Pipeline:
                 - device: Target device for the model
                 - name: Custom name for the pipeline
                 - trust_remote_code: Whether to trust remote code
-        
+
         Returns:
             Pipeline: Loaded pipeline instance ready for use.
-        
+
         Raises:
             FileNotFoundError: If pipeline cannot be found locally and
                 local_only is True.
             ValueError: If pipeline files are corrupted or invalid.
             ImportError: If required dependencies are not available.
-        
+
         Example:
             >>> # Load from local path
             >>> pipeline = Pipeline.load("./saved_pipeline")
@@ -393,7 +393,7 @@ class Pipeline:
             >>> pipeline = Pipeline.load("yangheng/OmniGenome-RNA-Classification")
             >>> # Use loaded pipeline
             >>> results = pipeline("ATCGATCG")
-        
+
         Note:
             - Loads all pipeline components (model, tokenizer, datasets, trainer)
             - Automatically handles device placement
@@ -430,22 +430,22 @@ class Pipeline:
     def save(self, path, overwrite=False, **kwargs):
         """
         Save the pipeline to disk.
-        
+
         This method saves the complete pipeline including model, tokenizer,
         datasets, trainer, and metadata to a directory. The saved pipeline
         can be loaded later using Pipeline.load().
-        
+
         Args:
             path (str): Directory path where to save the pipeline.
             overwrite (bool, optional): If True, overwrite existing directory.
                 If False, raise error if directory exists. Defaults to False.
             **kwargs: Additional keyword arguments for model saving.
-        
+
         Raises:
             FileExistsError: If path exists and overwrite is False.
             OSError: If there are issues creating the directory or writing files.
             RuntimeError: If saving fails due to model or data issues.
-        
+
         Example:
             >>> pipeline = Pipeline("my_pipeline", model_name_or_path=model)
             >>> # Train the pipeline
@@ -454,7 +454,7 @@ class Pipeline:
             >>> pipeline.save("./trained_pipeline", overwrite=True)
             >>> # Load the saved pipeline later
             >>> loaded_pipeline = Pipeline.load("./trained_pipeline")
-        
+
         Note:
             - Saves all pipeline components (model, tokenizer, datasets, trainer)
             - Preserves training configurations and metadata

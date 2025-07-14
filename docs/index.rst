@@ -5,8 +5,6 @@
 OmniGenBench Documentation
 ==========================
 
-
-
 .. image:: ../asset/favicon.png
    :width: 1000px
    :align: left
@@ -50,20 +48,34 @@ OmniGenBench Documentation
      </div>
    </div>
 
-
 .. toctree::
    :maxdepth: 2
-   :caption: Documentation Contents
+   :caption: Installation
 
    installation
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Basic Usage
+
    usage
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Command Usage
 
    cli
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Package Design Principles
+
    design_principle
 
-   api_reference
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
 
+   api_reference
 
 For more details, refer to the navigation bar on the left.

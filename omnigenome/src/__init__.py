@@ -9,4 +9,3 @@
 """
 This package contains the core source code of the OmniGenome library.
 """
-

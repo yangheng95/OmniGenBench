@@ -21,20 +21,20 @@ from ...abc.abstract_model import OmniModel
 class OmniModelForSeq2Seq(OmniModel):
     """
     Sequence-to-sequence model for genomic sequences.
-    
+
     This model implements a sequence-to-sequence architecture for genomic
     sequences, where the input is one sequence and the output is another
     sequence. It's useful for tasks like sequence translation, structure
     prediction, or sequence transformation.
-    
+
     The model can be extended to implement specific seq2seq tasks by
     overriding the forward, predict, and inference methods.
     """
-    
+
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         """
         Initialize the sequence-to-sequence model.
-        
+
         Args:
             config_or_model: Model configuration or pre-trained model
             tokenizer: Tokenizer for processing input sequences

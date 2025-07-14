@@ -23,26 +23,26 @@ from ...abc.abstract_model import OmniModel
 class OmniModelForMLM(OmniModel):
     """
     Masked Language Model for genomic sequences.
-    
+
     This model implements masked language modeling for genomic sequences, where
     tokens are randomly masked and the model learns to predict the original tokens.
     It's useful for pre-training genomic language models and understanding sequence
     patterns and dependencies.
-    
+
     Attributes:
         loss_fn: Cross-entropy loss function for masked language modeling
     """
-    
+
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         """
         Initialize the MLM model.
-        
+
         Args:
             config_or_model: Model configuration or pre-trained model
             tokenizer: Tokenizer for processing input sequences
             *args: Additional positional arguments
             **kwargs: Additional keyword arguments
-            
+
         Raises:
             ValueError: If the model doesn't support masked language modeling
         """
@@ -59,10 +59,10 @@ class OmniModelForMLM(OmniModel):
     def forward(self, **inputs):
         """
         Forward pass for masked language modeling.
-        
+
         Args:
             **inputs: Input tensors including input_ids, attention_mask, and labels
-            
+
         Returns:
             dict: Dictionary containing loss, logits, and last_hidden_state
         """
@@ -85,11 +85,11 @@ class OmniModelForMLM(OmniModel):
     def predict(self, sequence_or_inputs, **kwargs):
         """
         Generate predictions for masked language modeling.
-        
+
         Args:
             sequence_or_inputs: Input sequences or pre-processed inputs
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             dict: Dictionary containing predictions, logits, and last_hidden_state
         """
@@ -124,11 +124,11 @@ class OmniModelForMLM(OmniModel):
     def inference(self, sequence_or_inputs, **kwargs):
         """
         Perform inference for masked language modeling, decoding predictions to sequences.
-        
+
         Args:
             sequence_or_inputs: Input sequences or pre-processed inputs
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             dict: Dictionary containing decoded predictions, logits, and last_hidden_state
         """
@@ -164,11 +164,11 @@ class OmniModelForMLM(OmniModel):
     def loss_function(self, logits, labels):
         """
         Compute the loss for masked language modeling.
-        
+
         Args:
             logits (torch.Tensor): Model predictions [batch_size, seq_len, vocab_size]
             labels (torch.Tensor): Ground truth labels [batch_size, seq_len]
-            
+
         Returns:
             torch.Tensor: Computed cross-entropy loss value
         """

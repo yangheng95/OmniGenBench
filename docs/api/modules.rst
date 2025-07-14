@@ -1,11 +1,11 @@
 Low-level Modules
 =================
 
-This section documents the low-level, fine-grained modules of OmniGenomeBench, including models, datasets, metrics, tokenizers, and trainers. These modules provide the building blocks for custom development and advanced usage.
+This section documents the low-level, fine-grained modules of OmniGenBench, including models, datasets, metrics, tokenizers, and trainers. These modules provide the building blocks for custom development and advanced usage.
 
 **Overview:**
 
-- Low-level modules expose the core functionality and implementation details of OmniGenomeBench.
+- Low-level modules expose the core functionality and implementation details of OmniGenBench.
 - Users can explore these modules to understand the internal design, extend functionality, or troubleshoot specific issues.
 - Each module is documented with its classes, functions, and usage examples.
 

@@ -19,115 +19,6 @@ from transformers import BatchEncoding
 from ..misc.utils import fprint, env_meta_info, RNA2StructureCache
 
 
-def load_omni_dataset(benchmark=None, dataset='', **kwargs):
-    """
-    Load an OmniGenome dataset.
-
-    This function searches for dataset files within a specified benchmark directory,
-    loads the data, and returns it as a dictionary of examples. It supports
-    various file formats including CSV, JSON, Parquet, and plain text files.
-
-    Args:
-        benchmark (str, optional): The name or path of the benchmark (e.g., "RGB").
-        dataset (str): The specific dataset name to load (e.g., "train").
-        **kwargs: Additional keyword arguments.
-            - max_examples (int): Maximum number of examples to load.
-            - shuffle (bool): Whether to shuffle the examples. Defaults to True.
-
-    Returns:
-        dict: A dictionary where keys are split names (e.g., 'train.csv') and
-              values are lists of data instances (dictionaries).
-
-    Raises:
-        AssertionError: If neither benchmark nor dataset is provided.
-        Exception: If the file format is not supported.
-
-    Example:
-        >>> # Load a benchmark dataset
-        >>> data = load_omni_dataset("RGB", "train", max_examples=1000)
-        >>> print(f"Loaded {len(data)} splits")
-        
-        >>> # Load a specific dataset file
-        >>> data = load_omni_dataset(dataset="path/to/data.json")
-    """
-    import os
-    from findfile import find_file, find_files
-    from ... import download_benchmark
-
-    if not benchmark:
-        assert dataset, "Either benchmark or dataset (name or path) must be provided."
-        benchmark = dataset
-
-    if not os.path.exists(benchmark):
-        fprint(
-            "Benchmark:",
-            benchmark,
-            "does not exist. Search online for available benchmarks.",
-        )
-        benchmark_root = download_benchmark(benchmark)
-    else:
-        benchmark_root = benchmark
-
-    data_cfg_file = find_file(benchmark_root, ['config', dataset])
-    data_files = find_files(
-        os.path.dirname(data_cfg_file),
-        or_key=['train', 'dev', 'test', 'valid', dataset],
-        exclude_key=['.py', '__pycache__', '.ipynb_checkpoints'],
-    )
-    examples = {}
-    max_examples = kwargs.get("max_examples", None)
-
-    for data_source in data_files:
-        split = []
-
-        if data_source.endswith(".csv"):
-            import pandas as pd
-
-            df = pd.read_csv(data_source)
-            for i in range(len(df)):
-                split.append(df.iloc[i].to_dict())
-        elif data_source.endswith(".json"):
-            import json
-
-            try:
-                with open(data_source, "r", encoding="utf8") as f:
-                    split = json.load(f)
-            except:
-                with open(data_source, "r", encoding="utf8") as f:
-                    lines = f.readlines()  # Assume the data is a list of examples
-                for i in range(len(lines)):
-                    lines[i] = json.loads(lines[i])
-                for line in lines:
-                    split.append(line)
-        elif data_source.endswith(".parquet"):
-            import pandas as pd
-
-            df = pd.read_parquet(data_source)
-            for i in range(len(df)):
-                split.append(df.iloc[i].to_dict())
-        elif data_source.endswith(".txt") or data_source.endswith(".dat"):
-            with open(data_source, "r", encoding="utf8") as f:
-                lines = f.readlines()
-            for line in lines:
-                split.append({"text": line.strip()})
-        else:
-            raise Exception(f"Unknown file format of {data_source}.")
-
-        fprint(f"Loaded {len(split)} examples from {data_source}")
-
-        if kwargs.get("shuffle", True) is True:
-            fprint("Detected shuffle=True, shuffling the examples...")
-            random.shuffle(split)
-
-        if max_examples is not None:
-            fprint(f"Detected max_examples={max_examples}, truncating the examples...")
-            split = split[:max_examples]
-
-        examples[os.path.basename(data_source)] = split
-
-    return examples
-
-
 def covert_input_to_tensor(data):
     """
     Recursively converts numerical values in a nested data structure to PyTorch tensors.
@@ -165,7 +56,7 @@ def covert_input_to_tensor(data):
 class OmniGenomeDict(dict):
     """
     A dictionary subclass that allows moving all tensor values to a specified device.
-    
+
     This class extends the standard Python dictionary to provide a convenient
     method for moving all tensor values to a specific device (CPU/GPU).
     """
@@ -196,14 +87,14 @@ class OmniGenomeDict(dict):
 class OmniDataset(torch.utils.data.Dataset):
     """
     Abstract base class for all datasets in OmniGenome.
-    
+
     This class provides a unified interface for genomic datasets in the OmniGenome
     framework. It handles data loading, preprocessing, tokenization, and provides
     a PyTorch-compatible dataset interface.
-    
+
     The class supports various data formats and can handle different types of
     genomic tasks including classification, regression, and token-level tasks.
-    
+
     Attributes:
         tokenizer: The tokenizer to use for processing sequences.
         max_length (int): The maximum sequence length for tokenization.
@@ -227,17 +118,17 @@ class OmniDataset(torch.utils.data.Dataset):
             **kwargs: Additional keyword arguments.
                 - label2id (dict): A mapping from labels to integer IDs.
                 - shuffle (bool): Whether to shuffle the data. Defaults to True.
-                - structure_in (bool): Whether to include secondary structure 
+                - structure_in (bool): Whether to include secondary structure
                   information. Defaults to False.
-                - drop_long_seq (bool): Whether to drop sequences longer than 
+                - drop_long_seq (bool): Whether to drop sequences longer than
                   max_length. Defaults to False.
 
         Example:
             >>> # Initialize with a single data file
             >>> dataset = OmniDataset("data.json", tokenizer, max_length=512)
-            
+
             >>> # Initialize with label mapping
-            >>> dataset = OmniDataset("data.json", tokenizer, 
+            >>> dataset = OmniDataset("data.json", tokenizer,
             ...                      label2id={"A": 0, "B": 1})
         """
         super(OmniDataset, self).__init__()
@@ -267,9 +158,7 @@ class OmniDataset(torch.utils.data.Dataset):
             )
             self.max_length = self.tokenizer.max_length
         else:
-            fprint(
-                f"No max_length detected, using default max_length=512."
-            )
+            fprint(f"No max_length detected, using default max_length=512.")
             self.max_length = 512
 
         self.tokenizer.max_length = self.max_length
@@ -526,6 +415,47 @@ class OmniDataset(torch.utils.data.Dataset):
                     lines = f.readlines()
                 for line in lines:
                     examples.append({"text": line.strip()})
+            elif data_source.endswith(
+                (".fasta", ".fa", ".fna", ".ffn", ".faa", ".frn")
+            ):
+                try:
+                    from Bio import SeqIO
+                except ImportError:
+                    raise ImportError(
+                        "Biopython is required for FASTA parsing. Please install with 'pip install biopython'."
+                    )
+                for record in SeqIO.parse(data_source, "fasta"):
+                    examples.append(
+                        {
+                            "id": record.id,
+                            "sequence": str(record.seq),
+                            "description": record.description,
+                        }
+                    )
+            elif data_source.endswith((".fastq", ".fq")):
+                try:
+                    from Bio import SeqIO
+                except ImportError:
+                    raise ImportError(
+                        "Biopython is required for FASTQ parsing. Please install with 'pip install biopython'."
+                    )
+                for record in SeqIO.parse(data_source, "fastq"):
+                    examples.append(
+                        {
+                            "id": record.id,
+                            "sequence": str(record.seq),
+                            "quality": record.letter_annotations.get(
+                                "phred_quality", []
+                            ),
+                        }
+                    )
+            elif data_source.endswith(".bed"):
+                import pandas as pd
+
+                df = pd.read_csv(data_source, sep="\t", comment="#")
+                # Assign column names for standard BED fields
+                for _, row in df.iterrows():
+                    examples.append(row.to_dict())
             else:
                 raise Exception("Unknown file format.")
 
@@ -709,4 +639,3 @@ class OmniDataset(torch.utils.data.Dataset):
         """
         for data_item in self.data:
             yield OmniGenomeDict(data_item)
-

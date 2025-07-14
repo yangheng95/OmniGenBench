@@ -32,11 +32,11 @@ def load_benchmark_datasets(
 ):
     """
     Load benchmark datasets from the OmniGenome hub.
-    
+
     This function automatically downloads benchmark datasets if they don't exist locally,
     loads their configurations, and initializes train/validation/test datasets with
     the specified tokenizer.
-    
+
     Args:
         benchmark (str): Name or path of the benchmark to load. If the benchmark
             doesn't exist locally, it will be downloaded from the hub.
@@ -46,17 +46,17 @@ def load_benchmark_datasets(
             be loaded from the benchmark configuration.
         **kwargs: Additional keyword arguments to override benchmark configuration.
             These will be passed to the dataset classes and tokenizer initialization.
-    
+
     Returns:
         dict: Dictionary containing datasets for each benchmark task, with keys
             being benchmark names and values being dictionaries with 'train',
             'valid', and 'test' datasets.
-    
+
     Raises:
         FileNotFoundError: If the benchmark cannot be found or downloaded.
         ValueError: If the benchmark configuration is invalid.
         ImportError: If required dependencies are not available.
-    
+
     Example:
         >>> from omnigenome import OmniSingleNucleotideTokenizer
         >>> tokenizer = OmniSingleNucleotideTokenizer.from_pretrained("model_name")
@@ -64,7 +64,7 @@ def load_benchmark_datasets(
         >>> print(f"Loaded {len(datasets)} benchmark tasks")
         >>> for task_name, task_datasets in datasets.items():
         ...     print(f"{task_name}: {len(task_datasets['train'])} train samples")
-    
+
     Note:
         - The function automatically handles U/T conversion and other preprocessing
           based on the benchmark configuration.
@@ -80,7 +80,7 @@ def load_benchmark_datasets(
             "does not exist. Search online for available benchmarks.",
         )
         benchmark = download_benchmark(benchmark)
-        
+
     # Import benchmark list
     bench_metadata = load_module_from_path(
         f"bench_metadata", f"{benchmark}/metadata.py"
@@ -107,9 +107,7 @@ def load_benchmark_datasets(
 
         for key, value in _kwargs.items():
             if key in bench_config:
-                fprint(
-                    "Override", key, "with", value, "according to the input kwargs"
-                )
+                fprint("Override", key, "with", value, "according to the input kwargs")
                 bench_config.update({key: value})
 
             else:
@@ -170,8 +168,10 @@ def load_benchmark_datasets(
             "valid": valid_set,
         }
 
-        fprint(f"Loaded dataset for {bench} with {len(train_set)} train samples, "
-              f"{len(test_set)} test samples and {len(valid_set)} valid samples.")
+        fprint(
+            f"Loaded dataset for {bench} with {len(train_set)} train samples, "
+            f"{len(test_set)} test samples and {len(valid_set)} valid samples."
+        )
 
         datasets[bench] = dataset
 

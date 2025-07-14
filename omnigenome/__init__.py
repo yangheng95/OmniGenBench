@@ -8,19 +8,13 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 
 """
-OmniGenome: A comprehensive toolkit for genomic foundation models.
+This __init__.py file exposes the Key API Entries of the library for easy access.
+Use dir(omnigenome) to see all available APIs.
 
-This package provides a suite of tools for working with genomic data, including:
-- Automated benchmarking and training pipelines.
-- A hub for accessing pre-trained models, datasets, and pipelines.
-- A flexible and extensible framework for building custom models and tasks.
-
-This __init__.py file exposes the core components of the library for easy access.
-
-Key Components:
----------------
+Key API Entries:
+----------------
 - AutoBench: Automated benchmarking of genomic models
-- AutoTrain: Automated training of genomic models  
+- AutoTrain: Automated training of genomic models
 - BenchHub: Hub for accessing benchmarks
 - ModelHub: Hub for accessing pre-trained models
 - PipelineHub: Hub for accessing pipelines
@@ -29,27 +23,10 @@ Key Components:
 - Tokenizer classes for different sequence representations
 - Metric classes for evaluation
 - Trainer classes for model training
-
-Example Usage:
---------------
-```python
-from omnigenome import AutoBench, AutoTrain, OmniModelForSequenceClassification
-
-# Run automated benchmarking
-bench = AutoBench("RGB", "model_name")
-bench.run()
-
-# Train a model
-trainer = AutoTrain("RGB", "model_name")
-trainer.run()
-
-# Use a specific model
-model = OmniModelForSequenceClassification("model_path", tokenizer)
-```
 """
 
-__name__ = "omnigenome"
-__version__ = "0.3.0alpha"
+__name__ = "omnigenbench"
+__version__ = "0.3.1alpha"
 
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
@@ -140,10 +117,18 @@ from .src.abc.abstract_tokenizer import OmniTokenizer as OmniGenomeTokenizer
 from .src.abc.abstract_dataset import OmniDataset as OmniGenomeDataset
 from .src.abc.abstract_metric import OmniMetric as OmniGenomeMetric
 from .src.abc.abstract_model import OmniModel as OmniGenomeModel
-from .src.dataset.omni_dataset import OmniDatasetForSequenceClassification as OmniGenomeDatasetForSequenceClassification
-from .src.dataset.omni_dataset import OmniDatasetForSequenceRegression as OmniGenomeDatasetForSequenceRegression
-from .src.dataset.omni_dataset import OmniDatasetForTokenClassification as OmniGenomeDatasetForTokenClassification
-from .src.dataset.omni_dataset import OmniDatasetForTokenRegression as OmniGenomeDatasetForTokenRegression
+from .src.dataset.omni_dataset import (
+    OmniDatasetForSequenceClassification as OmniGenomeDatasetForSequenceClassification,
+)
+from .src.dataset.omni_dataset import (
+    OmniDatasetForSequenceRegression as OmniGenomeDatasetForSequenceRegression,
+)
+from .src.dataset.omni_dataset import (
+    OmniDatasetForTokenClassification as OmniGenomeDatasetForTokenClassification,
+)
+from .src.dataset.omni_dataset import (
+    OmniDatasetForTokenRegression as OmniGenomeDatasetForTokenRegression,
+)
 from .src.lora.lora_model import OmniLoraModel as OmniGenomeLoraModel
 from .src.model import (
     OmniModelForSequenceClassification as OmniGenomeModelForSequenceClassification,
@@ -159,10 +144,10 @@ from .src.model import (
     OmniModelForRNADesign as OmniGenomeModelForRNADesign,
     OmniModelForEmbedding as OmniGenomeModelForEmbedding,
     OmniModelForAugmentation as OmniGenomeModelForAugmentation,
-
 )
 
 from .utility.ensemble import VoteEnsemblePredictor
+
 # ------------------------------------------------------------------------------
 
 
@@ -215,7 +200,7 @@ __all__ = [
     "download_benchmark",
     "download_model",
     "download_pipeline",
-    "VoteEnsemblePredictor"
+    "VoteEnsemblePredictor",
 ]
 
 
@@ -227,10 +212,10 @@ LOGO1 = r"""
         @@** = **@@                \___/ |_| |_| |_||_| |_||_|
      @@** ------+ **@@                
    @@** =========# **@@            ____  
-  @@ ---------------+ @@          / ___|  ___  _ __    ___   _ __ ___    ___ 
- @@ ================== @@        | |  _  / _ \| '_ \  / _ \ | '_ ` _ \  / _ \
-  @@ +--------------- @@         | |_| ||  __/| | | || (_) || | | | | ||  __/ 
-   @@** #========= **@@           \____| \___||_| |_| \___/ |_| |_| |_| \___| 
+  @@ ---------------+ @@          / ___|  ___  _ __   
+ @@ ================== @@        | |  _  / _ \| '_ \
+  @@ +--------------- @@         | |_| ||  __/| | | |
+   @@** #========= **@@           \____| \___||_| |_| 
     @@** +------ **@@          
        @@** = **@@           
           @@**                    ____                      _   
@@ -251,10 +236,10 @@ LOGO2 = r"""
    *@@  #========= @@*        
     *@@*         *@@*          
       *@@  +---@@@*              ____  
-        *@@*   **               / ___|  ___  _ __    ___   _ __ ___    ___ 
-          **@**                | |  _  / _ \| '_ \  / _ \ | '_ ` _ \  / _ \ 
-        *@@* *@@*              | |_| ||  __/| | | || (_) || | | | | ||  __/ 
-      *@@ ---+  @@*             \____| \___||_| |_| \___/ |_| |_| |_| \___| 
+        *@@*   **               / ___|  ___  _ __  
+          **@**                | |  _  / _ \| '_ \ 
+        *@@* *@@*              | |_| ||  __/| | | |
+      *@@ ---+  @@*             \____| \___||_| |_|
     *@@*         *@@*          
    *@@ =========#  @@*         
   *@@               @@*        

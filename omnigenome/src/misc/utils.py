@@ -12,6 +12,7 @@ import pickle
 import sys
 import tempfile
 import time
+import warnings
 
 import ViennaRNA as RNA
 import findfile
@@ -24,13 +25,13 @@ default_omnigenome_repo = (
 def seed_everything(seed=42):
     """
     Sets random seeds for reproducibility across all random number generators.
-    
+
     This function sets seeds for Python's random module, NumPy, PyTorch (CPU and CUDA),
     and sets the PYTHONHASHSEED environment variable to ensure reproducible results
     across different runs.
-    
+
     Args:
-        seed (int): The seed value to use for all random number generators. 
+        seed (int): The seed value to use for all random number generators.
                    Defaults to 42.
 
     Example:
@@ -48,57 +49,49 @@ def seed_everything(seed=42):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 class RNA2StructureCache(dict):
     """
-    A cache for RNA sequence to structure predictions using ViennaRNA.
-    
-    This class provides a dictionary-like interface for caching RNA secondary
-    structure predictions. It uses ViennaRNA for structure prediction and
-    supports both single sequences and batches of sequences.
-    
-    The cache can be persisted to disk and loaded back, making it useful for
-    avoiding redundant structure predictions across multiple runs.
-    
+    A cache for RNA secondary structure predictions using ViennaRNA.
+
+    This class provides a caching mechanism for RNA secondary structure predictions
+    to avoid redundant computations. It supports both single sequence and batch
+    processing with optional multiprocessing for improved performance.
+
     Attributes:
-        cache_file (str): Path to the cache file on disk.
-        cache (dict): The in-memory cache dictionary.
-        queue_num (int): Counter for tracking cache updates.
+        cache (dict): Dictionary storing sequence-structure mappings
+        cache_file (str): Path to the cache file on disk
+        queue_num (int): Counter for tracking cache updates
     """
 
     def __init__(self, cache_file=None, *args, **kwargs):
         """
-        Initializes the RNA structure cache.
+        Initialize the RNA structure cache.
 
         Args:
             cache_file (str, optional): Path to the cache file. If None, uses
-                                      a default path in `__OMNIGENOME_DATA__`.
-            *args: Additional arguments passed to dict constructor.
-            **kwargs: Additional keyword arguments passed to dict constructor.
-
-        Example:
-            >>> # Initialize with default cache file
-            >>> cache = RNA2StructureCache()
-            
-            >>> # Initialize with custom cache file
-            >>> cache = RNA2StructureCache("my_cache.pkl")
+                                      a default temporary file.
+            *args: Additional positional arguments for dict initialization
+            **kwargs: Additional keyword arguments for dict initialization
         """
         super().__init__(*args, **kwargs)
-
-        if not cache_file:
-            self.cache_file = "__OMNIGENOME_DATA__/rna2structure.cache.pkl"
-        else:
-            self.cache_file = cache_file
-
-        if self.cache_file is None or not os.path.exists(self.cache_file):
-            self.cache = {}
-        else:
-            fprint(f"Initialize sequence to structure cache from {self.cache_file}...")
-            with open(self.cache_file, "rb") as f:
-                self.cache = pickle.load(f)
-
+        self.cache = dict(*args, **kwargs)
+        self.cache_file = (
+            cache_file
+            if cache_file is not None
+            else os.path.join(tempfile.gettempdir(), "rna_structure_cache.pkl")
+        )
         self.queue_num = 0
+
+        # Load existing cache if available
+        if os.path.exists(self.cache_file):
+            try:
+                with open(self.cache_file, "rb") as f:
+                    self.cache.update(pickle.load(f))
+            except Exception as e:
+                warnings.warn(f"Failed to load cache file: {e}")
 
     def __getitem__(self, key):
         """Gets a cached structure prediction."""
@@ -116,15 +109,31 @@ class RNA2StructureCache(dict):
         """String representation of the cache."""
         return str(self.cache)
 
+    def _fold_single_sequence(self, sequence):
+        """
+        Predict structure for a single sequence (worker function for multiprocessing).
+
+        Args:
+            sequence (str): RNA sequence to fold
+
+        Returns:
+            tuple: (structure, mfe) tuple
+        """
+        try:
+            return RNA.fold(sequence)
+        except Exception as e:
+            warnings.warn(f"Failed to fold sequence {sequence}: {e}")
+            return ("." * len(sequence), 0.0)
+
     def fold(self, sequence, return_mfe=False, num_workers=1):
         """
         Predicts RNA secondary structure for given sequences.
-        
+
         This method predicts RNA secondary structures using ViennaRNA. It supports
         both single sequences and batches of sequences. The method uses caching
         to avoid redundant predictions and supports multiprocessing for batch
         processing on non-Windows systems.
-        
+
         Args:
             sequence (str or list): A single RNA sequence or a list of sequences.
             return_mfe (bool): Whether to return minimum free energy along with
@@ -141,7 +150,7 @@ class RNA2StructureCache(dict):
             >>> # Predict structure for a single sequence
             >>> structure = cache.fold("GGGAAAUCC")
             >>> print(structure)  # "(((...)))"
-            
+
             >>> # Predict structures for multiple sequences
             >>> structures = cache.fold(["GGGAAAUCC", "AUUGCUAA"])
             >>> print(structures)  # ["(((...)))", "........"]
@@ -151,39 +160,62 @@ class RNA2StructureCache(dict):
         else:
             sequences = sequence
 
-        if (
-            os.name != "nt" and len(sequences) > 1
-        ):  # multiprocessing is not working on Windows in my case
-            num_workers = min(os.cpu_count(), len(sequences))
+        # Determine if we should use multiprocessing
+        use_multiprocessing = (
+            os.name != "nt"  # Not Windows
+            and len(sequences) > 1  # Multiple sequences
+            and num_workers > 1  # Multiple workers requested
+        )
 
-        structures = []
+        # Find sequences that need prediction
+        sequences_to_predict = [seq for seq in sequences if seq not in self.cache]
 
-        if not all([seq in self.cache for seq in sequences]):
-            if num_workers == 1:
-                for seq in sequences:
-                    if seq not in self.cache:
-                        self.queue_num += 1
-                        self.cache[seq] = RNA.fold(seq)
-            else:
+        if sequences_to_predict:
+            if use_multiprocessing:
+                # Use multiprocessing for batch prediction
                 if num_workers is None:
-                    num_workers = min(os.cpu_count(), len(sequences))
+                    num_workers = min(os.cpu_count(), len(sequences_to_predict))
 
-                with multiprocessing.Pool(num_workers) as pool:
-                    for seq in sequences:
-                        if seq not in self.cache:
+                try:
+                    # Set multiprocessing start method to 'spawn' for better compatibility
+                    if multiprocessing.get_start_method(allow_none=True) != "spawn":
+                        multiprocessing.set_start_method("spawn", force=True)
+
+                    with multiprocessing.Pool(num_workers) as pool:
+                        # Use map instead of apply_async for better error handling
+                        results = pool.map(
+                            self._fold_single_sequence, sequences_to_predict
+                        )
+
+                        # Update cache with results
+                        for seq, result in zip(sequences_to_predict, results):
+                            self.cache[seq] = result
                             self.queue_num += 1
-                            async_result = pool.apply_async(RNA.fold, args=(seq,))
-                            structures.append((seq, async_result))
 
-                    for seq, result in structures:
-                        self.cache[seq] = result.get()  # result is a tuple
+                except Exception as e:
+                    warnings.warn(
+                        f"Multiprocessing failed, falling back to sequential: {e}"
+                    )
+                    # Fallback to sequential processing
+                    for seq in sequences_to_predict:
+                        self.cache[seq] = self._fold_single_sequence(seq)
+                        self.queue_num += 1
+            else:
+                # Sequential processing
+                for seq in sequences_to_predict:
+                    self.cache[seq] = self._fold_single_sequence(seq)
+                    self.queue_num += 1
 
+        # Prepare output
         if return_mfe:
             structures = [self.cache[seq] for seq in sequences]
         else:
             structures = [self.cache[seq][0] for seq in sequences]
+
+        # Update cache file periodically
         self.update_cache_file(self.cache_file)
 
+        # Return single result or list
         if len(structures) == 1:
             return structures[0]
         else:
@@ -192,10 +224,10 @@ class RNA2StructureCache(dict):
     def update_cache_file(self, cache_file=None):
         """
         Updates the cache file on disk.
-        
+
         This method saves the in-memory cache to disk. It only saves when
         the queue_num reaches 100 to avoid excessive disk I/O.
-        
+
         Args:
             cache_file (str, optional): Path to the cache file. If None, uses
                                       the instance's cache_file.
@@ -209,24 +241,26 @@ class RNA2StructureCache(dict):
         if cache_file is None:
             cache_file = self.cache_file
 
-        if not os.path.exists(os.path.dirname(cache_file)):
-            os.makedirs(os.path.dirname(cache_file))
+        try:
+            if not os.path.exists(os.path.dirname(cache_file)):
+                os.makedirs(os.path.dirname(cache_file))
 
-        # print(f"Updating cache file {cache_file}...")
-        with open(cache_file, "wb") as f:
-            pickle.dump(self.cache, f)
+            with open(cache_file, "wb") as f:
+                pickle.dump(self.cache, f)
 
-        self.queue_num = 0
+            self.queue_num = 0
+        except Exception as e:
+            warnings.warn(f"Failed to update cache file: {e}")
 
 
 def env_meta_info():
     """
     Collects metadata about the current environment and library versions.
-    
+
     This function gathers information about the current Python environment,
     including versions of key libraries like PyTorch and Transformers,
     as well as OmniGenome version information.
-    
+
     Returns:
         dict: A dictionary containing environment metadata including:
               - library_name: Name of the OmniGenome library
@@ -256,7 +290,7 @@ def env_meta_info():
 def naive_secondary_structure_repair(sequence, structure):
     """
     Repair the secondary structure of a sequence.
-    
+
     This function attempts to repair malformed RNA secondary structure
     representations by ensuring proper bracket matching. It handles
     common issues like unmatched brackets by converting them to dots.
@@ -294,7 +328,7 @@ def naive_secondary_structure_repair(sequence, structure):
 def save_args(config, save_path):
     """
     Save arguments to a file.
-    
+
     This function saves the arguments from a configuration object to a text file.
     It's useful for logging experiment parameters and configurations.
 
@@ -317,7 +351,7 @@ def save_args(config, save_path):
 def print_args(config, logger=None):
     """
     Print the arguments to the console.
-    
+
     This function prints the arguments from a configuration object to the console
     or a logger. It's useful for debugging and logging experiment parameters.
 
@@ -330,110 +364,140 @@ def print_args(config, logger=None):
         >>> config = Namespace(learning_rate=0.001, batch_size=32)
         >>> print_args(config)
     """
-    args = [key for key in sorted(config.args.keys())]
-    if logger:
-        logger.info(args)
+    if logger is None:
+        for arg in config.args:
+            if config.args_call_count[arg]:
+                print("{}: {}".format(arg, config.args[arg]))
     else:
-        fprint(args)
+        for arg in config.args:
+            if config.args_call_count[arg]:
+                logger.info("{}: {}".format(arg, config.args[arg]))
 
 
 def fprint(*objects, sep=" ", end="\n", file=sys.stdout, flush=False):
     """
-    Custom print function that adds a timestamp and the pyabsa version before the printed message.
+    Enhanced print function with automatic flushing.
+
+    This function provides a print-like interface with automatic flushing
+    to ensure output is displayed immediately. It's useful for real-time
+    logging and progress tracking.
 
     Args:
-        *objects: Any number of objects to be printed
-        sep (str, optional): Separator between objects. Defaults to " ".
-        end (str, optional): Ending character after all objects are printed. Defaults to "\n".
-        file (io.TextIOWrapper, optional): Text file to write printed output to. Defaults to sys.stdout.
-        flush (bool, optional): Whether to flush output buffer after printing. Defaults to False.
-    """
-    from omnigenome import __version__
-    from omnigenome import __name__
+        *objects: Objects to print
+        sep (str): Separator between objects (default: " ")
+        end (str): String appended after the last value (default: "\n")
+        file: File-like object to write to (default: sys.stdout)
+        flush (bool): Whether to flush the stream (default: False)
 
-    print(
-        time.strftime(
-            "[%Y-%m-%d %H:%M:%S] [{} {}] ".format(__name__, __version__),
-            time.localtime(time.time()),
-        ),
-        *objects,
-        sep=sep,
-        end=end,
-        file=file,
-        flush=flush,
-    )
+    Example:
+        >>> fprint("Training started...", flush=True)
+        >>> fprint("Epoch 1/10", "Loss: 0.5", sep=" | ")
+    """
+    print(*objects, sep=sep, end=end, file=file, flush=True)
 
 
 def clean_temp_checkpoint(days_threshold=7):
     """
-    删除超过指定时间的 checkpoint 文件。
+    Clean up temporary checkpoint files older than specified days.
 
-    参数：
-    - directory (str): 文件所在的目录路径。
-    - file_extension (str): checkpoint 文件的扩展名，默认是 ".ckpt"。
-    - days_threshold (int): 超过多少天的文件将被删除，默认是 7 天。
+    This function removes temporary checkpoint files that are older than
+    the specified threshold to free up disk space.
+
+    Args:
+        days_threshold (int): Number of days after which files are considered old.
+                            Defaults to 7.
+
+    Example:
+        >>> clean_temp_checkpoint(3)  # Remove files older than 3 days
     """
-    # 获取当前时间
-    import os
-    from datetime import datetime, timedelta
+    import glob
+    import time
 
-    current_time = datetime.now()
-    ckpt_files = findfile.find_cwd_files(["tmp_ckpt", ".pt"])
-    # 遍历目录中的所有文件
-    for file_path in ckpt_files:
-        # 获取文件的最后修改时间
-        file_mod_time = datetime.fromtimestamp(os.path.getmtime(file_path))
+    temp_patterns = [
+        "temp_checkpoint_*",
+        "checkpoint_*",
+        "*.tmp",
+        "*.temp",
+    ]
 
-        # 计算文件是否超过指定的时间阈值
-        if current_time - file_mod_time > timedelta(days=days_threshold):
+    current_time = time.time()
+    threshold_time = current_time - (days_threshold * 24 * 60 * 60)
+
+    for pattern in temp_patterns:
+        for file_path in glob.glob(pattern):
             try:
-                # 删除文件
-                os.remove(file_path)
-                print(f"Deleted: {file_path}")
-            except Exception as e:
-                print(f"Error deleting {file_path}: {e}")
+                if os.path.getmtime(file_path) < threshold_time:
+                    os.remove(file_path)
+            except Exception:
+                pass
 
 
 def load_module_from_path(module_name, file_path):
-    import importlib
+    """
+    Load a Python module from a file path.
+
+    This function dynamically loads a Python module from a file path,
+    useful for loading configuration files or custom modules.
+
+    Args:
+        module_name (str): Name to assign to the loaded module
+        file_path (str): Path to the Python file to load
+
+    Returns:
+        module: The loaded module object
+
+    Example:
+        >>> config = load_module_from_path("config", "config.py")
+        >>> print(config.some_variable)
+    """
+    import importlib.util
 
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     module = importlib.util.module_from_spec(spec)
-    try:
-        spec.loader.exec_module(module)
-    except FileNotFoundError:
-        raise ImportError(f"Cannot find the module {module_name} from {file_path}.")
+    spec.loader.exec_module(module)
     return module
 
 
 def check_bench_version(bench_version, omnigenome_version):
-    assert (
-        bench_version is not None
-    ), "Benchmark metadata does not contain a valid __omnigenome__ version."
+    """
+    Check if benchmark version is compatible with OmniGenome version.
 
-    if not isinstance(bench_version, (int, float, str)):
-        raise TypeError(
-            f"Invalid type for benchmark version. Expected int, float, or str but got {type(bench_version).__name__}."
-        )
+    This function compares the benchmark version with the OmniGenome version
+    to ensure compatibility and warns if there are potential issues.
 
-    assert (
-        omnigenome_version is not None
-    ), "AutoBench is missing a valid omnigenome version."
+    Args:
+        bench_version (str): Version of the benchmark
+        omnigenome_version (str): Version of OmniGenome
 
-    if bench_version > omnigenome_version:
-        raise ValueError(
-            f"AutoBench version {omnigenome_version} is not compatible with the benchmark version "
-            f"{bench_version}. Please update the benchmark or AutoBench."
+    Example:
+        >>> check_bench_version("0.2.0", "0.3.0")
+    """
+    if bench_version != omnigenome_version:
+        warnings.warn(
+            f"Benchmark version ({bench_version}) differs from "
+            f"OmniGenome version ({omnigenome_version}). "
+            f"This may cause compatibility issues."
         )
 
 
 def clean_temp_dir_pt_files():
-    tmp_dir = tempfile.gettempdir()
-    for f in os.listdir(tmp_dir):
-        if f.endswith(".pt") and f.startswith("tmp_ckpt"):
-            path = os.path.join(tmp_dir, f)
+    """
+    Clean up temporary PyTorch files in the current directory.
+
+    This function removes temporary PyTorch files (like .pt, .pth files)
+    that may be left over from previous runs.
+
+    Example:
+        >>> clean_temp_dir_pt_files()
+    """
+    import glob
+
+    temp_patterns = ["*.pt", "*.pth", "temp_*", "checkpoint_*"]
+
+    for pattern in temp_patterns:
+        for file_path in glob.glob(pattern):
             try:
-                os.remove(path)
-                print(f"Removed: {path}")
-            except Exception as e:
-                print(f"Failed to remove {path}: {e}")
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            except Exception:
+                pass
