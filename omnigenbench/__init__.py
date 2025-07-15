@@ -26,7 +26,7 @@ Key API Entries:
 """
 
 __name__ = "omnigenbench"
-__version__ = "0.3.2alpha2"
+__version__ = "0.3.2alpha3"
 
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"

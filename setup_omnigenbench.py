@@ -37,7 +37,10 @@ setup(
     license="Apache-2.0",
     packages=find_packages(include=["omnigenbench", "omnigenbench.*"]),
     entry_points={
-
+        "console_scripts": [
+            "autobench=omnigenbench.auto.auto_bench.auto_bench_cli:run_bench",
+            "autotrain=omnigenbench.auto.auto_train.auto_train_cli:run_train",
+        ],
     },
     install_requires=[
         "findfile>=2.0.0",
