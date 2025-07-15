@@ -20,7 +20,7 @@ from omnigenbench import *
 
 # Override package metadata to reflect omnigenbench
 __name__ = "omnigenome"
-__version__ = "0.0.1beta"
+__version__ = "1.0.0beta"
 __author__ = "Yang, Heng"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "Apache-2.0"

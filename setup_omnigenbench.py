@@ -40,7 +40,20 @@ setup(
 
     },
     install_requires=[
-        "omnigenome==0.0.1beta",  # Depend on the main package
+        "findfile>=2.0.0",
+        "autocuda>=0.16",
+        "metric-visualizer>=0.9.6",
+        "termcolor",
+        "gitpython",
+        "torch>=2.6.0",
+        "pandas",
+        "viennarna",
+        "scikit-learn",
+        "accelerate",
+        "transformers>=4.46.0",
+        "packaging",
+        "peft",
+        "dill",
     ],
     extras_require=extras,
     classifiers=[

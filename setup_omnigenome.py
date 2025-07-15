@@ -54,8 +54,6 @@ setup(
         "packaging",
         "peft",
         "dill",
-        "accelerate",
-        "omnigenbench>=0.3.2alpha", # Depend on the alias package
     ],
     extras_require=extras,
     classifiers=[
