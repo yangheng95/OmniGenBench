@@ -196,6 +196,7 @@ class OmniDataset(torch.utils.data.Dataset):
                     self.data.append(prepared_input)
 
             self._postprocessing()
+            self._pad_and_truncate()
 
     def print_label_distribution(self):
         """

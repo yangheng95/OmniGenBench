@@ -26,7 +26,7 @@ Key API Entries:
 """
 
 __name__ = "omnigenbench"
-__version__ = "0.3.1alpha"
+__version__ = "0.3.2alpha"
 
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
@@ -123,42 +123,38 @@ from .utility.pipeline_hub.pipeline_hub import PipelineHub
 # Import module utilities
 from .src.model.module_utils import OmniPooling
 
+from .utility.ensemble import VoteEnsemblePredictor
+
+
 # --------------------------------------------------------------------------------
 # For backward compatibility version 0.2.7alpha and earlier
-from .src.abc.abstract_tokenizer import OmniTokenizer as OmniGenomeTokenizer
-from .src.abc.abstract_dataset import OmniDataset as OmniGenomeDataset
-from .src.abc.abstract_metric import OmniMetric as OmniGenomeMetric
-from .src.abc.abstract_model import OmniModel as OmniGenomeModel
-from .src.dataset.omni_dataset import (
-    OmniDatasetForSequenceClassification as OmniGenomeDatasetForSequenceClassification,
+OmniGenomeTokenizer = OmniTokenizer
+OmniGenomeKmersTokenizer = OmniKmersTokenizer
+OmniGenomeSingleNucleotideTokenizer = OmniSingleNucleotideTokenizer
+OmniGenomeBPETokenizer = OmniBPETokenizer
+OmniGenomeDataset = OmniDataset
+OmniGenomeMetric = OmniMetric
+OmniGenomeModel = OmniModel
+OmniGenomeDatasetForSequenceClassification = OmniDatasetForSequenceClassification
+OmniGenomeDatasetForSequenceRegression = OmniDatasetForSequenceRegression
+OmniGenomeDatasetForTokenClassification = OmniDatasetForTokenClassification
+OmniGenomeDatasetForTokenRegression = OmniDatasetForTokenRegression
+OmniGenomeLoraModel = OmniLoraModel
+OmniGenomeModelForSequenceClassification = OmniModelForSequenceClassification
+OmniGenomeModelForMultiLabelSequenceClassification = (
+    OmniModelForMultiLabelSequenceClassification
 )
-from .src.dataset.omni_dataset import (
-    OmniDatasetForSequenceRegression as OmniGenomeDatasetForSequenceRegression,
-)
-from .src.dataset.omni_dataset import (
-    OmniDatasetForTokenClassification as OmniGenomeDatasetForTokenClassification,
-)
-from .src.dataset.omni_dataset import (
-    OmniDatasetForTokenRegression as OmniGenomeDatasetForTokenRegression,
-)
-from .src.lora.lora_model import OmniLoraModel as OmniGenomeLoraModel
-from .src.model import (
-    OmniModelForSequenceClassification as OmniGenomeModelForSequenceClassification,
-    OmniModelForMultiLabelSequenceClassification as OmniGenomeModelForMultiLabelSequenceClassification,
-    OmniModelForTokenClassification as OmniGenomeModelForTokenClassification,
-    OmniModelForSequenceRegression as OmniGenomeModelForSequenceRegression,
-    OmniModelForTokenRegression as OmniGenomeModelForTokenRegression,
-    OmniModelForStructuralImputation as OmniGenomeModelForStructuralImputation,
-    OmniModelForMatrixRegression as OmniGenomeModelForMatrixRegression,
-    OmniModelForMatrixClassification as OmniGenomeModelForMatrixClassification,
-    OmniModelForMLM as OmniGenomeModelForMLM,
-    OmniModelForSeq2Seq as OmniGenomeModelForSeq2Seq,
-    OmniModelForRNADesign as OmniGenomeModelForRNADesign,
-    OmniModelForEmbedding as OmniGenomeModelForEmbedding,
-    OmniModelForAugmentation as OmniGenomeModelForAugmentation,
-)
-
-from .utility.ensemble import VoteEnsemblePredictor
+OmniGenomeModelForTokenClassification = OmniModelForTokenClassification
+OmniGenomeModelForSequenceRegression = OmniModelForSequenceRegression
+OmniGenomeModelForTokenRegression = OmniModelForTokenRegression
+OmniGenomeModelForStructuralImputation = OmniModelForStructuralImputation
+OmniGenomeModelForMatrixRegression = OmniModelForMatrixRegression
+OmniGenomeModelForMatrixClassification = OmniModelForMatrixClassification
+OmniGenomeModelForMLM = OmniModelForMLM
+OmniGenomeModelForSeq2Seq = OmniModelForSeq2Seq
+OmniGenomeModelForRNADesign = OmniModelForRNADesign
+OmniGenomeModelForEmbedding = OmniModelForEmbedding
+OmniGenomeModelForAugmentation = OmniModelForAugmentation
 
 # ------------------------------------------------------------------------------
 
@@ -224,51 +220,77 @@ __all__ = [
     "print_args",
     "env_meta_info",
     "RNA2StructureCache",
+    # OmniGenome* aliases for backward compatibility
+    "OmniGenomeTokenizer",
+    "OmniGenomeKmersTokenizer",
+    "OmniGenomeSingleNucleotideTokenizer",
+    "OmniGenomeBPETokenizer",
+    "OmniGenomeDataset",
+    "OmniGenomeMetric",
+    "OmniGenomeModel",
+    "OmniGenomeDatasetForSequenceClassification",
+    "OmniGenomeDatasetForSequenceRegression",
+    "OmniGenomeDatasetForTokenClassification",
+    "OmniGenomeDatasetForTokenRegression",
+    "OmniGenomeLoraModel",
+    "OmniGenomeModelForSequenceClassification",
+    "OmniGenomeModelForMultiLabelSequenceClassification",
+    "OmniGenomeModelForTokenClassification",
+    "OmniGenomeModelForSequenceRegression",
+    "OmniGenomeModelForTokenRegression",
+    "OmniGenomeModelForStructuralImputation",
+    "OmniGenomeModelForMatrixRegression",
+    "OmniGenomeModelForMatrixClassification",
+    "OmniGenomeModelForMLM",
+    "OmniGenomeModelForSeq2Seq",
+    "OmniGenomeModelForRNADesign",
+    "OmniGenomeModelForEmbedding",
+    "OmniGenomeModelForAugmentation",
 ]
 
 
-LOGO1 = r"""                       
-    **@@ #========= @@**            ___                     _ 
+LOGO1 = r"""
+    **@@ #========= @@**            ___                     _
       **@@ +----- @@**             / _ \  _ __ ___   _ __  (_)
         **@@ = @@**               | | | || '_ ` _ \ | '_ \ | |
            **@@                   | |_| || | | | | || | | || |
         @@** = **@@                \___/ |_| |_| |_||_| |_||_|
-     @@** ------+ **@@                
-   @@** =========# **@@            ____  
-  @@ ---------------+ @@          / ___|  ___  _ __   
+     @@** ------+ **@@
+   @@** =========# **@@            ____
+  @@ ---------------+ @@          / ___|  ___  _ __
  @@ ================== @@        | |  _  / _ \| '_ \
   @@ +--------------- @@         | |_| ||  __/| | | |
-   @@** #========= **@@           \____| \___||_| |_| 
-    @@** +------ **@@          
-       @@** = **@@           
-          @@**                    ____                      _   
-       **@@ = @@**               | __ )   ___  _ __    ___ | |__  
-    **@@ -----+  @@**            |  _ \  / _ \| '_ \  / __|| '_ \ 
+   @@** #========= **@@           \____| \___||_| |_|
+    @@** +------ **@@
+       @@** = **@@
+          @@**                    ____                      _
+       **@@ = @@**               | __ )   ___  _ __    ___ | |__
+    **@@ -----+  @@**            |  _ \  / _ \| '_ \  / __|| '_ \
   **@@ ==========# @@**          | |_) ||  __/| | | || (__ | | | |
   @@ --------------+ @@**        |____/  \___||_| |_| \___||_| |_|
 """
 
 LOGO2 = r"""
 
-   **  +----------- **           ___                     _ 
+   **  +----------- **           ___                     _
   @@                 @@         / _ \  _ __ ___   _ __  (_)
  @@* #============== *@@       | | | || '_ ` _ \ | '_ \ | |
  @@*                 *@@       | |_| || | | | | || | | || |
  *@@  +------------ *@@         \___/ |_| |_| |_||_| |_||_|
-  *@*               @@*       
-   *@@  #========= @@*        
-    *@@*         *@@*          
-      *@@  +---@@@*              ____  
-        *@@*   **               / ___|  ___  _ __  
-          **@**                | |  _  / _ \| '_ \ 
+  *@*               @@*
+   *@@  #========= @@*
+    *@@*         *@@*
+      *@@  +---@@@*              ____
+        *@@*   **               / ___|  ___  _ __
+          **@**                | |  _  / _ \| '_ \
         *@@* *@@*              | |_| ||  __/| | | |
       *@@ ---+  @@*             \____| \___||_| |_|
-    *@@*         *@@*          
-   *@@ =========#  @@*         
-  *@@               @@*        
- *@@ -------------+  @@*        ____                      _   
- @@                   @@       | __ )   ___  _ __    ___ | |__ 
- @@ ===============#  @@       |  _ \  / _ \| '_ \  / __|| '_ \ 
+    *@@*         *@@*
+   *@@ =========#  @@*
+  *@@               @@*
+ *@@ -------------+  @@*        ____                      _
+ @@                   @@       | __ )   ___  _ __    ___ | |__
+ @@ ===============#  @@       |  _ \  / _ \| '_ \  / __|| '_ \
   @@                 @@        | |_) ||  __/| | | || (__ | | | |
    ** -----------+  **         |____/  \___||_| |_| \___||_| |_|
 """

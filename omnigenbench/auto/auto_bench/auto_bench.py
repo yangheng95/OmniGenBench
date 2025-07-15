@@ -370,7 +370,7 @@ class AutoBench:
                         if hasattr(TrainingArguments, k) and k != "output_dir"
                     }
                     training_args = TrainingArguments(
-                        output_dir=f"./autobench_evaluations/{self.model_name}-{bench}",
+                        output_dir=f"autobench_evaluations/{self.model_name}-{bench}",
                         num_train_epochs=hf_kwargs.pop(
                             "num_train_epochs", bench_config["epochs"]
                         ),

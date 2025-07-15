@@ -445,21 +445,22 @@ def download_benchmark(
     if benchmark_name_or_path in benchmarks_info:
         benchmarks_info_item = benchmarks_info[benchmark_name_or_path]
         try:
-            benchmark_url = f'{repo}/benchmarks/{benchmarks_info_item["filename"]}'
+            benchmark_url = f'{repo}benchmarks/{benchmarks_info_item["filename"]}'
             response = requests.get(benchmark_url, stream=True)
             cache_path = os.path.join(cache_dir, f"{benchmarks_info_item['filename']}")
-            with open(cache_path, "wb") as f:
-                for chunk in tqdm.tqdm(
-                    response.iter_content(chunk_size=1024 * 1024),
-                    unit="MB",
-                    total=int(response.headers["content-length"]) // 1024 // 1024,
-                    desc="Downloading benchmark",
-                ):
-                    f.write(chunk)
-        except Exception as e:
+            if not os.path.exists(cache_path):
+                os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+                with open(cache_path, "wb") as f:
+                    for chunk in tqdm.tqdm(
+                        response.iter_content(chunk_size=1024 * 1024),
+                        unit="MB",
+                        total=int(response.headers["content-length"]) // 1024 // 1024,
+                        desc="Downloading benchmark",
+                    ):
+                        f.write(chunk)
+            return unzip_checkpoint(cache_path)
+        except ConnectionError as e:
             raise ConnectionError("Fail to download benchmark: {}".format(e))
-
-        return unzip_checkpoint(cache_path)
 
     else:
         raise ValueError("Benchmark not found in the repository.")

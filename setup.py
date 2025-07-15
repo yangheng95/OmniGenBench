@@ -24,7 +24,7 @@ extras = {
 # This is the main setup.py - it will build omnigenbench by default
 # Use setup_omnigenome.py and setup_omnigenbench.py for separate builds
 setup(
-    name="omnigenome",
+    name="omnigenbench",
     version=__version__,
     description="OmniGenoBench: A comprehensive toolkit for genome analysis.",
     long_description=long_description,
@@ -37,11 +37,11 @@ setup(
     include_package_data=True,
     exclude_package_data={"": [".gitignore"]},
     license="Apache-2.0",
-    packages=find_packages(include=["omnigenome", "omnigenome.*"]),
+    packages=find_packages(include=["omnigenbench", "omnigenbench.*", "omnigenome", "omnigenome.*"]),
     entry_points={
         "console_scripts": [
-            "autobench=omnigenome:run_bench",
-            "autotrain=omnigenome:run_train",
+            "autobench=omnigenbench.auto.auto_bench.auto_bench_cli:run_bench",
+            "autotrain=omnigenbench.auto.auto_train.auto_train_cli:run_train",
         ],
     },
     install_requires=[

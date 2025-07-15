@@ -15,8 +15,19 @@ import sys
 import time
 
 from typing import Optional
-from ..auto_bench.auto_bench import AutoBench
-from ...src.misc.utils import fprint
+
+# Handle both relative and absolute imports
+try:
+    from ..auto_bench.auto_bench import AutoBench
+    from ...src.misc.utils import fprint
+except ImportError:
+    # Fallback for direct execution
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from omnigenbench.auto.auto_bench.auto_bench import AutoBench
+    from omnigenbench.src.misc.utils import fprint
 
 
 def bench_command(args: Optional[list] = None):
@@ -187,43 +198,6 @@ def run_bench():
 
     # Execute the command.
     sys.exit(os.system(cmd))
-
-    # # 匹配tqdm进度条的正则表达式（根据实际输出调整）
-    # tqdm_pattern = re.compile(r'^.*\d+%\|.*\|\s+\d+/\d+\s+\[.*\]\s*$')
-    #
-    # last_tqdm_line = ''
-    #
-    # with open(log_file, 'w', encoding='utf-8') as log_file:
-    #     # 执行命令并捕获输出流
-    #     proc = subprocess.Popen(
-    #         cmd_base,
-    #         shell=True,
-    #         stdout=subprocess.PIPE,
-    #         stderr=subprocess.STDOUT,
-    #         bufsize=1,
-    #         universal_newlines=True
-    #     )
-    #
-    #     # 实时处理输出流
-    #     for line in proc.stdout:
-    #         line = line.rstrip()  # 移除行尾换行符
-    #         if tqdm_pattern.match(line):
-    #             # 更新最后一行tqdm输出
-    #             last_tqdm_line = line + '\n'  # 换行符需要手动添加
-    #             # 实时显示进度条（覆盖模式）
-    #             sys.stdout.write('\r' + line)
-    #             sys.stdout.flush()
-    #         else:
-    #             # 写入日志并正常打印
-    #             log_file.write(line + '\n')
-    #             print(line)
-    #
-    #     # 命令执行完毕后写入最后一个tqdm进度条
-    #     if last_tqdm_line:
-    #         log_file.write(last_tqdm_line)
-    #         sys.stdout.write('\n')  # 最后换行避免覆盖
-    #
-    # sys.exit(proc.returncode)
 
 
 if __name__ == "__main__":

@@ -37,13 +37,10 @@ setup(
     license="Apache-2.0",
     packages=find_packages(include=["omnigenbench", "omnigenbench.*"]),
     entry_points={
-        "console_scripts": [
-            "omnigenbench=omnigenbench:run_bench",
-            "omnigenbench-train=omnigenbench:run_train",
-        ],
+
     },
     install_requires=[
-        "omnigenome>=0.3.0alpha1",  # Depend on the main package
+        "omnigenome==0.0.1beta",  # Depend on the main package
     ],
     extras_require=extras,
     classifiers=[

@@ -37,10 +37,7 @@ setup(
     license="Apache-2.0",
     packages=find_packages(include=["omnigenome", "omnigenome.*"]),
     entry_points={
-        "console_scripts": [
-            "autobench=omnigenome:run_bench",
-            "autotrain=omnigenome:run_train",
-        ],
+
     },
     install_requires=[
         "findfile>=2.0.0",
@@ -57,7 +54,8 @@ setup(
         "packaging",
         "peft",
         "dill",
-        "accelerate"
+        "accelerate",
+        "omnigenbench>=0.3.2alpha", # Depend on the alias package
     ],
     extras_require=extras,
     classifiers=[
