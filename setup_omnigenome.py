@@ -11,7 +11,7 @@ from pathlib import Path
 from setuptools import setup, find_packages
 
 # Define version directly to avoid circular import
-__version__ = "1.0.0beta"
+from omnigenome import __version__
 
 cwd = Path(__file__).parent
 long_description = (cwd / "README.MD").read_text(encoding="utf8")
