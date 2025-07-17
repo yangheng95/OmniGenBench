@@ -9,7 +9,7 @@
 
 """
 This __init__.py file exposes the Key API Entries of the library for easy access.
-Use dir(omnigenome) to see all available APIs.
+Use dir(omnigenbench) to see all available APIs.
 
 Key API Entries:
 ----------------
@@ -26,44 +26,40 @@ Key API Entries:
 """
 
 __name__ = "omnigenbench"
-__version__ = "0.3.2alpha3"
-
+__version__ = "0.3.3alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "Apache-2.0"
 
 # Import core auto components
 from .auto.auto_bench.auto_bench import AutoBench
-from .auto.auto_bench.auto_bench_config import AutoBenchConfig
+from .auto.config.auto_config import AutoConfig
 from .auto.bench_hub.bench_hub import BenchHub
 from .auto.auto_train.auto_train import AutoTrain
 from .auto.auto_bench.auto_bench_cli import run_bench, bench_command
 from .auto.auto_train.auto_train_cli import run_train, train_command
 
 # Import source modules
-from .src import dataset as dataset
-from .src import metric as metric
-from .src import model as model
-from .src import tokenizer as tokenizer
+from .src import dataset, metric, model, tokenizer
 
 # Import abstract base classes
 from .src.abc.abstract_dataset import OmniDataset
 from .src.abc.abstract_metric import OmniMetric
 from .src.abc.abstract_model import OmniModel
 from .src.abc.abstract_tokenizer import OmniTokenizer
-from .src.abc.abstract_tokenizer import OmniTokenizer as AutoTokenizer
 
 # Import dataset classes
-from .src.dataset.omni_dataset import OmniDatasetForSequenceClassification
-from .src.dataset.omni_dataset import OmniDatasetForSequenceRegression
-from .src.dataset.omni_dataset import OmniDatasetForTokenClassification
-from .src.dataset.omni_dataset import OmniDatasetForTokenRegression
+from .src.dataset.omni_dataset import (
+    OmniDatasetForSequenceClassification,
+    OmniDatasetForSequenceRegression,
+    OmniDatasetForTokenClassification,
+    OmniDatasetForTokenRegression,
+)
 
 # Import metric classes
 from .src.metric import ClassificationMetric, RegressionMetric, RankingMetric
 
 # Import utility functions
-from .src.misc import utils as utils
 from .src.misc.utils import (
     clean_temp_dir_pt_files,
     fprint,
@@ -98,9 +94,11 @@ from .src.model import (
 from .src.lora.lora_model import OmniLoraModel
 
 # Import tokenizer classes
-from .src.tokenizer import OmniBPETokenizer
-from .src.tokenizer import OmniKmersTokenizer
-from .src.tokenizer import OmniSingleNucleotideTokenizer
+from .src.tokenizer import (
+    OmniBPETokenizer,
+    OmniKmersTokenizer,
+    OmniSingleNucleotideTokenizer,
+)
 
 # Import trainer classes
 from .src.trainer.hf_trainer import HFTrainer
@@ -108,11 +106,13 @@ from .src.trainer.trainer import Trainer
 from .src.trainer.accelerate_trainer import AccelerateTrainer
 
 # Import hub utilities
-from .utility.hub_utils import download_benchmark
-from .utility.hub_utils import download_model
-from .utility.hub_utils import download_pipeline
-from .utility.hub_utils import query_models_info
-from .utility import hub_utils as hub_utils
+from .utility.hub_utils import (
+    download_benchmark,
+    download_model,
+    download_pipeline,
+    query_models_info,
+)
+from .utility import hub_utils
 
 # Import hub classes
 from .utility.model_hub.model_hub import ModelHub
@@ -122,12 +122,12 @@ from .utility.pipeline_hub.pipeline_hub import PipelineHub
 
 # Import module utilities
 from .src.model.module_utils import OmniPooling
-
 from .utility.ensemble import VoteEnsemblePredictor
-
 
 # --------------------------------------------------------------------------------
 # For backward compatibility version 0.2.7alpha and earlier
+from .auto.config.auto_config import AutoBenchConfig
+
 OmniGenomeTokenizer = OmniTokenizer
 OmniGenomeKmersTokenizer = OmniKmersTokenizer
 OmniGenomeSingleNucleotideTokenizer = OmniSingleNucleotideTokenizer
@@ -158,13 +158,11 @@ OmniGenomeModelForAugmentation = OmniModelForAugmentation
 
 # ------------------------------------------------------------------------------
 
-
 __all__ = [
     "load_benchmark_datasets",
     "OmniDataset",
     "OmniModel",
     "OmniMetric",
-    "AutoTokenizer",
     "OmniTokenizer",
     "OmniKmersTokenizer",
     "OmniSingleNucleotideTokenizer",
@@ -174,29 +172,8 @@ __all__ = [
     "PipelineHub",
     "BenchHub",
     "AutoBench",
-    "AutoBenchConfig",
-    "utils",
-    "model",
-    "tokenizer",
-    "dataset",
-    "OmniModelForSequenceClassification",
-    "OmniModelForMultiLabelSequenceClassification",
-    "OmniModelForTokenClassification",
-    "OmniModelForSequenceRegression",
-    "OmniModelForTokenRegression",
-    "OmniModelForRNADesign",
-    "OmniModelForEmbedding",
-    "OmniModelForAugmentation",
-    "OmniModelForStructuralImputation",
-    "OmniModelForMatrixRegression",
-    "OmniModelForMatrixClassification",
-    "OmniModelForMLM",
-    "OmniModelForSeq2Seq",
-    "OmniDatasetForTokenClassification",
-    "OmniDatasetForTokenRegression",
-    "OmniDatasetForSequenceClassification",
-    "OmniDatasetForSequenceRegression",
-    "OmniLoraModel",
+    "AutoTrain",
+    "AutoConfig",
     "ClassificationMetric",
     "RegressionMetric",
     "RankingMetric",
@@ -204,12 +181,10 @@ __all__ = [
     "HFTrainer",
     "AccelerateTrainer",
     "AutoBenchConfig",
-    "AutoBench",
     "download_benchmark",
     "download_model",
     "download_pipeline",
     "VoteEnsemblePredictor",
-    # utils
     "clean_temp_dir_pt_files",
     "fprint",
     "seed_everything",
@@ -246,6 +221,11 @@ __all__ = [
     "OmniGenomeModelForRNADesign",
     "OmniGenomeModelForEmbedding",
     "OmniGenomeModelForAugmentation",
+    # Command line functions
+    "run_bench",
+    "bench_command",
+    "run_train",
+    "train_command",
 ]
 
 

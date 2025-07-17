@@ -209,7 +209,9 @@ class BaseTrainer(ABC):
         self.patience = patience if patience > 0 else epochs
         self.gradient_accumulation_steps = gradient_accumulation_steps
         self.optimizer = optimizer
-        self.loss_fn = loss_fn
+        # Set loss function if provided
+        if loss_fn is not None and hasattr(self.model, "set_loss_fn"):
+            self.model.set_loss_fn(loss_fn)
         self.compute_metrics = (
             (
                 compute_metrics
@@ -236,10 +238,6 @@ class BaseTrainer(ABC):
         self.predictions = {}
         self._optimization_direction = None
         self.trial_name = kwargs.get("trial_name", self.model.__class__.__name__)
-
-        # Set loss function if provided
-        if self.loss_fn is not None and hasattr(self.model, "set_loss_fn"):
-            self.model.set_loss_fn(self.loss_fn)
 
     def _setup_data_loaders(
         self,

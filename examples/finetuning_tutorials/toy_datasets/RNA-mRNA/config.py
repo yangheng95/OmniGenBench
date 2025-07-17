@@ -14,7 +14,7 @@ import numpy as np
 import torch
 
 from omnigenbench import (
-    AutoBenchConfig,
+    AutoConfig,
     OmniDatasetForTokenRegression,
     OmniModelForTokenRegression,
     RegressionMetric,
@@ -83,4 +83,4 @@ config_dict = {
     "model_cls": OmniModelForTokenRegression,
 }
 
-bench_config = AutoBenchConfig(config_dict)
+bench_config = AutoConfig(config_dict)

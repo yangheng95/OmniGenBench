@@ -15,7 +15,7 @@ import torch
 
 from omnigenbench import (
     ClassificationMetric,
-    AutoBenchConfig,
+    AutoConfig,
     OmniDatasetForTokenClassification,
     OmniModelForTokenClassification,
 )
@@ -80,4 +80,4 @@ config_dict = {
     "model_cls": OmniModelForTokenClassification,
 }
 
-bench_config = AutoBenchConfig(config_dict)
+bench_config = AutoConfig(config_dict)

@@ -414,6 +414,16 @@ def download_benchmark(
         >>> # Download with custom cache directory
         >>> benchmark_path = download_benchmark("RGB", cache_dir="./benchmarks")
     """
+    p = findfile.find_cwd_dir(benchmark_name_or_path)
+    if p:
+        fprint("Benchmark:", benchmark_name_or_path, "found in {}.".format(p))
+        return p
+    else:
+        fprint(
+            "Benchmark:",
+            benchmark_name_or_path,
+            "cannot be found. Search from the online hub to download...",
+        )
     cache_dir = (cache_dir if cache_dir else "__OMNIGENOME_DATA__") + "/benchmarks/"
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
@@ -458,6 +468,9 @@ def download_benchmark(
                         desc="Downloading benchmark",
                     ):
                         f.write(chunk)
+            fprint(
+                f"Benchmark {benchmark_name_or_path} downloaded successfully to: {cache_path}"
+            )
             return unzip_checkpoint(cache_path)
         except ConnectionError as e:
             raise ConnectionError("Fail to download benchmark: {}".format(e))

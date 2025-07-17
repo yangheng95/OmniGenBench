@@ -28,6 +28,7 @@ from ...src.misc.utils import (
 from ...src.trainer.trainer import Trainer
 from ...src.trainer.accelerate_trainer import AccelerateTrainer
 from ...utility.hub_utils import download_benchmark
+from ...auto.config.auto_config import AutoConfig
 from ... import __version__ as omnigenbench_version
 
 
@@ -116,13 +117,8 @@ class AutoBench:
             self.mv.summary(round=4)
         else:
             self.mv = MetricVisualizer(self.mv_path)
-        if not os.path.exists(self.benchmark):
-            fprint(
-                "Benchmark:",
-                benchmark,
-                "does not exist. Search online for available benchmarks.",
-            )
-            self.benchmark = download_benchmark(self.benchmark)
+
+        self.benchmark = download_benchmark(self.benchmark)
 
         # Import benchmark list
         self.bench_metadata = load_module_from_path(
@@ -209,7 +205,17 @@ class AutoBench:
                 self.benchmark, and_key=f"{self.benchmark}.{bench}.config".split(".")
             )
             config = load_module_from_path("config", bench_config_path)
-            bench_config = config.bench_config
+            bench_config = None
+            for attr_name in dir(config):
+                attr = getattr(config, attr_name)
+                if isinstance(
+                    attr, AutoConfig
+                ):  # Check if it is an instance of AutoConfig
+                    bench_config = attr
+            if bench_config is None:
+                raise ValueError(
+                    f"Could not find AutoConfig instance in {bench_config_path}"
+                )
             fprint(f"Loaded config for {bench} from {bench_config_path}")
             fprint(bench_config)
 

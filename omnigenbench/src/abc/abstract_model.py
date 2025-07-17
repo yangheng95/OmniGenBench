@@ -113,6 +113,16 @@ class OmniModel(torch.nn.Module):
             num_labels = len(label2id)
         elif num_labels is not None and label2id is None:
             label2id = {str(i): i for i in range(num_labels)}
+        elif label2id is None and num_labels is None:
+            raise ValueError(
+                "Either label2id or num_labels must be provided to initialize the model."
+            )
+        else:
+            if len(label2id) != num_labels:
+                raise ValueError(
+                    "The length of label2id does not match num_labels. "
+                    f"Expected {num_labels}, but got {len(label2id)}."
+                )
 
         # do not change the order of the following lines
         super().__init__(*args, **kwargs)
@@ -377,6 +387,11 @@ class OmniModel(torch.nn.Module):
             >>> model.set_loss_fn(nn.CrossEntropyLoss())
         """
         self.loss_fn = loss_function
+        try:
+            self.loss_fn.weight.to(self.model.device)
+        except AttributeError:
+            # If the loss function does not have a weight attribute, we assume it's not weighted
+            pass
 
     def predict(self, sequence_or_inputs, **kwargs):
         """

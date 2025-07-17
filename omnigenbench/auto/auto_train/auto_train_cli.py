@@ -10,10 +10,6 @@
 
 import argparse
 import os
-import platform
-import sys
-import time
-
 from typing import Optional
 
 # Handle both relative and absolute imports
@@ -36,14 +32,41 @@ def train_command(args: Optional[list] = None):
 
     :param args: A list of command-line arguments. If None, `sys.argv` is used.
     """
-
     parser = create_parser()
-    parsed_args = parser.parse_args(args)
+    parsed_args, unknown_args = parser.parse_known_args(args)
+    # Dynamically load config.py if it exists in the dataset directory
+    config_path = os.path.join(parsed_args.dataset, "config.py")
+    print(f"Loading configuration from: {config_path}")
+    if os.path.exists(config_path):
+        config = load_module_from_path("module_name", config_path)
+        for attr_name in dir(config):
+            attr = getattr(config, attr_name)
+            if isinstance(attr, AutoConfig):  # Check if it is an instance of AutoConfig
+                # Process the found AutoConfig instance
+                for key, value in vars(
+                    attr
+                ).items():  # Iterate over all attributes of the instance
+                    if not hasattr(parsed_args, key):
+                        setattr(parsed_args, key, value)
+
+    # Convert unknown arguments into a dictionary
+    extra_args = {}
+    for arg in unknown_args:
+        if arg.startswith("--"):
+            key = arg.lstrip("--")
+            value = True  # Default to True for flags
+            if "=" in key:
+                key, value = key.split("=", 1)
+            extra_args[key] = value
+
+    # Merge extra_args into parsed_args
+    for key, value in extra_args.items():
+        if not hasattr(parsed_args, key):
+            setattr(parsed_args, key, value)
 
     model_path = parsed_args.model
-    fprint(f"\n>> Starting evaluation for model: {model_path}")
+    fprint(f"\n>> Starting training for model: {model_path}")
 
-    # Special handling for multimolecule models
     if "multimolecule" in model_path:
         from multimolecule import RnaTokenizer, AutoModelForTokenPrediction
 
@@ -56,16 +79,20 @@ def train_command(args: Optional[list] = None):
         model = model_path
 
     # Initialize AutoTraining
-    autobench = AutoTrain(
-        dataset=parsed_args.dataset,
+    args = vars(parsed_args)
+    args.pop("model")
+    args.pop("tokenizer")
+    autotrain = AutoTrain(
+        dataset=args.pop("dataset"),
         model_name_or_path=model,
         tokenizer=tokenizer,
-        overwrite=parsed_args.overwrite,
-        trainer=parsed_args.trainer,
+        overwrite=args.pop("overwrite", False),
+        trainer=args.pop("trainer", "accelerate"),
+        **vars(parsed_args),  # Pass all parsed arguments
     )
 
-    # Run evaluation
-    autobench.run(**vars(parsed_args))
+    # Run training
+    autotrain.run(**vars(parsed_args))
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -75,10 +102,10 @@ def create_parser() -> argparse.ArgumentParser:
     :return: An `argparse.ArgumentParser` instance.
     """
     parser = argparse.ArgumentParser(
-        description="Genomic Foundation Model Benchmark Suite (Single Model)",
+        description="Genomic Foundation Model Training Suite",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    # Required argument
+    # Required arguments
     parser.add_argument(
         "-d",
         "--dataset",
@@ -92,7 +119,6 @@ def create_parser() -> argparse.ArgumentParser:
         default=None,
         help="Path to the tokenizer to use (HF tokenizer ID or local path).",
     )
-
     parser.add_argument(
         "-m",
         "--model",
@@ -100,37 +126,19 @@ def create_parser() -> argparse.ArgumentParser:
         required=True,
         help="Path to the model to evaluate (HF model ID or local path).",
     )
-
     # Optional arguments
     parser.add_argument(
         "--overwrite",
         type=bool,
         default=False,
-        help="Overwrite existing bench results, otherwise resume from training checkpoint.",
-    )
-    parser.add_argument(
-        "--bs_scale",
-        type=int,
-        default=1,
-        help="Batch size scale factor. To increase GPU memory utilization, set to 2 or 4, etc.",
+        help="Overwrite existing training results, otherwise resume from checkpoint.",
     )
     parser.add_argument(
         "--trainer",
         type=str,
-        default="accelerate",
+        default="native",
         choices=["native", "accelerate", "hf_trainer"],
-        help="Trainer to use for training. \n"
-        "Use 'accelerate' for distributed training. Set to false to disable. "
-        "You can use 'accelerate config' to customize behavior.\n"
-        "Use 'hf_trainer' for Hugging Face Trainer. \n"
-        "Set to 'native' to use native PyTorch training loop.\n",
-    )
-    parser.add_argument(
-        "--autocast",
-        type=str,
-        default="fp16",
-        choices=["fp16", "fp32", "bf16", "fp8", "no"],
-        help="Automatic mixed precision training mode.",
+        help="Trainer to use for training. Options: native, accelerate, hf_trainer.",
     )
     return parser
 
@@ -141,11 +149,7 @@ def run_train():
 
     This function is the entry point for the 'autotrain' console script.
     """
-    try:
-        train_command()
-    except Exception as e:
-        fprint(f"Error running auto-train: {e}")
-        sys.exit(1)
+    train_command()
 
 
 if __name__ == "__main__":

@@ -73,13 +73,8 @@ def load_benchmark_datasets(
         - The function supports multiple seeds for robust evaluation.
         - Long sequences can be dropped or truncated based on configuration.
     """
-    if not os.path.exists(benchmark):
-        fprint(
-            "Benchmark:",
-            benchmark,
-            "does not exist. Search online for available benchmarks.",
-        )
-        benchmark = download_benchmark(benchmark)
+
+    benchmark = download_benchmark(benchmark)
 
     # Import benchmark list
     bench_metadata = load_module_from_path(

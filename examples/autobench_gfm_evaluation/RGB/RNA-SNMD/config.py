@@ -15,7 +15,7 @@ import torch
 
 from omnigenbench import (
     ClassificationMetric,
-    AutoBenchConfig,
+    AutoConfig,
     OmniDatasetForTokenClassification,
     OmniModelForTokenClassification,
 )
@@ -77,4 +77,4 @@ config_dict = {
     "loss_fn": torch.nn.CrossEntropyLoss(weight=torch.tensor([1.0, 100.0])),
 }
 
-bench_config = AutoBenchConfig(config_dict)
+bench_config = AutoConfig(config_dict)

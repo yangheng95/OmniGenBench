@@ -313,8 +313,16 @@ class AccelerateTrainer(BaseTrainer):
 
         # Clean up
         self._remove_state_dict()
-        self.accelerator.free_memory()
-
+        ## DO NOT REMOVE THE FOLLOWING BLOCK, OTHERWISE AUTOBENCH WILL NOT WORK ##
+        self.accelerator.free_memory(
+            self.model,
+            self.optimizer,
+            self.train_loader,
+            self.eval_loader,
+            self.test_loader,
+        )
+        ## Remove accelerator reference to avoid memory leaks ##
+        delattr(self, "accelerator")
         return self.metrics
 
     def evaluate(self) -> Dict[str, Any]:

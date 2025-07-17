@@ -9,7 +9,9 @@
 
 from pathlib import Path
 from setuptools import setup, find_packages
-from omnigenome import __version__
+
+# Define version directly to avoid circular import
+__version__ = "1.0.0beta"
 
 cwd = Path(__file__).parent
 long_description = (cwd / "README.MD").read_text(encoding="utf8")
@@ -38,11 +40,12 @@ setup(
     packages=find_packages(include=["omnigenome", "omnigenome.*"]),
     entry_points={
         "console_scripts": [
-            "autobench=omnigenbench.auto.auto_bench.auto_bench_cli:run_bench",
-            "autotrain=omnigenbench.auto.auto_train.auto_train_cli:run_train",
+            "autobench=omnigenome:run_bench",
+            "autotrain=omnigenome:run_train",
         ],
     },
     install_requires=[
+        "omnigenbench>=0.3.0",  # Add dependency on omnigenbench
         "findfile>=2.0.0",
         "autocuda>=0.16",
         "metric-visualizer>=0.9.6",

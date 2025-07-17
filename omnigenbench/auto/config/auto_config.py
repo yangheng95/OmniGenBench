@@ -8,14 +8,12 @@
 # Copyright (C) 2019-2024. All Rights Reserved.
 from argparse import Namespace
 
-from transformers import PretrainedConfig
-
-from .config_check import config_check
+from ...auto.auto_bench.config_check import config_check
 
 
-class AutoBenchConfig(PretrainedConfig):
+class AutoConfig:
     """
-    A configuration class for AutoBench, extending `transformers.PretrainedConfig`.
+    A configuration class for AutoBench and AutoTrain from OmniGenBench.
 
     This class holds the configuration parameters for a benchmark run. It behaves
     like a dictionary and also tracks how many times each parameter is accessed.
@@ -23,10 +21,10 @@ class AutoBenchConfig(PretrainedConfig):
 
     def __init__(self, args=None, **kwargs):
         """
-        Initializes the AutoBenchConfig.
+        Initializes the AutoConfig.
 
         :param args: A dictionary or `argparse.Namespace` of parameters.
-        :param kwargs: Additional keyword arguments for `PretrainedConfig`.
+        :param kwargs:
         """
         if not args:
             args = {}
@@ -214,3 +212,7 @@ class AutoBenchConfig(PretrainedConfig):
         :return: True if the parameter dict is not equal to the other object, False otherwise.
         """
         return self.args != other
+
+
+class AutoBenchConfig(AutoConfig):
+    pass

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# file: auto_bench.py
+# file: auto_train.py
 # time: 11:54 14/04/2024
 # author: YANG, HENG <hy345@exeter.ac.uk> (杨恒)
 # github: https://github.com/yangheng95
@@ -16,6 +16,7 @@ import torch
 from metric_visualizer import MetricVisualizer
 from transformers import TrainingArguments, Trainer as HFTrainer
 
+from ...auto.config.auto_config import AutoConfig
 from ...src.lora.lora_model import OmniLoraModel
 from ...src.abc.abstract_tokenizer import OmniTokenizer
 from ...src.misc.utils import (
@@ -67,7 +68,7 @@ class AutoTrain:
 
         Args:
             dataset (str): The name or path of the dataset to use for training.
-            model_name_or_path (str): The name or path of the model to train.
+            model_name_or_path (str): The model instance, model name or model path of the model to train.
             tokenizer: The tokenizer to use. If None, it will be loaded from the model path.
             **kwargs: Additional keyword arguments.
                 - autocast (str): The autocast precision to use ('fp16', 'bf16', etc.).
@@ -113,9 +114,9 @@ class AutoTrain:
             self.mv.summary(round=4)
         else:
             self.mv = MetricVisualizer(self.mv_path)
-        self.bench_info()
+        self.train_info()
 
-    def bench_info(self):
+    def train_info(self):
         """
         Print and return information about the current training setup.
 
@@ -127,7 +128,7 @@ class AutoTrain:
             str: A string containing training setup information.
 
         Example:
-            >>> info = trainer.bench_info()
+            >>> info = trainer.train_info()
             >>> print(info)
         """
         info = f"Dataset Root: {self.dataset}\n"
@@ -160,13 +161,21 @@ class AutoTrain:
         clean_temp_checkpoint(1)  # clean temp checkpoint older than 1 day
 
         _kwargs = kwargs.copy()
-        bench_config_path = findfile.find_file(
+        train_config_path = findfile.find_file(
             self.dataset, f"{self.dataset}.config".split(".")
         )
-        config = load_module_from_path("config", bench_config_path)
-        bench_config = config.bench_config
-        fprint(f"Loaded config for {self.dataset} from {bench_config_path}")
-        fprint(bench_config)
+        config = load_module_from_path("config", train_config_path)
+        train_config = None
+        for attr_name in dir(config):
+            attr = getattr(config, attr_name)
+            if isinstance(attr, AutoConfig):  # Check if it is an instance of AutoConfig
+                train_config = attr
+        if train_config is None:
+            raise ValueError(
+                f"Could not find AutoConfig instance in {train_config_path}"
+            )
+        fprint(f"Loaded config for {self.dataset} from {train_config_path}")
+        fprint(train_config.args)
 
         # Init Tokenizer and Model
         if not self.tokenizer:
@@ -176,56 +185,55 @@ class AutoTrain:
         else:
             tokenizer = self.tokenizer
 
-        if not isinstance(bench_config["seeds"], list):
-            bench_config["seeds"] = [bench_config["seeds"]]
+        if not isinstance(train_config["seeds"], list):
+            train_config["seeds"] = [train_config["seeds"]]
 
-        random_seeds = bench_config["seeds"]
+        random_seeds = train_config["seeds"]
         for seed in random_seeds:
             for key, value in _kwargs.items():
-                if key in bench_config:
+                if key in train_config:
                     fprint(
                         "Override", key, "with", value, "according to the input kwargs"
                     )
-                    bench_config.update({key: value})
+                    train_config.update({key: value})
 
                 else:
                     warnings.warn(
-                        f"kwarg: {key} not found in bench_config while setting {key} = {value}"
+                        f"kwarg: {key} not found in train_config while setting {key} = {value}"
                     )
-                    bench_config.update({key: value})
+                    train_config.update({key: value})
 
-            for key, value in bench_config.items():
-                if key in bench_config and key in _kwargs:
+            for key, value in train_config.items():
+                if key in train_config and key in _kwargs:
                     _kwargs.pop(key)
 
             fprint(
-                f"AutoBench Config for {self.dataset}:",
-                "\n".join([f"{k}: {v}" for k, v in bench_config.items()]),
+                f"Autotrain Config for {self.dataset}:",
+                "\n".join([f"{k}: {v}" for k, v in train_config.items()]),
             )
             for key, value in _kwargs.items():
-                if key in bench_config:
+                if key in train_config:
                     fprint(
                         "Override", key, "with", value, "according to the input kwargs"
                     )
-                    bench_config.update({key: value})
+                    train_config.update({key: value})
 
                 else:
                     warnings.warn(
-                        f"kwarg: {key} not found in bench_config while setting {key} = {value}"
+                        f"kwarg: {key} not found in train_config while setting {key} = {value}"
                     )
-                    bench_config.update({key: value})
+                    train_config.update({key: value})
 
-            for key, value in bench_config.items():
-                if key in bench_config and key in _kwargs:
+            for key, value in train_config.items():
+                if key in train_config and key in _kwargs:
                     _kwargs.pop(key)
-
             fprint(
-                f"AutoBench Config for {self.dataset}:",
-                "\n".join([f"{k}: {v}" for k, v in bench_config.items()]),
+                f"Autotrain Config for {self.dataset}:",
+                "\n".join([f"{k}: {v}" for k, v in train_config.items()]),
             )
 
             batch_size = (
-                bench_config["batch_size"] if "batch_size" in bench_config else 8
+                train_config["batch_size"] if "batch_size" in train_config else 8
             )
 
             record_name = f"{os.path.basename(self.dataset)}-{self.model_name}".split(
@@ -234,17 +242,17 @@ class AutoTrain:
             # check if the record exists
             if record_name in self.mv.transpose() and len(
                 list(self.mv.transpose()[record_name].values())[0]
-            ) >= len(bench_config["seeds"]):
+            ) >= len(train_config["seeds"]):
                 continue
 
             seed_everything(seed)
             if self.model_name_or_path:
-                model_cls = bench_config["model_cls"]
+                model_cls = train_config["model_cls"]
                 model = model_cls(
                     self.model_name_or_path,
                     tokenizer=tokenizer,
-                    label2id=bench_config.label2id,
-                    num_labels=bench_config["num_labels"],
+                    label2id=train_config.label2id,
+                    num_labels=train_config["num_labels"],
                     trust_remote_code=True,
                     ignore_mismatched_sizes=True,
                 )
@@ -258,47 +266,47 @@ class AutoTrain:
                 model = OmniLoraModel(model, **kwargs.get("lora_config", {}))
 
             # Init Trainer
-            dataset_cls = bench_config["dataset_cls"]
+            dataset_cls = train_config["dataset_cls"]
 
             if hasattr(model.config, "max_position_embeddings"):
                 max_length = min(
-                    bench_config["max_length"],
+                    train_config["max_length"],
                     model.config.max_position_embeddings,
                 )
             else:
-                max_length = bench_config["max_length"]
+                max_length = train_config["max_length"]
 
             train_set = dataset_cls(
-                data_source=bench_config["train_file"],
+                data_source=train_config["train_file"],
                 tokenizer=tokenizer,
-                label2id=bench_config["label2id"],
+                label2id=train_config["label2id"],
                 max_length=max_length,
-                structure_in=bench_config.get("structure_in", False),
-                max_examples=bench_config.get("max_examples", None),
-                shuffle=bench_config.get("shuffle", True),
-                drop_long_seq=bench_config.get("drop_long_seq", False),
+                structure_in=train_config.get("structure_in", False),
+                max_examples=train_config.get("max_examples", None),
+                shuffle=train_config.get("shuffle", True),
+                drop_long_seq=train_config.get("drop_long_seq", False),
                 **_kwargs,
             )
             test_set = dataset_cls(
-                data_source=bench_config["test_file"],
+                data_source=train_config["test_file"],
                 tokenizer=tokenizer,
-                label2id=bench_config["label2id"],
+                label2id=train_config["label2id"],
                 max_length=max_length,
-                structure_in=bench_config.get("structure_in", False),
-                max_examples=bench_config.get("max_examples", None),
+                structure_in=train_config.get("structure_in", False),
+                max_examples=train_config.get("max_examples", None),
                 shuffle=False,
-                drop_long_seq=bench_config.get("drop_long_seq", False),
+                drop_long_seq=train_config.get("drop_long_seq", False),
                 **_kwargs,
             )
             valid_set = dataset_cls(
-                data_source=bench_config["valid_file"],
+                data_source=train_config["valid_file"],
                 tokenizer=tokenizer,
-                label2id=bench_config["label2id"],
+                label2id=train_config["label2id"],
                 max_length=max_length,
-                structure_in=bench_config.get("structure_in", False),
-                max_examples=bench_config.get("max_examples", None),
+                structure_in=train_config.get("structure_in", False),
+                max_examples=train_config.get("max_examples", None),
                 shuffle=False,
-                drop_long_seq=bench_config.get("drop_long_seq", False),
+                drop_long_seq=train_config.get("drop_long_seq", False),
                 **_kwargs,
             )
 
@@ -312,7 +320,7 @@ class AutoTrain:
                 training_args = TrainingArguments(
                     output_dir=f"./autotrain_evaluations/{self.model_name}",
                     num_train_epochs=hf_kwargs.pop(
-                        "num_train_epochs", bench_config["epochs"]
+                        "num_train_epochs", train_config["epochs"]
                     ),
                     per_device_train_batch_size=hf_kwargs.pop("batch_size", batch_size),
                     per_device_eval_batch_size=hf_kwargs.pop("batch_size", batch_size),
@@ -331,7 +339,7 @@ class AutoTrain:
 
                 valid_set = valid_set if len(valid_set) else test_set
 
-                if len(bench_config["compute_metrics"]) > 1:
+                if len(train_config["compute_metrics"]) > 1:
                     fprint(
                         "Multiple metrics not supported by HFTrainer, using the first one metric only."
                     )
@@ -341,9 +349,9 @@ class AutoTrain:
                     train_dataset=train_set,
                     eval_dataset=valid_set,
                     compute_metrics=(
-                        bench_config["compute_metrics"][0]
-                        if isinstance(bench_config["compute_metrics"], list)
-                        else bench_config["compute_metrics"]
+                        train_config["compute_metrics"][0]
+                        if isinstance(train_config["compute_metrics"], list)
+                        else train_config["compute_metrics"]
                     ),
                 )
 
@@ -366,13 +374,13 @@ class AutoTrain:
                 optimizer = torch.optim.AdamW(
                     filter(lambda p: p.requires_grad, model.parameters()),
                     lr=(
-                        bench_config["learning_rate"]
-                        if "learning_rate" in bench_config
+                        train_config["learning_rate"]
+                        if "learning_rate" in train_config
                         else 2e-5
                     ),
                     weight_decay=(
-                        bench_config["weight_decay"]
-                        if "weight_decay" in bench_config
+                        train_config["weight_decay"]
+                        if "weight_decay" in train_config
                         else 0
                     ),
                 )
@@ -388,26 +396,31 @@ class AutoTrain:
                     test_dataset=test_set,
                     batch_size=batch_size,
                     patience=(
-                        bench_config["patience"] if "patience" in bench_config else 3
+                        train_config["patience"] if "patience" in train_config else 3
                     ),
-                    epochs=bench_config["epochs"],
-                    gradient_accumulation_steps=bench_config.get(
+                    epochs=train_config["epochs"],
+                    gradient_accumulation_steps=train_config.get(
                         "gradient_accumulation_steps", 1
                     ),
                     optimizer=optimizer,
                     loss_fn=(
-                        bench_config["loss_fn"] if "loss_fn" in bench_config else None
+                        train_config["loss_fn"] if "loss_fn" in train_config else None
                     ),
-                    compute_metrics=bench_config["compute_metrics"],
+                    compute_metrics=train_config["compute_metrics"],
                     seed=seed,
                     autocast=self.autocast,
                     **_kwargs,
                 )
                 metrics = trainer.train()
-                save_path = os.path.join(
-                    autotrain_evaluations, self.dataset, self.model_name
-                )
-                trainer.save_model(save_path)
+                print(_kwargs)
+                if _kwargs["save_model"]:
+                    fprint(
+                        f"Saving model to {autotrain_evaluations}/{self.dataset}/{self.model_name}"
+                    )
+                    save_path = os.path.join(
+                        autotrain_evaluations, self.dataset, self.model_name
+                    )
+                    trainer.save_model(save_path)
 
                 if metrics:
                     for key, value in metrics["test"][-1].items():
