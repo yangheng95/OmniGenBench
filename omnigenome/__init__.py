@@ -16,10 +16,11 @@ All imports are redirected to the omnigenbench package.
 
 For backward compatibility, this package maintains the same API as omnigenbench.
 """
+from omnigenbench import __version__
 
 # Package metadata (define locally to avoid circular imports)
 __name__ = "omnigenome"
-__version__ = "1.0.0beta"
+__version__ = __version__
 __author__ = "Yang, Heng"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "Apache-2.0"
