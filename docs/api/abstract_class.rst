@@ -20,22 +20,8 @@ OmniGenBench provides a set of abstract base classes that define the core interf
 
 Refer to the API documentation below for details on each abstract class, including their methods and usage examples.
 
-Abstract Base Classes
----------------------
-
-.. automodule:: omnigenbench.src.abc.abstract_dataset
-    :members:
-    :undoc-members:
-    :inherited-members:
-    :show-inheritance:
-    :noindex:
-
-.. automodule:: omnigenbench.src.abc.abstract_metric
-    :members:
-    :undoc-members:
-    :inherited-members:
-    :show-inheritance:
-    :noindex:
+OmniModel
+---------
 
 .. automodule:: omnigenbench.src.abc.abstract_model
     :members:
@@ -44,6 +30,20 @@ Abstract Base Classes
     :show-inheritance:
     :noindex:
 
+OmniDataset
+-----------
+
+.. automodule:: omnigenbench.src.abc.abstract_dataset
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :noindex:
+
+
+OmniTokenizer
+-------------
+
 .. automodule:: omnigenbench.src.abc.abstract_tokenizer
     :members:
     :undoc-members:
@@ -51,18 +51,19 @@ Abstract Base Classes
     :show-inheritance:
     :noindex:
 
-Dataset
--------
 
-.. automodule:: omnigenbench.src.dataset.omni_dataset
+OmniMetrics
+-----------
+
+.. automodule:: omnigenbench.src.abc.abstract_metric
     :members:
     :undoc-members:
     :inherited-members:
     :show-inheritance:
     :noindex:
 
-LoRA
-----
+OmniLoRA
+--------
 
 .. automodule:: omnigenbench.src.lora.lora_model
     :members:

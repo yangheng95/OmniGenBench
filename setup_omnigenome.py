@@ -45,7 +45,7 @@ setup(
         ],
     },
     install_requires=[
-        "omnigenbench>=0.3.0",  # Add dependency on omnigenbench
+        "omnigenbench>=0.3.3",  # Add dependency on omnigenbench
         "findfile>=2.0.0",
         "autocuda>=0.16",
         "metric-visualizer>=0.9.6",
