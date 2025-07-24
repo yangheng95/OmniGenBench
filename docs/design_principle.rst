@@ -18,6 +18,7 @@ How to Extend Abstract Classes
 To add new functionality, simply subclass the relevant abstract class and implement the required methods. This allows you to create custom models, datasets, tokenizers, or metrics tailored to your specific needs.
 
 **Example: Custom Model Extension**
+
 .. code-block:: python
 
     from omnigenbench import OmniModel
@@ -37,6 +38,7 @@ To add new functionality, simply subclass the relevant abstract class and implem
             return type(outputs)(logits=logits)
 
 **Example: Custom Dataset Extension**
+
 .. code-block:: python
 
     from omnigenbench import OmniDatasetForSequenceClassification
@@ -57,6 +59,7 @@ To add new functionality, simply subclass the relevant abstract class and implem
             return processed_data
 
 **Example: Custom Tokenizer Extension**
+
 .. code-block:: python
 
     from omnigenbench import OmniTokenizer
