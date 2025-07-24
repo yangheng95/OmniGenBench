@@ -27,6 +27,12 @@ h2 {
     padding-bottom: 0.2em;
 }
 
+h3 {
+    font-size: 1.5em;
+    border-bottom: 2px;
+    padding-bottom: 0.2em;
+}
+
 /* Enhanced code blocks */
 .highlight {
     border-radius: 8px;
