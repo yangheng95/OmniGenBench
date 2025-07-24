@@ -77,6 +77,7 @@ To add new functionality, simply subclass the relevant abstract class and implem
             return [sequence[i:i+k] for i in range(len(sequence) - k + 1)]
 
 **Example: Custom Metric Extension**
+
 .. code-block:: python
 
     from omnigenbench import OmniMetric

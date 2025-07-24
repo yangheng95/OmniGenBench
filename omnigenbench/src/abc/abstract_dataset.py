@@ -21,8 +21,6 @@ from ..misc.utils import fprint, env_meta_info, RNA2StructureCache
 
 def covert_input_to_tensor(data):
     """
-    Recursively converts numerical values in a nested data structure to PyTorch tensors.
-
     This function traverses through nested dictionaries and lists, converting
     numerical values to PyTorch tensors while preserving the structure.
 
@@ -55,8 +53,6 @@ def covert_input_to_tensor(data):
 
 class OmniGenomeDict(dict):
     """
-    A dictionary subclass that allows moving all tensor values to a specified device.
-
     This class extends the standard Python dictionary to provide a convenient
     method for moving all tensor values to a specific device (CPU/GPU).
     """
@@ -86,9 +82,7 @@ class OmniGenomeDict(dict):
 
 class OmniDataset(torch.utils.data.Dataset):
     """
-    Abstract base class for all datasets in OmniGenome.
-
-    This class provides a unified interface for genomic datasets in the OmniGenome
+    A unified interface for genomic datasets in the OmniGenome
     framework. It handles data loading, preprocessing, tokenization, and provides
     a PyTorch-compatible dataset interface.
 

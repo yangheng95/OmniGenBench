@@ -16,14 +16,9 @@ from ..misc.utils import env_meta_info, load_module_from_path
 
 class OmniTokenizer:
     """
-    A wrapper class for tokenizers to provide a consistent interface within OmniGenome.
-
     This class provides a unified interface for tokenizers in the OmniGenome framework.
     It wraps underlying tokenizers (typically from Hugging Face) and provides
-    additional functionality for genomic sequence processing.
-
-    The class handles various tokenization strategies and provides compatibility
-    with different model architectures. It also supports custom tokenizer wrappers
+    additional functionality for genomic sequence processing. It also supports custom tokenizer wrappers
     for specialized genomic tasks.
 
     Attributes:
@@ -74,10 +69,6 @@ class OmniTokenizer:
         """
         Loads a tokenizer from a pre-trained model path.
 
-        It attempts to load a custom tokenizer wrapper if `omnigenome_wrapper.py`
-        is present in the model directory. Otherwise, it falls back to
-        `transformers.AutoTokenizer`.
-
         Args:
             model_name_or_path (str): The name or path of the pre-trained model.
             **kwargs: Additional arguments for the tokenizer.
@@ -88,10 +79,8 @@ class OmniTokenizer:
         Example:
             >>> # Load from a pre-trained model
             >>> tokenizer = OmniTokenizer.from_pretrained("model_name")
-
             >>> # Load with custom parameters
-            >>> tokenizer = OmniTokenizer.from_pretrained("model_name",
-            ...                                          trust_remote_code=True)
+            >>> tokenizer = OmniTokenizer.from_pretrained("model_name", trust_remote_code=True)
         """
         wrapper_path = f"{model_name_or_path.rstrip('/')}/omnigenome_wrapper.py"
         if os.path.exists(wrapper_path):
@@ -162,9 +151,6 @@ class OmniTokenizer:
         """
         Converts a sequence into a list of tokens. Must be implemented by subclasses.
 
-        This method should be implemented by concrete tokenizer classes to define
-        how sequences are tokenized for their specific use case.
-
         Args:
             sequence (str): The input sequence.
             **kwargs: Additional arguments.
@@ -189,9 +175,6 @@ class OmniTokenizer:
         """
         Converts a sequence into a list of token IDs. Must be implemented by subclasses.
 
-        This method should be implemented by concrete tokenizer classes to define
-        how sequences are encoded into token IDs.
-
         Args:
             sequence (str): The input sequence.
             **kwargs: Additional arguments.
@@ -215,9 +198,6 @@ class OmniTokenizer:
     def decode(self, sequence, **kwargs):
         """
         Converts a list of token IDs back into a sequence. Must be implemented by subclasses.
-
-        This method should be implemented by concrete tokenizer classes to define
-        how token IDs are decoded back into sequences.
 
         Args:
             sequence (list): A list of token IDs.

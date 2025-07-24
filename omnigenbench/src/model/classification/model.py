@@ -15,16 +15,10 @@ from ..module_utils import OmniPooling
 
 class OmniModelForTokenClassification(OmniModel):
     """
-    Model for token classification tasks in genomics.
-
     This model is designed for token-level classification tasks such as
     sequence labeling, where each token in the input sequence needs to be
     classified into different categories. It extends the base OmniModel
     with token-level classification capabilities.
-
-    The model adds a classification head on top of the base model's hidden
-    states and applies softmax to produce probability distributions over
-    the label classes for each token.
 
     Attributes:
         softmax (torch.nn.Softmax): Softmax layer for probability computation.
@@ -423,13 +417,9 @@ class OmniModelForSequenceClassification(OmniModel):
 
 class OmniModelForMultiLabelSequenceClassification(OmniModelForSequenceClassification):
     """
-    Model for multi-label sequence classification tasks in genomics.
-
     This model is designed for multi-label classification tasks where
     a single sequence can be assigned multiple labels simultaneously.
-    It extends the sequence classification model with multi-label capabilities.
-
-    The model uses sigmoid activation instead of softmax to allow multiple
+    It extends the sequence classification model with multi-label capabilities. It uses sigmoid activation instead of softmax to allow multiple
     labels per sequence and uses binary cross-entropy loss for training.
 
     Attributes:
@@ -525,8 +515,6 @@ class OmniModelForMultiLabelSequenceClassification(OmniModelForSequenceClassific
     def inference(self, sequence_or_inputs, **kwargs):
         """
         Performs multi-label inference with human-readable output.
-
-        This method provides processed, human-readable multi-label predictions.
         It converts logits to binary labels and provides confidence scores.
 
         Args:

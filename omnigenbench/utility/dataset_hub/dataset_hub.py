@@ -8,8 +8,6 @@
 # Google Scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2025. All rights reserved.
 """
-Dataset Hub Module
-
 This module provides utilities for loading benchmark datasets from the OmniGenome hub.
 It handles automatic downloading, configuration loading, and dataset initialization
 for various genomic benchmarks.
@@ -31,8 +29,6 @@ def load_benchmark_datasets(
     **kwargs: dict,
 ):
     """
-    Load benchmark datasets from the OmniGenome hub.
-
     This function automatically downloads benchmark datasets if they don't exist locally,
     loads their configurations, and initializes train/validation/test datasets with
     the specified tokenizer.
@@ -48,9 +44,7 @@ def load_benchmark_datasets(
             These will be passed to the dataset classes and tokenizer initialization.
 
     Returns:
-        dict: Dictionary containing datasets for each benchmark task, with keys
-            being benchmark names and values being dictionaries with 'train',
-            'valid', and 'test' datasets.
+        dict: Dictionary containing datasets for each benchmark task, with keys being benchmark names and values being dictionaries with 'train', 'valid', and 'test' datasets.
 
     Raises:
         FileNotFoundError: If the benchmark cannot be found or downloaded.

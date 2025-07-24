@@ -33,13 +33,12 @@ autotrain_evaluations = "./autotrain_evaluations"
 
 class AutoTrain:
     """
-    AutoTrain is a class for automatically training genomic foundation models on a given dataset.
-
     This class provides a comprehensive framework for training genomic models
     on various datasets with minimal configuration. It handles dataset loading,
     model initialization, training configuration, and result tracking.
 
     AutoTrain supports various training scenarios including:
+
     - Single dataset training with multiple seeds
     - Different trainer backends (native, accelerate, huggingface)
     - Automatic metric visualization and result tracking
@@ -120,10 +119,6 @@ class AutoTrain:
         """
         Print and return information about the current training setup.
 
-        This method provides a comprehensive overview of the current
-        training configuration, including dataset details, model information,
-        and training settings.
-
         Returns:
             str: A string containing training setup information.
 
@@ -140,8 +135,6 @@ class AutoTrain:
 
     def run(self, **kwargs):
         """
-        Run the training process.
-
         This method loads the dataset configuration, initializes the model and
         tokenizer, and runs training across multiple seeds. It supports various
         training backends and automatic result tracking.
@@ -153,7 +146,6 @@ class AutoTrain:
         Example:
             >>> # Run training with default settings
             >>> trainer.run()
-
             >>> # Run with custom parameters
             >>> trainer.run(learning_rate=1e-4, batch_size=16)
         """
