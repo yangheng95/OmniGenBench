@@ -23,8 +23,6 @@ from ..src.misc.utils import fprint, default_omnigenome_repo
 
 def unzip_checkpoint(checkpoint_path):
     """
-    Unzips a checkpoint file.
-
     This function extracts a zipped checkpoint file to a directory,
     making it ready for use by the model loading functions.
 
@@ -50,8 +48,6 @@ def query_models_info(
     keyword: Union[list, str], repo: str = None, local_only: bool = False, **kwargs
 ) -> Dict[str, Any]:
     """
-    Queries information about available models from the hub.
-
     This function retrieves model information from the OmniGenome hub,
     either from a remote repository or from a local cache. It supports
     filtering by keywords to find specific models.
@@ -69,7 +65,6 @@ def query_models_info(
         >>> # Query all models
         >>> models = query_models_info("")
         >>> print(len(models))  # Number of available models
-
         >>> # Query specific models
         >>> models = query_models_info("DNA")
         >>> print(models.keys())  # Models containing "DNA"
@@ -107,8 +102,6 @@ def query_pipelines_info(
     keyword: Union[list, str], repo: str = None, local_only: bool = False, **kwargs
 ) -> Dict[str, Any]:
     """
-    Queries information about available pipelines from the hub.
-
     This function retrieves pipeline information from the OmniGenome hub,
     either from a remote repository or from a local cache. It supports
     filtering by keywords to find specific pipelines.
@@ -126,7 +119,6 @@ def query_pipelines_info(
         >>> # Query all pipelines
         >>> pipelines = query_pipelines_info("")
         >>> print(len(pipelines))  # Number of available pipelines
-
         >>> # Query specific pipelines
         >>> pipelines = query_pipelines_info("classification")
         >>> print(pipelines.keys())  # Pipelines containing "classification"
@@ -164,8 +156,6 @@ def query_benchmarks_info(
     keyword: Union[list, str], repo: str = None, local_only: bool = False, **kwargs
 ) -> Dict[str, Any]:
     """
-    Queries information about available benchmarks from the hub.
-
     This function retrieves benchmark information from the OmniGenome hub,
     either from a remote repository or from a local cache. It supports
     filtering by keywords to find specific benchmarks.
@@ -183,7 +173,6 @@ def query_benchmarks_info(
         >>> # Query all benchmarks
         >>> benchmarks = query_benchmarks_info("")
         >>> print(len(benchmarks))  # Number of available benchmarks
-
         >>> # Query specific benchmarks
         >>> benchmarks = query_benchmarks_info("RGB")
         >>> print(benchmarks.keys())  # Benchmarks containing "RGB"
@@ -221,10 +210,7 @@ def download_model(
     model_name_or_path: str, local_only: bool = False, repo: str = None, cache_dir=None
 ) -> str:
     """
-    Downloads a model from a given URL.
-
-    This function downloads a model from the OmniGenome hub and caches it
-    locally for future use. It supports both remote and local-only modes.
+    Downloads a model from a given URL. It supports both remote and local-only modes.
 
     Args:
         model_name_or_path (str): The name or path of the model to download.
@@ -245,7 +231,6 @@ def download_model(
         >>> # Download a model
         >>> model_path = download_model("DNABERT-2")
         >>> print(model_path)  # Path to the downloaded model
-
         >>> # Download with custom cache directory
         >>> model_path = download_model("DNABERT-2", cache_dir="./models")
     """
@@ -305,10 +290,7 @@ def download_pipeline(
     cache_dir=None,
 ) -> str:
     """
-    Downloads a pipeline from a given URL.
-
-    This function downloads a pipeline from the OmniGenome hub and caches it
-    locally for future use. It supports both remote and local-only modes.
+    Downloads a pipeline from a given URL. It supports both remote and local-only modes.
 
     Args:
         pipeline_name_or_path (str): The name or path of the pipeline to download.
@@ -386,10 +368,7 @@ def download_benchmark(
     cache_dir=None,
 ) -> str:
     """
-    Downloads a benchmark from a given URL.
-
-    This function downloads a benchmark from the OmniGenome hub and caches it
-    locally for future use. It supports both remote and local-only modes.
+    Downloads a benchmark from a given URL. It supports both remote and local-only modes.
 
     Args:
         benchmark_name_or_path (str): The name or path of the benchmark to download.
@@ -410,7 +389,6 @@ def download_benchmark(
         >>> # Download a benchmark
         >>> benchmark_path = download_benchmark("RGB")
         >>> print(benchmark_path)  # Path to the downloaded benchmark
-
         >>> # Download with custom cache directory
         >>> benchmark_path = download_benchmark("RGB", cache_dir="./benchmarks")
     """
@@ -482,9 +460,6 @@ def download_benchmark(
 def check_version(repo: str = None) -> None:
     """
     Checks the version compatibility between local and remote OmniGenome.
-
-    This function compares the local OmniGenome version with the version
-    available in the remote repository to ensure compatibility.
 
     Args:
         repo (str, optional): The repository URL to check. If None, uses the default hub.

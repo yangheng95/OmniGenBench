@@ -74,8 +74,7 @@ class PipelineHub:
                 - name: Custom name for the pipeline
 
         Returns:
-            Pipeline: Loaded pipeline instance with model, tokenizer, datasets,
-                and trainer ready for use.
+            Pipeline: Loaded pipeline instance with model, tokenizer, datasets, and trainer ready for use.
 
         Raises:
             FileNotFoundError: If the pipeline cannot be found locally and

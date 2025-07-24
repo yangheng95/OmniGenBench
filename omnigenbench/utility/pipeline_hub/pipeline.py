@@ -7,8 +7,6 @@
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
 """
-Pipeline Module
-
 This module provides the Pipeline class for creating and managing complete
 machine learning workflows that combine models, tokenizers, datasets, and
 trainers. Pipelines provide a unified interface for training, inference,
@@ -30,8 +28,6 @@ from ...src.trainer.trainer import Trainer
 
 class Pipeline:
     """
-    Complete machine learning pipeline combining model, tokenizer, datasets, and trainer.
-
     The Pipeline class provides a unified interface for managing complete machine
     learning workflows. It handles model initialization, training, inference, and
     persistence. Pipelines can be loaded from pre-built configurations or created
@@ -180,8 +176,6 @@ class Pipeline:
 
     def init_pipeline(self, *, model_name_or_path, tokenizer=None, **kwargs):
         """
-        Initialize the pipeline components from a model path.
-
         This method handles loading the model, tokenizer, and configuration
         from a model path or identifier. It tries to load from the ModelHub
         first, then falls back to HuggingFace transformers.
@@ -191,6 +185,7 @@ class Pipeline:
             tokenizer (optional): Tokenizer instance. If None, will be loaded
                 from the model path. Defaults to None.
             **kwargs: Additional keyword arguments for model loading including:
+
                 - trust_remote_code (bool): Whether to trust remote code
                 - device (str): Target device for the model
                 - Other model-specific parameters
@@ -240,8 +235,6 @@ class Pipeline:
 
     def train(self, datasets: dict = None, trainer=None, **kwargs):
         """
-        Train the model in the pipeline.
-
         This method initiates training of the model using the provided datasets
         and trainer configuration. If no trainer is provided, the pipeline's
         existing trainer will be used.
@@ -283,14 +276,13 @@ class Pipeline:
 
     def predict(self, inputs, **kwargs):
         """
-        Generate predictions for input data.
-
         This method provides a high-level interface for generating predictions
         from the pipeline's model. It handles preprocessing and postprocessing
         automatically.
 
         Args:
             inputs: Input data for prediction. Can be:
+
                 - str: Single sequence string
                 - list: List of sequence strings
                 - tensor: Preprocessed input tensors
@@ -320,8 +312,6 @@ class Pipeline:
 
     def inference(self, inputs, **kwargs):
         """
-        Run full inference pipeline on input data.
-
         This method provides the complete inference pipeline including
         preprocessing, model forward pass, and postprocessing. It's the
         recommended method for production inference.
@@ -336,7 +326,7 @@ class Pipeline:
                 - return_hidden_states: Whether to return hidden states
                 - temperature: Temperature for sampling (if applicable)
 
-        Returns:
+        Returns: 
             dict: Complete inference results including:
                 - predictions: Final predictions
                 - confidence: Confidence scores
@@ -362,8 +352,6 @@ class Pipeline:
     @staticmethod
     def load(pipeline_name_or_path, local_only=False, **kwargs):
         """
-        Load a pipeline from disk or hub.
-
         This static method loads a complete pipeline including model, tokenizer,
         datasets, and trainer from a saved pipeline directory or hub identifier.
 
@@ -429,8 +417,6 @@ class Pipeline:
 
     def save(self, path, overwrite=False, **kwargs):
         """
-        Save the pipeline to disk.
-
         This method saves the complete pipeline including model, tokenizer,
         datasets, trainer, and metadata to a directory. The saved pipeline
         can be loaded later using Pipeline.load().

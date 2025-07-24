@@ -28,6 +28,9 @@ Pipeline Hub
     :show-inheritance:
     :noindex:
 
+Pipeline
+------------
+
 .. automodule:: omnigenbench.utility.pipeline_hub.pipeline
     :members:
     :undoc-members:
