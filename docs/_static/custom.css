@@ -17,13 +17,13 @@ h1, h2, h3, h4, h5, h6 {
 
 h1 {
     font-size: 2.5em;
-    border-bottom: 3px solid #3498db;
+    /* border-bottom: 3px solid #ecf0f1; */
     padding-bottom: 0.3em;
 }
 
 h2 {
     font-size: 2em;
-    border-bottom: 2px solid #ecf0f1;
+    /* border-bottom: 2px solid #ecf0f1; */
     padding-bottom: 0.2em;
 }
 
@@ -43,7 +43,7 @@ h3 {
 .highlight pre {
     border-radius: 8px;
     padding: 1.5em;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: linear-gradient(135deg, #f8f9fa 0%, #dcdddf 100%);
     color: #333;
 }
 
@@ -352,3 +352,109 @@ img {
     margin-left: 1em;
     margin-bottom: 0.3em;
 }
+
+
+/* .py.class {
+    border: 1px solid #ddd;
+    padding: 1em;
+    background: #f8f8f8;
+    margin-bottom: 1em;
+    border-left: 5px solid #2980B9;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+
+.py.function {
+    border: 1px solid #ccc;
+    background-color: #f1f8ff;
+    padding: 6px 12px;
+    border-left: 4px solid #ffa601;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 14px;
+    display: block;         
+    width: 100%;            
+    margin-bottom: 6px;
+    box-sizing: border-box; 
+} */
+
+
+/* 整个类模块外框 */
+.py.class {
+    border: 1px solid #bdc3c7;
+    border-left: 6px solid #ec342e;
+    background-color: #fdfdfd;
+    margin: 2em 0;
+    padding: 1.2em 1.5em;
+    /* font-family: "Consolas", "Courier New", monospace; */
+    border-radius: 6px;
+    /* box-shadow: 0 2px 6px rgba(0,0,0,0.06); */
+}
+
+/* 类名标题 */
+.py.class-name {
+    font-size: 1.6em;
+    font-weight: bold;
+    color: #000000;
+    margin-bottom: 1em;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.3em;
+}
+
+/* 方法列表整体区域
+.py.method {
+    margin-left: 1em;
+    padding-left: 1em;
+    border-left: 3px solid #3498db;
+} */
+
+/* 方法列表整体区域 */
+.py.method {
+    margin-left: 1em;
+    padding-left: 1em;
+    border-left: 3px solid #3498db;
+    background-color: #f1f8ff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 14px;
+    display: block;         
+    width: 100%;            
+    margin-bottom: 6px;
+    box-sizing: border-box; 
+}
+
+/* 每个方法（函数）块 */
+.py.function {
+    margin-bottom: 1.5em;
+    background-color: #fdfdfd;
+    padding: 0.8em 1em;
+    border: 1px solid #bdc3c7;
+    border-left: 4px solid #dbac34;
+    border-radius: 4px;
+    box-shadow: inset 0 0 3px rgba(0,0,0,0.05);
+}
+
+/* 函数名 */
+.method-name {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #fd920f;
+    margin-bottom: 0.4em;
+}
+
+/* 函数文档注释 */
+.method-doc {
+    font-size: 0.95em;
+    color: #444;
+    line-height: 1.5;
+    margin-left: 0.5em;
+}
+
+
+.sig-name.descname {
+  word-break: break-all;
+  white-space: normal;
+}
+
