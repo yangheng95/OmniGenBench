@@ -22,8 +22,8 @@ Refer to the documentation below for details on each module, including available
 .. toctree::
     :maxdepth: 2
     
-    downstream_models
-    downstream_datasets
+    downstream_models.rst
+    downstream_datasets.rst
     metrics
     tokenizers
     trainers

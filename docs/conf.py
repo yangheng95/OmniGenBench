@@ -8,6 +8,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
+
 # -- Project information -----------------------------------------------------
 
 project = 'OmniGenBench'
@@ -57,6 +58,9 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 extensions.append("sphinx_wagtail_theme")
 html_theme = 'sphinx_wagtail_theme'
+# extensions.append("pytorch_sphinx_theme")
+# html_theme = 'pytorch_sphinx_theme'
+
 # html_theme = 'sphinx_book_theme'
 
 

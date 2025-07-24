@@ -10,6 +10,8 @@ This module provides some templated dataset processing classes inherited from th
 - OmniDatasetForTokenClassification: A dataset class for token (nucleotide) classification tasks.
 - OmniDatasetForTokenRegression: A dataset class for token (nucleotide) regression tasks.
 
+OmniDataset
+~~~~~~~~~~~~~~~~~
 
 .. automodule:: omnigenbench.src.dataset.omni_dataset
     :members:
