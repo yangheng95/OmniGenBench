@@ -14,13 +14,9 @@ from ..misc.utils import env_meta_info
 
 class OmniMetric:
     """
-    Abstract base class for all metrics in OmniGenome, based on scikit-learn.
-
     This class provides a unified interface for evaluation metrics in the OmniGenome
     framework. It integrates with scikit-learn's metric functions and provides
-    additional functionality for handling genomic data evaluation.
-
-    The class automatically exposes all scikit-learn metrics as attributes,
+    additional functionality for handling genomic data evaluation. The class automatically exposes all scikit-learn metrics as attributes,
     making them easily accessible for evaluation tasks.
 
     Attributes:
@@ -63,9 +59,6 @@ class OmniMetric:
         """
         Computes the metric. This method must be implemented by subclasses.
 
-        This method should be implemented by concrete metric classes to define
-        how the metric is calculated for their specific evaluation task.
-
         Args:
             y_true: Ground truth labels.
             y_pred: Predicted labels.
@@ -90,10 +83,7 @@ class OmniMetric:
     @staticmethod
     def flatten(y_true, y_pred):
         """
-        Flattens the ground truth and prediction arrays.
-
-        This utility method ensures that the input arrays are properly flattened
-        for metric computation. It handles various input formats and converts
+        Flattens the ground truth and prediction arrays. It handles various input formats and converts
         them to 1D numpy arrays.
 
         Args:

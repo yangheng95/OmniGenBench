@@ -32,12 +32,8 @@ except ImportError:
 
 def bench_command(args: Optional[list] = None):
     """
-    Entry point for the OmniGenome benchmark command-line interface.
-
     This function parses command-line arguments, initializes the AutoBench,
     and runs the evaluation.
-
-    :param args: A list of command-line arguments. If None, `sys.argv` is used.
     """
 
     parser = create_parser()
@@ -75,7 +71,8 @@ def create_parser() -> argparse.ArgumentParser:
     """
     Creates the argument parser for the benchmark CLI.
 
-    :return: An `argparse.ArgumentParser` instance.
+    Returns: 
+        An `argparse.ArgumentParser` instance.
     """
     parser = argparse.ArgumentParser(
         description="Genomic Foundation Model Benchmark Suite (Single Model)",
@@ -143,8 +140,6 @@ def create_parser() -> argparse.ArgumentParser:
 
 def run_bench():
     """
-    Wrapper function to run the benchmark command.
-
     This function sets up logging, constructs the command to execute
     (potentially with `accelerate launch`), and runs it.
     """

@@ -38,6 +38,7 @@ h2 {
     border-radius: 8px;
     padding: 1.5em;
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    color: #333;
 }
 
 /* Improved admonitions */
@@ -200,10 +201,12 @@ img {
 
 /* Enhanced code syntax highlighting */
 .highlight .hll { background-color: #ffffcc }
-.highlight .c { color: #999988; font-style: italic }
+.highlight .c { color: #767666; font-style: italic }
 .highlight .err { color: #a61717; background-color: #e3d2d2 }
-.highlight .k { color: #000000; font-weight: bold }
+.highlight .k { color: hwb(0 0% 99% / 0.908); font-weight: bold }
 .highlight .o { color: #000000; font-weight: bold }
+.highlight .n { color: #333 }
+.highlight .p { color: #333 }  /* 括号、标点符号 */
 .highlight .cm { color: #999988; font-style: italic }
 .highlight .cp { color: #999999; font-weight: bold; font-style: italic }
 .highlight .c1 { color: #999988; font-style: italic }
@@ -269,7 +272,7 @@ img {
 
 .rst-versions .rst-current-version {
     background: #3498db;
-    color: white;
+    color: rgb(255, 255, 255);
 }
 
 .rst-versions .rst-other-versions {
@@ -334,3 +337,12 @@ img {
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 } 
+
+.field-list dt {
+    font-weight: bold;
+    margin-top: 0.2em;
+}
+.field-list dd {
+    margin-left: 1em;
+    margin-bottom: 0.3em;
+}

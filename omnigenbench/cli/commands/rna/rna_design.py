@@ -17,13 +17,12 @@ from ..base import BaseCommand
 
 class RNADesignCommand(BaseCommand):
     """
-    Command-line interface for RNA sequence design using genetic algorithms.
-    
     This class provides a CLI interface for designing RNA sequences that fold into
     specific secondary structures. It uses genetic algorithms with customizable
     parameters to optimize sequence design for target structures.
     
     The design process involves:
+
     1. Loading a pre-trained RNA design model
     2. Running genetic algorithm optimization
     3. Generating sequences that match the target structure
@@ -39,22 +38,19 @@ class RNADesignCommand(BaseCommand):
     Example:
         >>> # Basic RNA design
         >>> python -m omnigenbench.cli design --structure "(((...)))"
-        
         >>> # Design with custom parameters
-        >>> python -m omnigenbench.cli design \
-        ...     --structure "(((...)))" \
-        ...     --model-path "yangheng/OmniGenome-186M" \
-        ...     --mutation-ratio 0.3 \
-        ...     --num-population 200 \
-        ...     --num-generation 150 \
+        >>> python -m omnigenbench.cli design 
+        ...     --structure "(((...)))"
+        ...     --model-path "yangheng/OmniGenome-186M"
+        ...     --mutation-ratio 0.3
+        ...     --num-population 200
+        ...     --num-generation 150
         ...     --output "results.json"
     """
 
     @classmethod
     def register_command(cls, subparsers):
         """
-        Register the RNA design command with the argument parser.
-
         This method sets up the command-line interface for RNA sequence design,
         including all necessary arguments and their descriptions.
 
@@ -108,8 +104,6 @@ class RNADesignCommand(BaseCommand):
     @staticmethod
     def execute(args: argparse.Namespace):
         """
-        Execute the RNA design command with the provided arguments.
-
         This method runs the RNA sequence design process using genetic algorithms.
         It validates parameters, loads the model, runs the design optimization,
         and outputs or saves the results.
@@ -161,8 +155,6 @@ class RNADesignCommand(BaseCommand):
 
 def register_command(subparsers):
     """
-    Register the RNA design command with the CLI.
-
     This function is a convenience wrapper for registering the RNADesignCommand
     with the argument parser.
 

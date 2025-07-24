@@ -28,7 +28,6 @@ Classification Models
 .. automodule:: omnigenbench.src.model.classification.model
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -38,14 +37,12 @@ Regression Models
 .. automodule:: omnigenbench.src.model.regression.model
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
 .. automodule:: omnigenbench.src.model.regression.resnet
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -55,7 +52,6 @@ Embedding Models
 .. automodule:: omnigenbench.src.model.embedding.model
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -65,7 +61,6 @@ MLM Models
 .. automodule:: omnigenbench.src.model.mlm.model
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -75,7 +70,6 @@ RNA Design Models
 .. automodule:: omnigenbench.src.model.rna_design.model
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -85,7 +79,6 @@ Sequence-to-Sequence Models
 .. automodule:: omnigenbench.src.model.seq2seq.model
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -95,7 +88,6 @@ Augmentation Models
 .. automodule:: omnigenbench.src.model.augmentation.model
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -105,7 +97,6 @@ Model Utilities
 .. automodule:: omnigenbench.src.model.module_utils
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -125,7 +116,6 @@ This module provides some templated dataset processing classes inherited from th
 .. automodule:: omnigenbench.src.dataset.omni_dataset
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -138,7 +128,6 @@ Base Metrics
 .. automodule:: omnigenbench.src.metric.metric
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -148,7 +137,6 @@ Classification Metrics
 .. automodule:: omnigenbench.src.metric.classification_metric
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -158,7 +146,6 @@ Regression Metrics
 .. automodule:: omnigenbench.src.metric.regression_metric
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -168,7 +155,6 @@ Ranking Metrics
 .. automodule:: omnigenbench.src.metric.ranking_metric
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -181,7 +167,6 @@ BPE Tokenizer
 .. automodule:: omnigenbench.src.tokenizer.bpe_tokenizer
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -191,7 +176,6 @@ K-mers Tokenizer
 .. automodule:: omnigenbench.src.tokenizer.kmers_tokenizer
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -201,7 +185,6 @@ Single Nucleotide Tokenizer
 .. automodule:: omnigenbench.src.tokenizer.single_nucleotide_tokenizer
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -214,7 +197,6 @@ Base Trainer
 .. automodule:: omnigenbench.src.trainer.trainer
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -224,7 +206,6 @@ HuggingFace Trainer
 .. automodule:: omnigenbench.src.trainer.hf_trainer
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -234,7 +215,6 @@ Accelerate Trainer
 .. automodule:: omnigenbench.src.trainer.accelerate_trainer
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
@@ -247,6 +227,5 @@ Utilities
 .. automodule:: omnigenbench.src.misc.utils
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:

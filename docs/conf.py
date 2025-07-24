@@ -31,7 +31,6 @@ extensions = [
 autodoc_default_options = {
     'members': True,
     'undoc-members': True,
-    'inherited-members': True,
     'show-inheritance': True,
 }
 
@@ -58,10 +57,14 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 extensions.append("sphinx_wagtail_theme")
 html_theme = 'sphinx_wagtail_theme'
+# html_theme = 'sphinx_book_theme'
 
 
 # Add custom CSS for better styling
 html_static_path = ['_static']
+
+def setup(app):
+    app.add_css_file("custom.css")
 
 # Custom CSS to improve visual effects
 # html_css_files = [
@@ -89,4 +92,7 @@ html_context = {
 
 # -- Napoleon settings -------------------------------------------------------
 napoleon_google_docstring = True
-napoleon_numpy_docstring = True
+# napoleon_numpy_docstring = True
+napoleon_use_ivar = True
+autosectionlabel_prefix_document = True
+napoleon_use_rtype = False
