@@ -23,7 +23,7 @@ Refer to the documentation below for details on each module, including available
     :maxdepth: 2
     
     downstream_models
-    downstream datasets
+    downstream_datasets
     metrics
     tokenizers
     trainers
