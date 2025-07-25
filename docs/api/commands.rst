@@ -1,5 +1,5 @@
-CLI Commands
-============
+.. CLI Commands
+.. ============
 
 This section provides detailed documentation for the command-line interface (CLI) commands available in OmniGenBench. The CLI allows users to run benchmarks, train models, and manage resources directly from the terminal, making it easy to perform common tasks without writing Python scripts.
 
