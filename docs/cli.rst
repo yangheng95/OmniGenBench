@@ -1,5 +1,5 @@
-Command Line Usage
-==================
+.. Command Line Usage
+.. ==================
 .. code-block:: text
 
        **  +----------- **           ___                     _

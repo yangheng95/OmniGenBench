@@ -2,13 +2,13 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-OmniGenBench Documentation
+Welcome to OmniGenBench Documentation !
 ==========================
 
-.. image:: ../asset/favicon.png
-   :width: 1000px
-   :align: left
-   :alt: OmniGenBench Logo
+.. .. image:: ../asset/favicon.png
+..    :width: 1000px
+..    :align: left
+..    :alt: OmniGenBench Logo
 
 .. raw:: html
 

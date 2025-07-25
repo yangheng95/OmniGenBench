@@ -1,5 +1,5 @@
-Basic Usage
-===========
+.. Basic Usage
+.. ===========
 
 This page introduces common usage patterns of **OmniGenBench**, including automatic benchmarking, model training, inference, and resource downloads.
 

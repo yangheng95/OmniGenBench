@@ -1,6 +1,3 @@
-Low-level Modules
-=================
-
 This section documents the low-level, fine-grained modules of OmniGenBench, including models, datasets, metrics, tokenizers, and trainers. These modules provide the building blocks for custom development and advanced usage.
 
 **Overview:**
