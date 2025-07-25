@@ -1,5 +1,5 @@
-Installation
-==================
+.. Installation
+.. ==================
 
 This page describes how to install **OmniGenBench** and its dependencies.
 

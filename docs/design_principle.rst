@@ -1,5 +1,5 @@
-Design Principles
-=====================
+.. Design Principles
+.. =====================
 
 
 OmniGenBench is designed to provide a unified, extensible, and robust framework for genomic foundation models. The core philosophy centers on abstraction, modularity, and interoperability, enabling users to build, extend, and integrate genomic models and data pipelines with minimal friction.
