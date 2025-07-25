@@ -3,7 +3,6 @@
 
 OmniGenBench is a comprehensive toolkit for genomic foundation models. It provides automated benchmarking and training pipelines, a hub for accessing pre-trained models, datasets, and pipelines, and a flexible framework for building custom models and tasks.
 
-
 .. tip::
 
     How to Use This Reference:
