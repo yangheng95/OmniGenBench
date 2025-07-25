@@ -15,8 +15,6 @@ from ....src.misc.utils import fprint
 
 class OmniModelForEmbedding(torch.nn.Module):
     """
-    A wrapper class for generating embeddings from pre-trained models.
-
     This class provides a unified interface for loading pre-trained models and
     generating embeddings from genomic sequences. It supports various aggregation
     methods and batch processing for efficient embedding generation.
