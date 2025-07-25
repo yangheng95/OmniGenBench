@@ -172,8 +172,6 @@ class OmniModelForTokenRegression(OmniModel):
 
 class OmniModelForSequenceRegression(OmniModel):
     """
-    Sequence-level regression model for genomic sequences.
-
     This model performs regression at the sequence level, predicting a single
     continuous value for the entire input sequence. It's useful for tasks like
     predicting overall expression levels, binding affinities, or other sequence-level
@@ -321,8 +319,6 @@ class OmniModelForSequenceRegression(OmniModel):
 
 class OmniModelForStructuralImputation(OmniModelForSequenceRegression):
     """
-    Structural imputation model for genomic sequences.
-
     This model is specialized for imputing missing structural information in
     genomic sequences. It extends the sequence regression model with additional
     embedding capabilities for structural features.
@@ -374,8 +370,6 @@ class OmniModelForStructuralImputation(OmniModelForSequenceRegression):
 
 class OmniModelForTokenRegressionWith2DStructure(OmniModelForTokenRegression):
     """
-    Token-level regression model with 2D structural information.
-
     This model extends the basic token regression model to incorporate
     2D structural information, useful for RNA structure prediction
     and other structural genomics tasks.
@@ -419,8 +413,6 @@ class OmniModelForTokenRegressionWith2DStructure(OmniModelForTokenRegression):
 
 class OmniModelForSequenceRegressionWith2DStructure(OmniModelForSequenceRegression):
     """
-    Sequence-level regression model with 2D structural information.
-
     This model extends the basic sequence regression model to incorporate
     2D structural information, useful for RNA structure prediction
     and other structural genomics tasks.
@@ -465,8 +457,6 @@ class OmniModelForSequenceRegressionWith2DStructure(OmniModelForSequenceRegressi
 
 class OmniModelForMatrixRegression(OmniModel):
     """
-    Matrix regression model for genomic sequences.
-
     This model performs regression on matrix representations of genomic sequences,
     useful for tasks like contact map prediction, structure prediction, or other
     matrix-based genomic analysis tasks.
@@ -614,8 +604,6 @@ class OmniModelForMatrixRegression(OmniModel):
 
 class OmniModelForMatrixClassification(OmniModel):
     """
-    Matrix classification model for genomic sequences.
-
     This model performs classification on matrix representations of genomic sequences,
     useful for tasks like structure classification, contact map classification, or other
     matrix-based genomic analysis tasks.

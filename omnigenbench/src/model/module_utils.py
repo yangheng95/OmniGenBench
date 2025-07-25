@@ -7,8 +7,6 @@
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
 """
-Module utilities for OmniGenome models.
-
 This module provides utility classes and functions for handling model inputs,
 pooling operations, and attention mechanisms used across different OmniGenome model types.
 """

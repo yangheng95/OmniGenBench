@@ -214,15 +214,9 @@ class OmniModelForTokenClassification(OmniModel):
 
 class OmniModelForSequenceClassification(OmniModel):
     """
-    Model for sequence classification tasks in genomics.
-
     This model is designed for sequence-level classification tasks where
     the entire input sequence is classified into one of several categories.
     It extends the base OmniModel with sequence-level classification capabilities.
-
-    The model uses a pooling mechanism to aggregate token-level representations
-    into a sequence-level representation, which is then classified using a
-    linear classifier.
 
     Attributes:
         pooler (OmniPooling): Pooling layer for sequence-level representation.
@@ -256,8 +250,6 @@ class OmniModelForSequenceClassification(OmniModel):
 
     def forward(self, **inputs):
         """
-        Forward pass for sequence classification.
-
         This method performs the forward pass through the model, computing
         sequence-level logits and applying softmax to produce probability
         distributions over the label classes.
@@ -295,8 +287,6 @@ class OmniModelForSequenceClassification(OmniModel):
 
     def predict(self, sequence_or_inputs, **kwargs):
         """
-        Performs sequence-level prediction on raw inputs.
-
         This method takes raw sequences or tokenized inputs and returns
         sequence-level predictions. It processes the inputs through the model
         and returns the predicted class for each sequence.
@@ -343,8 +333,6 @@ class OmniModelForSequenceClassification(OmniModel):
 
     def inference(self, sequence_or_inputs, **kwargs):
         """
-        Performs sequence-level inference with human-readable output.
-
         This method provides processed, human-readable sequence-level predictions.
         It converts logits to class labels and provides confidence scores.
 
@@ -396,8 +384,6 @@ class OmniModelForSequenceClassification(OmniModel):
 
     def loss_function(self, logits, labels):
         """
-        Calculates the cross-entropy loss for sequence classification.
-
         This method computes the cross-entropy loss between the predicted
         logits and the ground truth labels.
 
@@ -451,9 +437,6 @@ class OmniModelForMultiLabelSequenceClassification(OmniModelForSequenceClassific
         """
         Calculates the binary cross-entropy loss for multi-label classification.
 
-        This method computes the binary cross-entropy loss between the predicted
-        probabilities and the ground truth multi-label targets.
-
         Args:
             logits (torch.Tensor): Predicted logits from the model.
             labels (torch.Tensor): Ground truth multi-label targets.
@@ -469,8 +452,6 @@ class OmniModelForMultiLabelSequenceClassification(OmniModelForSequenceClassific
 
     def predict(self, sequence_or_inputs, **kwargs):
         """
-        Performs multi-label prediction on raw inputs.
-
         This method takes raw sequences or tokenized inputs and returns
         multi-label predictions. It applies a threshold to determine
         which labels are active for each sequence.

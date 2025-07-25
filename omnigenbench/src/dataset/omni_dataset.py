@@ -6,14 +6,15 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
-# """
-# Specialized dataset classes for OmniGenome framework.
 
-# This module provides specialized dataset classes for various genomic tasks,
-# inheriting from the abstract `OmniDataset`. These classes handle data preparation
-# for token classification, sequence classification, token regression, and sequence regression,
-# integrating with tokenizers and managing metadata.
-# """
+"""
+Specialized dataset classes for OmniGenome framework.
+
+This module provides specialized dataset classes for various genomic tasks,
+inheriting from the abstract `OmniDataset`. These classes handle data preparation
+for token classification, sequence classification, token regression, and sequence regression,
+integrating with tokenizers and managing metadata.
+"""
 
 import json
 
@@ -22,7 +23,7 @@ import torch
 
 from ..abc.abstract_dataset import OmniDataset
 from ..misc.utils import fprint
-from ... import __name__, __version__
+from omnigenbench import __name__, __version__
 
 
 class OmniDatasetForTokenClassification(OmniDataset):
