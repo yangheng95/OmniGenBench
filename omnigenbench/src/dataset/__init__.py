@@ -10,6 +10,7 @@
 This package contains dataset-related modules.
 """
 
+# Original torch-based datasets (for backward compatibility)
 from .omni_dataset import OmniDatasetForSequenceClassification
 from .omni_dataset import OmniDatasetForSequenceRegression
 from .omni_dataset import OmniDatasetForTokenClassification

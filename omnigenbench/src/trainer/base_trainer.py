@@ -176,6 +176,7 @@ class BaseTrainer(ABC):
         epochs: int = 3,
         batch_size: int = 8,
         patience: int = -1,
+        max_grad_norm: float = 1.0,
         gradient_accumulation_steps: int = 1,
         optimizer: Optional[torch.optim.Optimizer] = None,
         loss_fn: Optional[torch.nn.Module] = None,
@@ -207,6 +208,7 @@ class BaseTrainer(ABC):
         self.epochs = epochs
         self.batch_size = batch_size
         self.patience = patience if patience > 0 else epochs
+        self.max_grad_norm = max_grad_norm
         self.gradient_accumulation_steps = gradient_accumulation_steps
         self.optimizer = optimizer
         # Set loss function if provided
@@ -260,7 +262,11 @@ class BaseTrainer(ABC):
         # Check if pre-built loaders are provided
         if kwargs.get("train_loader"):
             self.train_loader = kwargs.get("train_loader")
-            self.eval_loader = kwargs.get("eval_loader", None)
+        if kwargs.get("eval_loader") or kwargs.get("valid_loader"):
+            self.eval_loader = kwargs.get("eval_loader", None) or kwargs.get(
+                "valid_loader", None
+            )
+        if kwargs.get("test_loader"):
             self.test_loader = kwargs.get("test_loader", None)
         else:
             # Create data loaders from datasets

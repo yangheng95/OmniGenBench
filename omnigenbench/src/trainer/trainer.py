@@ -138,15 +138,17 @@ class Trainer(BaseTrainer):
         """
         self.model.train()
         train_loss = []
+        # 使用累积器来正确跟踪未缩放的损失值
+        loss_accumulator = 0.0
+        steps_since_update = 0
 
         train_it = tqdm(self.train_loader, desc=f"Epoch {epoch + 1}/{self.epochs} Loss")
 
+        # 在训练循环开始前清零梯度
+        self.optimizer.zero_grad()
+
         for step, batch in enumerate(train_it):
             batch = self._prepare_batch(batch)
-
-            # Zero gradients at the beginning of accumulation
-            if step % self.gradient_accumulation_steps == 0:
-                self.optimizer.zero_grad()
 
             # Forward pass with optional mixed precision
             if self.fast_dtype and self.fast_dtype != torch.float32:
@@ -160,8 +162,13 @@ class Trainer(BaseTrainer):
             # Compute loss
             loss = self._compute_loss(outputs)
 
+            # 累积原始损失值用于显示（在缩放前）
+            loss_accumulator += loss.item()
+            steps_since_update += 1
+
             # Scale loss for gradient accumulation
-            loss = loss / self.gradient_accumulation_steps
+            if self.gradient_accumulation_steps > 1:
+                loss = loss / self.gradient_accumulation_steps
 
             # Backward pass with optional mixed precision
             if self.fast_dtype and self.fast_dtype != torch.float32:
@@ -169,21 +176,51 @@ class Trainer(BaseTrainer):
             else:
                 loss.backward()
 
-            # Optimizer step after accumulation
+            # Optimizer step and gradient clearing after accumulation
             if (step + 1) % self.gradient_accumulation_steps == 0 or (step + 1) == len(
                 self.train_loader
             ):
                 if self.fast_dtype and self.fast_dtype != torch.float32:
+                    # Clip gradients before optimizer step
+                    if (
+                        hasattr(self, "max_grad_norm")
+                        and self.max_grad_norm is not None
+                    ):
+                        self.scaler.unscale_(self.optimizer)
+                        torch.nn.utils.clip_grad_norm_(
+                            self.model.parameters(), self.max_grad_norm
+                        )
                     self.scaler.step(self.optimizer)
                     self.scaler.update()
                 else:
+                    # Clip gradients before optimizer step
+                    if (
+                        hasattr(self, "max_grad_norm")
+                        and self.max_grad_norm is not None
+                    ):
+                        torch.nn.utils.clip_grad_norm_(
+                            self.model.parameters(), self.max_grad_norm
+                        )
                     self.optimizer.step()
 
-            # Track loss (unscaled for display)
-            train_loss.append(loss.item() * self.gradient_accumulation_steps)
-            train_it.set_description(
-                f"Epoch {epoch + 1}/{self.epochs} Loss: {np.nanmean(train_loss):.4f}"
-            )
+                # 完成参数更新后，记录平均损失值并重置累积器
+                avg_loss = loss_accumulator / steps_since_update
+                train_loss.append(avg_loss)
+                train_it.set_description(
+                    f"Epoch {epoch + 1}/{self.epochs} Loss: {np.nanmean(train_loss):.4f}"
+                )
+
+                # 重置累积器
+                loss_accumulator = 0.0
+                steps_since_update = 0
+
+                # 清空梯度，准备下一次累积
+                self.optimizer.zero_grad()
+            elif (step + 1) % max(1, self.gradient_accumulation_steps // 5) == 0:
+                # 在累积过程中也定期更新进度条，但不更新参数
+                train_it.set_description(
+                    f"Epoch {epoch + 1}/{self.epochs} Loss: {np.nanmean(train_loss) if train_loss else 0:.4f} (Accumulating {steps_since_update}/{self.gradient_accumulation_steps})"
+                )
 
         return np.nanmean(train_loss)
 
@@ -236,8 +273,10 @@ class Trainer(BaseTrainer):
                 batch = self._prepare_batch(batch)
                 labels = batch["labels"]
                 batch.pop("labels")
-
-                predictions = self._predict_batch(batch)["predictions"]
+                with torch.autocast(
+                    device_type=self.device.type, dtype=self.fast_dtype
+                ):
+                    predictions = self._predict_batch(batch)["predictions"]
 
                 val_truth.append(labels.float().cpu().numpy())
                 val_preds.append(predictions.float().cpu().numpy())
@@ -276,7 +315,10 @@ class Trainer(BaseTrainer):
                 labels = batch["labels"]
                 batch.pop("labels")
 
-                predictions = self._predict_batch(batch)["predictions"]
+                with torch.autocast(
+                    device_type=self.device.type, dtype=self.fast_dtype
+                ):
+                    predictions = self._predict_batch(batch)["predictions"]
 
                 truth.append(labels.float().cpu().numpy())
                 preds.append(predictions.float().cpu().numpy())

@@ -184,7 +184,8 @@ class OmniDataset(torch.utils.data.Dataset):
                     if key in tokenization_args:
                         new_args[key] = kwargs[key]
                 prepared_input = self.prepare_input(example, **new_args)
-
+                if not prepared_input:
+                    continue
                 if (
                     self.drop_long_seq
                     and len(prepared_input["input_ids"]) > self.max_length
@@ -411,11 +412,41 @@ class OmniDataset(torch.utils.data.Dataset):
                 df = pd.read_parquet(data_source)
                 for i in range(len(df)):
                     examples.append(df.iloc[i].to_dict())
-            elif data_source.endswith(".txt") or data_source.endswith(".dat"):
-                with open(data_source, "r", encoding="utf8") as f:
-                    lines = f.readlines()
-                for line in lines:
-                    examples.append({"text": line.strip()})
+            elif data_source.endswith(".npy") or data_source.endswith(".npz"):
+                import numpy as np
+
+                if data_source.endswith(".npy"):
+                    data = np.load(data_source, allow_pickle=True)
+                    if isinstance(data, np.ndarray):
+                        for item in data:
+                            examples.append(
+                                {
+                                    "sequence": item["sequence"],
+                                    "label": item.get("label", None),
+                                }
+                            )
+                    else:
+                        raise ValueError(
+                            "Unexpected data format in .npy file, expected an array of dictionaries. e.g.,"
+                            " [{'sequence': 'ATCG', 'label': 1}, ...]"
+                        )
+                elif data_source.endswith(".npz"):
+                    data = np.load(data_source, allow_pickle=True)
+                    for key in data.files:
+                        item = data[key]
+                        if isinstance(item, np.ndarray):
+                            for sub_item in item:
+                                examples.append(
+                                    {
+                                        "sequence": sub_item["sequence"],
+                                        "label": sub_item.get("label", None),
+                                    }
+                                )
+                        else:
+                            raise ValueError(
+                                "Unexpected data format in .npz file, expected an array of dictionaries. e.g.,"
+                                " [{'sequence': 'ATCG', 'label': 1}, ...]"
+                            )
             elif data_source.endswith(
                 (".fasta", ".fa", ".fna", ".ffn", ".faa", ".frn")
             ):

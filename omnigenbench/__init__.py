@@ -26,7 +26,7 @@ Key API Entries:
 """
 
 __name__ = "omnigenbench"
-__version__ = "0.3.4alpha"
+__version__ = "0.3.5alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "Apache-2.0"
@@ -55,6 +55,7 @@ from .src.dataset.omni_dataset import (
     OmniDatasetForTokenClassification,
     OmniDatasetForTokenRegression,
 )
+
 
 # Import metric classes
 from .src.metric import ClassificationMetric, RegressionMetric, RankingMetric
@@ -195,7 +196,10 @@ __all__ = [
     "print_args",
     "env_meta_info",
     "RNA2StructureCache",
-    # OmniGenome* aliases for backward compatibility
+    "OmniDatasetForSequenceClassification",
+    "OmniDatasetForSequenceRegression",
+    "OmniDatasetForTokenClassification",
+    "OmniDatasetForTokenRegression",
     "OmniTokenizer",
     "OmniKmersTokenizer",
     "OmniSingleNucleotideTokenizer",
@@ -203,10 +207,6 @@ __all__ = [
     "OmniDataset",
     "OmniMetric",
     "OmniModel",
-    "OmniDatasetForSequenceClassification",
-    "OmniDatasetForSequenceRegression",
-    "OmniDatasetForTokenClassification",
-    "OmniDatasetForTokenRegression",
     "OmniLoraModel",
     "OmniModelForSequenceClassification",
     "OmniModelForMultiLabelSequenceClassification",
@@ -221,6 +221,32 @@ __all__ = [
     "OmniModelForRNADesign",
     "OmniModelForEmbedding",
     "OmniModelForAugmentation",
+    # OmniGenome* aliases for backward compatibility
+    "OmniGenomeTokenizer",
+    "OmniGenomeKmersTokenizer",
+    "OmniGenomeSingleNucleotideTokenizer",
+    "OmniGenomeBPETokenizer",
+    "OmniGenomeDataset",
+    "OmniGenomeMetric",
+    "OmniGenomeModel",
+    "OmniGenomeDatasetForSequenceClassification",
+    "OmniGenomeDatasetForSequenceRegression",
+    "OmniGenomeDatasetForTokenClassification",
+    "OmniGenomeDatasetForTokenRegression",
+    "OmniGenomeLoraModel",
+    "OmniGenomeModelForSequenceClassification",
+    "OmniGenomeModelForMultiLabelSequenceClassification",
+    "OmniGenomeModelForTokenClassification",
+    "OmniGenomeModelForSequenceRegression",
+    "OmniGenomeModelForTokenRegression",
+    "OmniGenomeModelForStructuralImputation",
+    "OmniGenomeModelForMatrixRegression",
+    "OmniGenomeModelForMatrixClassification",
+    "OmniGenomeModelForMLM",
+    "OmniGenomeModelForSeq2Seq",
+    "OmniGenomeModelForRNADesign",
+    "OmniGenomeModelForEmbedding",
+    "OmniGenomeModelForAugmentation",
     # Command line functions
     "run_bench",
     "bench_command",

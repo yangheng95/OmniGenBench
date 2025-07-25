@@ -9,3 +9,4 @@
 """
 This package contains abstract base classes for datasets, models, and tokenizers.
 """
+from .abstract_dataset import OmniDataset
