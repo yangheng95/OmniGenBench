@@ -23,7 +23,8 @@ import torch
 
 from ..abc.abstract_dataset import OmniDataset
 from ..misc.utils import fprint
-from omnigenbench import __name__, __version__
+from omnigenbench import __name__ as name
+from omnigenbench import __version__ as version
 
 
 class OmniDatasetForTokenClassification(OmniDataset):
@@ -55,8 +56,8 @@ class OmniDatasetForTokenClassification(OmniDataset):
         )
         self.metadata.update(
             {
-                "library_name": __name__,
-                "omnigenbench_version": __version__,
+                "library_name": name,
+                "omnigenbench_version": version,
                 "task": "genome_token_classification",
             }
         )
@@ -167,8 +168,8 @@ class OmniDatasetForSequenceClassification(OmniDataset):
 
         self.metadata.update(
             {
-                "library_name": __name__,
-                "omnigenbench_version": __version__,
+                "library_name": name,
+                "omnigenbench_version": version,
                 "task": "genome_sequence_classification",
             }
         )
@@ -266,8 +267,8 @@ class OmniDatasetForTokenRegression(OmniDataset):
 
         self.metadata.update(
             {
-                "library_name": __name__,
-                "omnigenbench_version": __version__,
+                "library_name": name,
+                "omnigenbench_version": version,
                 "task": "genome_token_regression",
             }
         )
@@ -373,8 +374,8 @@ class OmniDatasetForSequenceRegression(OmniDataset):
 
         self.metadata.update(
             {
-                "library_name": __name__,
-                "omnigenbench_version": __version__,
+                "library_name": name,
+                "omnigenbench_version": version,
                 "task": "genome_sequence_regression",
             }
         )
