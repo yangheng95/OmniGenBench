@@ -58,6 +58,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 extensions.append("sphinx_wagtail_theme")
 html_theme = 'sphinx_wagtail_theme'
+# html_theme = "furo"
 # extensions.append("pytorch_sphinx_theme")
 # html_theme = 'pytorch_sphinx_theme'
 
