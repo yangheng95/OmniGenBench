@@ -27,6 +27,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',
     'sphinx.ext.viewcode',
+    'sphinx_design', 
 ]
 
 autodoc_default_options = {
@@ -108,4 +109,3 @@ napoleon_google_docstring = True
 napoleon_use_ivar = True
 autosectionlabel_prefix_document = True
 napoleon_use_rtype = False
-
