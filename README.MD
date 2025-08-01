@@ -45,12 +45,12 @@
 - 🧬 **Benchmark effortlessly** — Run automated and reproducible evaluations for genomic foundation models  
 - 🧠 **Understand your models** — Explore interpretability across diverse tasks and species  
 - ⚙️ **Run tutorials instantly** — Use click-to-run guides for genomic sequence modeling  
-- 🚀 **Train and infer efficiently** — Accelerated workflows for training and inference on GFMs  
+- 🚀 **Fine-tune and infer efficiently** — Accelerated workflows for fine-tuning and inference on GFMs on downstream tasks
 
 ## Installation
 
 ### Requirements
-Before installing OmniGenoBench, you need to install the following dependencies:
+Before installing OmniGenoBench, you need to install the following dependencies: 
 - Python 3.10+
 - PyTorch 2.5+
 - Transformers 4.46.0+

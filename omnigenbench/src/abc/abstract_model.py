@@ -518,7 +518,7 @@ class OmniModel(torch.nn.Module):
         """
         loss = outputs.get("loss", None)
         if loss is not None:
-            return outputs
+            return loss
 
         logits = outputs["logits"]
         if logits is not None or labels is not None:

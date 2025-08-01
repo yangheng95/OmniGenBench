@@ -129,7 +129,7 @@ class OmniDataset(torch.utils.data.Dataset):
 
             >>> # Initialize with label mapping
             >>> dataset = OmniDataset("data.json", tokenizer,
-            ...                      label2id={"A": 0, "B": 1})
+            ...                       label2id={"A": 0, "B": 1})
         """
         super(OmniDataset, self).__init__()
         self.metadata = env_meta_info()
@@ -272,6 +272,25 @@ class OmniDataset(torch.utils.data.Dataset):
         Returns:
             list: The padded and truncated data.
         """
+        key_lengths = {key: [] for key in self.data[0].keys()}
+        for item in self.data:
+            for key, value in item.items():
+                if not isinstance(value, torch.Tensor):
+                    value = torch.as_tensor(value)
+                length = value.size(0) if value.ndim > 0 else 0
+                key_lengths[key].append(length)
+
+        skip_padding_for_key = {
+            key: len(set(lengths)) == 1 for key, lengths in key_lengths.items()
+        }
+
+        skipped_keys = [key for key, skip in skip_padding_for_key.items() if skip]
+        if len(skipped_keys) == len(self.data[0].keys()):
+            fprint(
+                "All keys have consistent sequence lengths, skipping padding and truncation."
+            )
+            return self.data
+
         if hasattr(self.tokenizer, "pad_token_id"):
             pad_token_id = self.tokenizer.pad_token_id
         else:

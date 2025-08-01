@@ -471,7 +471,9 @@ class AccelerateTrainer(BaseTrainer):
             **kwargs: Additional keyword arguments for model saving
         """
         # Only main process saves the model
-        if self.accelerator.is_main_process:
+        if not hasattr(self, "accelerator"):
+            self.model.save(path, overwrite, **kwargs)
+        elif self.accelerator.is_main_process:
             self.accelerator.unwrap_model(self.model).save(path, overwrite, **kwargs)
 
     def _load_state_dict(self) -> None:

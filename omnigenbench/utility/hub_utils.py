@@ -38,8 +38,13 @@ def unzip_checkpoint(checkpoint_path):
         >>> extracted_path = unzip_checkpoint("model.zip")
         >>> print(extracted_path)  # "model"
     """
+    if not checkpoint_path.endswith(".zip"):
+        fprint("Checkpoint path does not end with .zip, returning the original path.")
+        return checkpoint_path
+
     import zipfile
 
+    fprint("Unzipping checkpoint from {}...".format(checkpoint_path))
     with zipfile.ZipFile(checkpoint_path, "r") as zip_ref:
         zip_ref.extractall(checkpoint_path.strip(".zip"))
 
