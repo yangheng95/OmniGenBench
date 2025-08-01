@@ -3,3 +3,4 @@ furo
 sphinx_rtd_theme
 sphinx-wagtail-theme
 OmniGenBench
+sphinx-design

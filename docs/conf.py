@@ -39,7 +39,7 @@ autodoc_default_options = {
 autosectionlabel_prefix_document = True
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = 'get_start'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
