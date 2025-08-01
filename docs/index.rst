@@ -393,7 +393,6 @@
 
    <div style="padding: 2.5em; margin-top: 1em; margin-bottom: 3em; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 12px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1); border: 1px solid rgba(255, 255, 255, 0.18);">
       <div style="text-align: center;">
-         <img src="../asset/favicon.png" alt="OmniGenBench Logo" style="width: 100px; margin-bottom: 1em;"/>
          <h1 style="font-size: 2.8em; font-weight: bold; margin: 0;">OmniGenBench</h1>
       </div>
       <div style="text-align: center; margin: 1.5em 0; width: 100%; display: flex; flex-direction: column; align-items: center;">
@@ -416,11 +415,27 @@ Key Features
 
 .. raw:: html
 
-   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5em;">
-       <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">🧬 Multi-Modal Support</h4> <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Available for both <strong>RNA and DNA</strong> modalities with comprehensive downstream tasks and foundation models, including fine-tuning and evaluation.</p> </div>
-       <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">⚡ Efficient Fine-tuning</h4> <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Full <strong>LoRA integration</strong> for efficient foundation model fine-tuning with up to 90% reduced computational requirements. A 24GB GPU is enough for all models.</p> </div>
-       <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">🔍 Interpretability</h4> <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Diverse explanation methods for better model interpretability, including <strong>attention visualization</strong> and <strong>motif discovery</strong>.</p> </div>
-       <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">📊 Rich Benchmarks</h4> <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Includes <strong>5 curated benchmarks</strong> covering structure prediction, classification, and cross-species analysis to serve as a robust evaluation tool.</p> </div>
+   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5em;">
+      <!-- 卡片1: Multi-Modal Support -->
+      <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> 
+         <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">🧬 Multi-Modal Support</h4> 
+         <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Available for both <strong>RNA and DNA</strong> modalities with comprehensive downstream tasks and foundation models, including fine-tuning and evaluation.</p> 
+      </div>
+      <!-- 卡片2: Efficient Fine-tuning -->
+      <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> 
+         <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">⚡ Efficient Fine-tuning</h4> 
+         <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Full <strong>LoRA integration</strong> for efficient foundation model fine-tuning with up to 90% reduced computational requirements. A 24GB GPU is enough for all models.</p> 
+      </div>
+      <!-- 卡片3: Interpretability -->
+      <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> 
+         <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">🔍 Interpretability</h4> 
+         <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Diverse explanation methods for better model interpretability, including <strong>attention visualization</strong> and <strong>motif discovery</strong>.</p> 
+      </div>
+      <!-- 卡片4: Rich Benchmarks -->
+      <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> 
+         <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">📊 Rich Benchmarks</h4> 
+         <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Includes <strong>5 curated benchmarks</strong> covering structure prediction, classification, and cross-species analysis to serve as a robust evaluation tool.</p> 
+      </div>
    </div>
 
 Explore the Documentation
@@ -437,6 +452,7 @@ Explore the Documentation
    </div>
 
 .. toctree::
+   :hidden:
    :maxdepth: 2
    :caption: Installation
 

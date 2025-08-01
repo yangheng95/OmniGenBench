@@ -59,6 +59,8 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 extensions.append("sphinx_wagtail_theme")
 html_theme = 'sphinx_wagtail_theme'
 # html_theme = "furo"
+# html_theme = "pydata_sphinx_theme"
+# html_theme = 'sphinxawesome_theme'
 # extensions.append("pytorch_sphinx_theme")
 # html_theme = 'pytorch_sphinx_theme'
 
@@ -78,6 +80,11 @@ def setup(app):
 
 html_theme_options = {
     "logo": "og_favicon.png",
+    # "logo": {
+    #     "link": "index.html", # 点击 Logo 后跳转的链接，通常是首页
+    #     "image_light": "_static/og_favicon.png", # 浅色模式下显示的 Logo 图片路径
+    #     "image_dark": "_static/og_favicon.png",  # 深色模式下显示的 Logo 图片路径
+    # },
     "project_name": "OmniGenBench Documentation",
     "header_links": "Home|https://cola-szhou.github.io/OmniGenBench_web/,GitHub|https://github.com/COLA-Laboratory/OmniGenBench",
 }
