@@ -549,38 +549,38 @@ Explore the Documentation
    </div>
 
 
-.. API Navigation
-.. -------------------------
+API Navigation
+-------------------------
 
-.. .. toctree::
-..    :maxdepth: 1
-..    :caption: Get started with OmniGenBench
+.. toctree::
+   :maxdepth: 1
+   :caption: Get started with OmniGenBench
 
-..    installation
+   installation
 
-.. .. toctree::
-..    :maxdepth: 1
-..    :caption: Core usage guide for OmniGenBench
+.. toctree::
+   :maxdepth: 1
+   :caption: Core usage guide for OmniGenBench
 
-..    usage
+   usage
 
-.. .. toctree::
-..    :maxdepth: 1
-..    :caption: Command Usage Examples
+.. toctree::
+   :maxdepth: 1
+   :caption: Command Usage Examples
 
-..    cli
+   cli
 
-.. .. toctree::
-..    :maxdepth: 1
-..    :caption: Package Design Principles
+.. toctree::
+   :maxdepth: 1
+   :caption: Package Design Principles
 
-..    design_principle
+   design_principle
 
-.. .. toctree::
-..    :maxdepth: 1
-..    :caption: API Reference
+.. toctree::
+   :maxdepth: 1
+   :caption: API Reference
 
-..    api_reference
+   api_reference
 
 
 
