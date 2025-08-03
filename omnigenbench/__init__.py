@@ -26,7 +26,7 @@ Key API Entries:
 """
 
 __name__ = "omnigenbench"
-__version__ = "0.3.6alpha"
+__version__ = "0.3.7alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "Apache-2.0"
@@ -128,6 +128,11 @@ from .utility.ensemble import VoteEnsemblePredictor
 # --------------------------------------------------------------------------------
 # For backward compatibility version 0.2.7alpha and earlier
 from .auto.config.auto_config import AutoBenchConfig
+
+# Import explainer classes
+from .src.explainability.epistasis.explainer import EpistasisExplainer
+from .src.explainability.sequence_logo.explainer import SequenceLogoExplainer
+from .src.explainability.visualization_2d.explainer import Visualization2DExplainer
 
 OmniGenomeTokenizer = OmniTokenizer
 OmniGenomeKmersTokenizer = OmniKmersTokenizer
@@ -252,6 +257,9 @@ __all__ = [
     "bench_command",
     "run_train",
     "train_command",
+    "EpistasisExplainer",
+    "SequenceLogoExplainer",
+    "Visualization2DExplainer",
 ]
 
 
