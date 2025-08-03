@@ -57,6 +57,9 @@ setup(
         "packaging",
         "peft",
         "dill",
+        "plotly",
+        "logomaker",
+        "matplotlib",
     ],
     extras_require=extras,
     classifiers=[

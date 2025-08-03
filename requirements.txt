@@ -12,4 +12,6 @@ transformers>=4.46.0
 packaging
 peft
 dill
-
+plotly
+logomaker
+matplotlib

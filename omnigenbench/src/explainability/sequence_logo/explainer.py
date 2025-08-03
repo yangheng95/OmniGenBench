@@ -1,3 +1,9 @@
+#
+# Author: Shasha Zhou <sz484@exeter.ac.uk>
+# Description:
+#
+# Copyright (C) 2020-2025. All Rights Reserved.
+#
 # -*- coding: utf-8 -*-
 # file: __init__.py
 # time: 2025-07-10 10:25
