@@ -3,18 +3,6 @@
 # Description:
 #
 # Copyright (C) 2020-2025. All Rights Reserved.
-#
-#
-# Author: Shasha Zhou <sz484@exeter.ac.uk>
-# Description:
-#
-# Copyright (C) 2020-2025. All Rights Reserved.
-#
-# -*- coding: utf-8 -*-
-# file: abstract_explainer.py
-# time: 2025-06-16 21:06
-# author: Shasha Zhou <sz484@exeter.ac.uk>
-# Copyright (C) 2020-2025. All Rights Reserved.
 
 
 from abc import ABC, abstractmethod
@@ -22,31 +10,51 @@ from typing import Any, Optional
 
 
 class AbstractExplainer(ABC):
-    """
-    Abstract base class for all explainers.
+    """Defines the standard interface for all explainer classes.
+
+    This abstract base class (ABC) establishes a contract that all concrete
+    explainer implementations must follow. It ensures that every explainer has a
+    consistent structure, including an `explain` method.
+
+    The typical workflow for a class inheriting from `AbstractExplainer` is:
+    1. Initialize the explainer with a model.
+    2. Call the `explain` method with some input to get an explanation.
+    3. Optionally, call the `visualize` method to create a visual representation
+       of the explanation.
+
+    The `__call__` method is provided as a convenient shortcut for steps 2 and 3.
     """
 
     def __init__(self, model):
-        """
-        Initialize the explainer.
+        """Initializes the explainer with a model.
 
         Args:
-            model (AbstractModel): The model to explain.
-            dataset (AbstractDataset): The dataset to explain, optional.
+            model (Any): The machine learning model (e.g., a PyTorch or TensorFlow model)
+                         whose predictions or behavior are to be explained. This model
+                         is stored as an attribute for use by other methods.
         """
         self.model = model
 
     @abstractmethod
     def explain(self, input: Any, **kwargs) -> Any:
-        """
-        Explain the model's prediction for a given input.
+        """Generates an explanation for a given input.
+
+        This is the core method of any explainer and **must be implemented** by
+        all concrete subclasses. Its purpose is to take an input and apply a specific
+        explanation technique (e.g., SHAP, LIME, t-SNE, Integrated Gradients) to
+        understand the model's behavior with respect to that input.
 
         Args:
-            input (Any): The input to explain.
-            **kwargs: Additional keyword arguments.
+            input (Any): The data point to be explained (e.g., a text sequence,
+                         a list of sequences, a tensor).
+            **kwargs: Additional, method-specific keyword arguments that the
+                      concrete implementation may require (e.g., `perplexity` for
+                      t-SNE, `n_samples` for LIME).
 
         Returns:
-            Any: The explanation.
+            Any: The generated explanation. The format depends on the explainer
+                 (e.g., an attribution matrix, a set of feature importances,
+                 2D coordinates for visualization).
         """
         raise NotImplementedError(
             f"Explanation is not implemented for {self.__class__.__name__}."
@@ -55,32 +63,40 @@ class AbstractExplainer(ABC):
     def visualize(
         self, explanation: Any, inputs: Optional[Any] = None, **kwargs
     ) -> Any:
-        """
-        Visualize the explanation.
+        """Creates a visual representation of an explanation.
+
+        This method is optional and should be implemented by subclasses that can
+        produce a visual output (e.g., a plot, a heatmap, a sequence logo).
 
         Args:
-            explanation (Any): The explanation to visualize.
-            inputs (Any): The inputs to visualize, optional.
-            **kwargs: Additional keyword arguments.
+            explanation (Any): The output from the `explain` method.
+            inputs (Optional[Any], optional): The original input data, which can be
+                                              useful for providing context in the
+                                              visualization. Defaults to None.
+            **kwargs: Additional keyword arguments for customizing the visualization
+                      (e.g., `title`, `width`, `height`, `color_scheme`).
 
         Returns:
-            Any: The visualization.
+            Any: A visualization object, such as a Matplotlib or Plotly figure.
         """
         raise NotImplementedError(
             f"Visualization is not implemented for {self.__class__.__name__}."
         )
 
-    def save(self, path: str, **kwargs) -> None:
-        """
-        Save the explainer.
-        """
-        raise NotImplementedError(
-            f"Saving is not implemented for {self.__class__.__name__}."
-        )
-
     def __call__(self, input: Any, **kwargs) -> Any:
-        """
-        Call the explainer.
+        """Provides a convenient shortcut to explain and visualize in one step.
+
+        This allows the explainer instance to be called like a function, which
+        first generates the explanation and then immediately passes it to the
+        visualize method.
+
+        Args:
+            input (Any): The input to explain.
+            **kwargs: Additional keyword arguments passed to both the `explain`
+                      and `visualize` methods.
+
+        Returns:
+            Any: The visualization generated by the `visualize` method.
         """
         explanation = self.explain(input, **kwargs)
         return self.visualize(explanation, input, **kwargs)

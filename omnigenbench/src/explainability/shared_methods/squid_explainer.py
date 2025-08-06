@@ -27,12 +27,39 @@ import os
 
 
 class SQUIDExplainer(AbstractExplainer):
-    """
-    SQUIDExplainer is a class that uses SQUID to explain the input.
-    paper: Seitz, E.E., McCandlish, D.M., Kinney, J.B., and Koo P.K. Interpreting cis-regulatory mechanisms from genomic deep neural networks using surrogate models. Nat Mach Intell (2024). https://doi.org/10.1038/s42256-024-00851-5
+    """Explains model predictions using the SQUID method.
+
+    SQUID (Surrogate-based QUantitative-epistatic-Interaction-Discovery) is a
+    method that uses in-silico mutagenesis to generate a dataset, which is then
+    used to train a simpler, interpretable surrogate model. From this surrogate
+    model, additive (first-order) or pairwise (second-order) feature attributions
+    can be extracted.
+
+    Attributes:
+        model: The target deep learning model to explain.
+        gpmap (str): The type of genotype-phenotype map for the surrogate model,
+                     either 'additive' or 'pairwise'.
+        token_to_id (Dict[str, int]): A mapping from sequence characters to integer IDs.
+        alphabet (List[str]): The list of unique characters in the input sequence.
+        num_tokens (int): The size of the alphabet.
+
+    Reference:
+        Seitz, E.E., McCandlish, D.M., Kinney, J.B., and Koo P.K. Interpreting
+        cis-regulatory mechanisms from genomic deep neural networks using surrogate
+        models. Nat Mach Intell (2024).
+        https://doi.org/10.1038/s42256-024-00851-5
     """
 
     def __init__(self, model, gpmap: str = "additive", **kwargs):
+        """Initializes the SQUIDExplainer.
+
+        Args:
+            model: The pre-trained model to be explained.
+            gpmap (str, optional): The type of surrogate model to fit. Can be 'additive'
+                                   for first-order effects or 'pairwise' for second-order
+                                   effects. Defaults to "additive".
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(model)
         self.model = model
         self.token_to_id = {}
@@ -56,11 +83,46 @@ class SQUIDExplainer(AbstractExplainer):
         batch_size: int = 32,
         **kwargs,
     ):
-        """
-        Explain the input sequence.
-        sequence: the sequence to explain, string
-        mut_type: the type of mutagenesis, "random" or "combinatorial", default is "random", string
-        **kwargs: additional arguments
+        """Generates feature attributions for an input sequence using the SQUID method.
+
+        This method performs three main steps:
+        1. Generates a dataset of mutated sequences and their corresponding model
+           predictions (in-silico MAVE).
+        2. Trains an interpretable surrogate model on this dataset.
+        3. Extracts the learned parameters from the surrogate model, which represent
+           the feature attributions.
+
+        Args:
+            sequence (str): The input sequence to explain.
+            mut_type (str, optional): The mutagenesis strategy. Can be "random" or
+                                      "combinatorial". Defaults to "random".
+            mut_rate (float, optional): The average mutation rate for 'random' mutagenesis.
+                                        Defaults to 0.1.
+            uniform (bool, optional): If True, use a fixed number of mutations per sequence
+                                      for 'random' mutagenesis. Defaults to False.
+            max_order (int, optional): The maximum order of mutations for 'combinatorial'
+                                       mutagenesis. -1 means all orders. Defaults to -1.
+            mut_window (Tuple[int, int], optional): The (start, end) window within the
+                                                    sequence to apply mutations. Defaults to None.
+            inter_window (Tuple[int, int], optional): A window for inter-mutational analysis.
+                                                      Defaults to None.
+            context_agnositc (bool, optional): If True, randomize the context outside the
+                                               mutation window. Defaults to False.
+            num_sim (int, optional): The number of mutated sequences to generate.
+                                     Defaults to 10000.
+            seed (Optional[int], optional): A random seed for reproducibility. Defaults to None.
+            save_window (Tuple[int, int], optional): The window of the sequence to use for
+                                                     training the surrogate model. Defaults to None.
+            batch_size (int, optional): Batch size for getting predictions from the target model.
+                                        Defaults to 32.
+            **kwargs: Additional arguments passed to the surrogate model fitting process.
+
+        Returns:
+            np.ndarray: The learned parameters from the surrogate model.
+                        - If `gpmap` is 'additive', returns `theta_lc` with shape (L, A),
+                          representing first-order effects.
+                        - If `gpmap` is 'pairwise', returns `theta_lclc` with shape (L, A, L, A),
+                          representing second-order effects.
         """
         fprint("Starting SQUID explanation")
         print(f"Using gpmap type: {self.gpmap}")
@@ -123,25 +185,19 @@ class SQUIDExplainer(AbstractExplainer):
         batch_size: int = 32,
         **kwargs,
     ):
-        """
-        Generate in silico MAVE data for a given sequence.
+        """(Private) Generates an in-silico MAVE dataset.
+
+        This helper function creates a dataset of mutated sequences and uses the
+        provided deep learning model to predict their corresponding phenotypes.
 
         Args:
-            sequence: the sequence to explain, string
-            mut_type: the type of mutagenesis, "random" or "combinatorial", default is "random", string
-            mut_rate: the mutation rate, default is 0.1, float
-            uniform: whether to use uniform mutation rate, default is False, bool
-            max_order: the maximum order of mutations to generate, default is -1, int
-            mut_window: the window of the mutated region, default is None, list
-            inter_window: the window of the inter-mutated region, default is None, list
-            context_agnositc: whether to use context-agnostic mutagenesis, default is False, bool
-            num_sim: the number of simulations to generate, default is 10000, int
-            seed: the seed for the random number generator, default is None, int
-            save_window: window used for delimiting sequences that are exported in 'x_mut' array, if used, the 'save_window' must be equal or larger than 'mut_window'.
-            **kwargs: additional arguments
+            (See `explain` method for argument descriptions)
 
         Returns:
-            X_mut: the in silico MAVE data, numpy array
+            Tuple[List[str], np.ndarray, np.ndarray]: A tuple containing:
+                - A list of the generated full sequences (strings).
+                - The one-hot encoded mutated sequences (`x_mut`).
+                - The model predictions for each sequence (`y_mut`).
         """
 
         if seed is not None:

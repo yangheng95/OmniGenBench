@@ -17,24 +17,41 @@ EXPLAINER_REGISTRY = {
 
 
 def get_explainer(name: str) -> AbstractExplainer:
-    """
-    Get an explainer by name.
+    """Retrieves an explainer class from the registry by its name.
+
+    Args:
+        name (str): The name of the explainer method to retrieve.
+
+    Returns:
+        AbstractExplainer: The explainer class corresponding to the given name.
     """
     fprint(f"Getting explainer with method: {name}")
     return EXPLAINER_REGISTRY[name]
 
 
 class EpistasisExplainer(AbstractExplainer):
-    """
-    Explain the sequence logo of the model.
+    """Explains and visualizes pairwise epistatic interactions in a sequence.
+
+    This explainer uses an underlying method (like SQUID) to fit a pairwise
+    surrogate model to the target model's predictions. It then extracts the
+    second-order interaction terms (epistasis) and visualizes them as an
+    interactive heatmap, showing the effect of combining mutations at two
+    different positions.
+
+    Attributes:
+        ExplainerClass (AbstractExplainer): The underlying explainer class (e.g., SQUIDExplainer).
+        explainer (AbstractExplainer): An instance of the explainer, configured for pairwise analysis.
+        matrix (np.ndarray): The most recently computed epistatic interaction matrix.
     """
 
     def __init__(self, model, method: str = "squid"):
-        """
-        Initialize the explainer.
+        """Initializes the EpistasisExplainer.
 
         Args:
-
+            model (Any): The model to explain, which must be compatible with the
+                         chosen underlying explainer method.
+            method (str, optional): The method to use for explaining epistasis.
+                                    Defaults to "squid".
         """
         fprint(f"Initializing EpistasisExplainer with method: {method}")
         super().__init__(model)
@@ -43,8 +60,22 @@ class EpistasisExplainer(AbstractExplainer):
         fprint("EpistasisExplainer initialized successfully")
 
     def explain(self, sequence, **kwargs):
-        """
-        Explain the sequence logo of the model.
+        """Computes the pairwise interaction matrix for a given sequence.
+
+        This method calls the underlying SQUID explainer to generate the epistasis
+        matrix (`theta_lclc`), which quantifies the interaction effect between
+        every pair of possible mutations.
+
+        Args:
+            sequence (str): The input sequence to explain.
+            **kwargs: Additional keyword arguments passed to the underlying
+                      explainer's `explain` method.
+
+        Returns:
+            np.ndarray: A 4D numpy array of shape `(L, A, L, A)`, where `L` is the
+                        sequence length and `A` is the alphabet size. `matrix[l1, c1, l2, c2]`
+                        represents the interaction effect between character `c1` at
+                        position `l1` and character `c2` at position `l2`.
         """
         fprint(f"Generating explanations for sequence: {sequence}")
         matrix = self.explainer.explain(sequence, **kwargs)
@@ -52,8 +83,17 @@ class EpistasisExplainer(AbstractExplainer):
         return matrix
 
     def visualize_heatmap(self, matrix, sequence: str, save_path=None, **kwargs):
-        """
-        Visualize the heatmap of the model.
+        """Visualizes the epistatic interaction matrix as an interactive heatmap.
+
+        This method creates a detailed heatmap where each cell represents the
+        interaction strength between two specific mutations. The heatmap is
+        lower-triangular to avoid redundancy.
+
+        Args:
+            matrix (np.ndarray): The 4D epistasis matrix from the `explain` method.
+            sequence (str): The original sequence, used for context.
+            save_path (str, optional): Path to save the interactive HTML plot. Defaults to None.
+            **kwargs: Not currently used, but included for future extensibility.
         """
         fprint("Visualizing the heatmap...")
 
@@ -154,14 +194,12 @@ class EpistasisExplainer(AbstractExplainer):
         fig.show()
 
     def __call__(self, sequence, save_path=None, **kwargs):
-        """
-        Explain the sequence logo of the model.
+        """A convenience method to explain and visualize in one step.
 
         Args:
-            sequence: The sequence to explain.
-            save_path: The path to save the figure.
-            visualize_type: The type of visualization. Can be "logo" or "heatmap".
-            **kwargs: Additional keyword arguments.
+            sequence (str): The sequence to explain.
+            save_path (str, optional): The path to save the figure. Defaults to None.
+            **kwargs: Additional keyword arguments passed to the `explain` method.
         """
         fprint(f"Generating explanations for sequence: {sequence}")
         matrix = self.explainer.explain(sequence, gpmap="additive", **kwargs)

@@ -18,26 +18,44 @@ EXPLAINER_REGISTRY = {
 
 
 def get_explainer(name: str) -> AbstractExplainer:
-    """
-    Get an explainer by name.
+    """Retrieves an explainer class from the registry by its name.
+
+    This function acts as a factory, allowing for dynamic selection of the
+    dimensionality reduction algorithm to be used.
+
+    Args:
+        name (str): The name of the explainer method to retrieve (e.g., "tsne").
+
+    Returns:
+        AbstractExplainer: The explainer class corresponding to the given name.
     """
     fprint(f"Getting explainer with method: {name}")
     return EXPLAINER_REGISTRY[name]
 
 
 class Visualization2DExplainer(AbstractExplainer):
-    """
-    Visualize the dataset in two dimensions.
+    """A high-level explainer for creating 2D visualizations of sequence embeddings.
+
+    This class provides a convenient wrapper around various dimensionality reduction
+    algorithms (like t-SNE) to generate and visualize 2D representations of
+    high-dimensional sequence embeddings. It simplifies the process of creating
+    interactive scatter plots to explore the structure of the embedding space.
+
+    Attributes:
+        model (OmniModelForEmbedding): The model used for generating embeddings.
+        ExplainerClass (AbstractExplainer): The specific dimensionality reduction class being used (e.g., TSNEExplainer).
+        explainer (AbstractExplainer): An instance of the `ExplainerClass`.
     """
 
     def __init__(self, model, method: str = "tsne"):
-        """
-        Initialize the explainer.
+        """Initializes the Visualization2DExplainer.
 
         Args:
-            model (AbstractModel): The model to explain.
-            dataset (AbstractDataset): The dataset to explain.
-            method (str): The method to use for the explainer, "tsne" by default.
+            model (OmniModelForEmbedding): The model to explain. It must be an instance of
+                                           `OmniModelForEmbedding` as it needs the
+                                           `batch_encode` method.
+            method (str, optional): The dimensionality reduction method to use.
+                                    Currently, only "tsne" is supported. Defaults to "tsne".
         """
         fprint(f"Initializing Visualization2DExplainer with method: {method}")
         super().__init__(model)
@@ -49,15 +67,22 @@ class Visualization2DExplainer(AbstractExplainer):
         fprint("Visualization2DExplainer initialized successfully")
 
     def explain(self, sequences, labels=None, **kwargs):
-        """
-        Explain the input.
+        """Generates the 2D embeddings for the input sequences.
+
+        This method acts as a wrapper, calling the `explain` method of the underlying
+        dimensionality reduction explainer (e.g., TSNEExplainer).
 
         Args:
-            input: The input to explain.
-            **kwargs: Additional keyword arguments.
+            sequences (List[str]): The list of input sequences to explain.
+            labels (Optional[List[Any]], optional): A list of corresponding labels.
+                                                    Not used in computation but passed down.
+                                                    Defaults to None.
+            **kwargs: Additional keyword arguments to be passed to the underlying
+                      explainer's `explain` method (e.g., `perplexity` for t-SNE).
 
         Returns:
-            Any: The explanation.
+            np.ndarray: An array of shape `(n_sequences, 2)` containing the
+                        generated 2D coordinates.
         """
         fprint(f"Generating explanations for {len(sequences)} sequences")
         self.sequences = sequences
@@ -81,25 +106,33 @@ class Visualization2DExplainer(AbstractExplainer):
         save_path=None,
         **kwargs,
     ):
-        """
-        Visualize the explanation.
+        """Creates an interactive 2D scatter plot of the embeddings.
+
+        This method uses Plotly Express to generate a rich, interactive visualization
+        where each point represents a sequence. Hovering over a point reveals its
+        sequence and label.
 
         Args:
-            embeddings: The embeddings to visualize.
-            sequences: The sequences to visualize.
-            labels: The labels to visualize. If None, all points are assigned 'Unlabeled'.
-            width: The width of the figure.
-            height: The height of the figure.
-            title: The title of the figure.
-            point_size: The size of the points.
-            point_opacity: The opacity of the points.
-            wrap_width: The width of the sequence.
-            color_palette: The color palette.
-            save_path: The path to save the figure.
-            **kwargs: Additional keyword arguments.
+            embeddings (np.ndarray): The 2D coordinates to visualize, shape `(n, 2)`.
+            sequences (List[str]): The original sequences, used for hover-over tooltips.
+            labels (Optional[List[Any]], optional): Labels for coloring points. If None, all points
+                                                    are assigned a single 'Unlabeled' category. Defaults to None.
+            width (int, optional): The width of the figure in pixels. Defaults to 800.
+            height (int, optional): The height of the figure in pixels. Defaults to 600.
+            title (str, optional): The title of the plot. Defaults to "2D Visualization of Sequence Embeddings".
+            point_size (int, optional): The size of the scatter plot points. Defaults to 8.
+            point_opacity (float, optional): The opacity of the points. Defaults to 0.8.
+            wrap_width (int, optional): The maximum width for sequence text in the hover tooltip
+                                        before it's truncated. Defaults to 50.
+            color_palette (Optional[List[str]], optional): A list of CSS colors to use. If None, a default
+                                                           Plotly palette is used. Defaults to None.
+            save_path (Optional[str], optional): The file path to save the interactive plot as an HTML file.
+                                                 If None, the plot is not saved. Defaults to None.
+            **kwargs: Not currently used, but included for future extensibility.
 
         Returns:
-            plotly.graph_objs._figure.Figure: The scatter plot figure object
+            plotly.graph_objs._figure.Figure: The Plotly scatter plot figure object, which can be
+                                              further customized or displayed.
         """
         fprint("Starting visualization process")
         fprint(f"Processing {len(sequences)} sequences for visualization")
@@ -179,8 +212,20 @@ class Visualization2DExplainer(AbstractExplainer):
         return fig
 
     def __call__(self, sequences, labels=None, **kwargs):
-        """
-        Call the explainer.
+        """A convenience method to generate and visualize the explanation in one step.
+
+        This method chains the `explain` and `visualize` calls, providing a simple
+        one-line interface for the most common use case.
+
+        Args:
+            sequences (List[str]): The list of input sequences.
+            labels (Optional[List[Any]], optional): The corresponding labels for the sequences.
+                                                    Defaults to None.
+            **kwargs: Additional keyword arguments passed to both the `explain` and
+                      `visualize` methods.
+
+        Returns:
+            plotly.graph_objs._figure.Figure: The final, interactive Plotly figure object.
         """
         embeddings = self.explainer.explain(sequences, labels, **kwargs)
         fig = self.visualize(embeddings, sequences, labels, **kwargs)
