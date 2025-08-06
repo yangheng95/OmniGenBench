@@ -138,6 +138,7 @@ class OmniDataset(torch.utils.data.Dataset):
         self.shuffle = kwargs.get("shuffle", True)
         self.structure_in = kwargs.get("structure_in", False)
         self.drop_long_seq = kwargs.get("drop_long_seq", False)
+        self.force_padding = kwargs.get("force_padding", True)
         if self.structure_in and not hasattr(self, "rna2structure"):
             self.rna2structure = RNA2StructureCache()
 
@@ -285,7 +286,7 @@ class OmniDataset(torch.utils.data.Dataset):
         }
 
         skipped_keys = [key for key, skip in skip_padding_for_key.items() if skip]
-        if len(skipped_keys) == len(self.data[0].keys()):
+        if len(skipped_keys) == len(self.data[0].keys()) and not self.force_padding:
             fprint(
                 "All keys have consistent sequence lengths, skipping padding and truncation."
             )
@@ -581,7 +582,7 @@ class OmniDataset(torch.utils.data.Dataset):
             #         "labels" in self.data[idx]
             # ), "The 'labels' field is required in the tokenized dataset."
 
-            if "labels" not in self.data[idx].data or self.data[idx]["labels"] is None:
+            if "labels" not in self.data[idx] or self.data[idx]["labels"] is None:
                 self.data[idx]["labels"] = torch.tensor([-100])
 
         if self.data[0]["labels"].dim() == 0:

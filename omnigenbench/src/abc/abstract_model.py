@@ -553,6 +553,7 @@ class OmniModel(torch.nn.Module):
             self.config.name_or_path,
             or_key=["bin", "json", "txt", "py"],
             exclude_key=["pytorch_model.bin", "model.safetensors"],
+            return_relative_path=False,
         ):
             shutil.copyfile(file, f"{path}/{os.path.basename(file)}")
 

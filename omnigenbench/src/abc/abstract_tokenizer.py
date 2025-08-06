@@ -93,6 +93,8 @@ class OmniTokenizer:
             >>> tokenizer = OmniTokenizer.from_pretrained("model_name",
             ...                                          trust_remote_code=True)
         """
+        kwargs.pop("num_labels", None)  # Seems we don't need num_labels here
+
         wrapper_path = f"{model_name_or_path.rstrip('/')}/omnigenome_wrapper.py"
         if os.path.exists(wrapper_path):
             tokenizer_cls = load_module_from_path(
@@ -103,10 +105,6 @@ class OmniTokenizer:
             )
         else:
             warnings.warn(f"No tokenizer wrapper found in {wrapper_path}. ")
-            kwargs.pop(
-                "num_labels", None
-            )  # Remove num_labels if it exists, as it may not be applicable
-
             tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
 
         return tokenizer

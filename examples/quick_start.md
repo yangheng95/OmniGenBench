@@ -45,13 +45,13 @@ The heavy lifting, backbone management, batching, distributed training, is abstr
 OmniGenBench’s flexibility is proven across diverse examples:
 
 ###  Compose Fine-Tuning for a New Task  
-By adding a multi-label head and a custom dataset class, a standard GFM becomes a high-performance, multi-label [transcription-factor–binding](tfb_prediction.ipynb) predictor, no framework edits required.
+By adding a multi-label head and a custom dataset class, a standard GFM becomes a high-performance, multi-label [transcription-factor–binding](tfb_prediction/tfb_prediction.ipynb) predictor, no framework edits required.
 
 ### Novel Zero-Shot Application  
-In [Variant Effect Prediction](variant_effect_prediction.ipynb), embeddings from a frozen backbone are compared between reference and alternate alleles, enabling functional impact prediction **without any task-specific training**.
+In [Variant Effect Prediction](variant_effect_prediction/variant_effect_prediction.ipynb), embeddings from a frozen backbone are compared between reference and alternate alleles, enabling functional impact prediction **without any task-specific training**.
 
 ### Overcoming Practical Barriers  
-With a single configuration dictionary, researchers apply [LoRA](benchmarking_with_lora.ipynb) parameter-efficient fine-tuning and benchmarking, adapting **billion-parameter** models on a single GPU, previously out of reach for most labs.
+With a single configuration dictionary, researchers apply [LoRA](autobench_gfm_evaluation/benchmarking_with_lora.ipynb) parameter-efficient fine-tuning and benchmarking, adapting **billion-parameter** models on a single GPU, previously out of reach for most labs.
 
 ---
 

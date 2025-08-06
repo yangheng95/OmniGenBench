@@ -161,8 +161,10 @@ class AutoTrain:
         clean_temp_checkpoint(1)  # clean temp checkpoint older than 1 day
 
         _kwargs = kwargs.copy()
+
         train_config_path = findfile.find_file(
-            self.dataset, f"{self.dataset}.config".split(".")
+            self.dataset,
+            f"{self.dataset}.config".split("."),
         )
         config = load_module_from_path("config", train_config_path)
         train_config = None
@@ -185,52 +187,30 @@ class AutoTrain:
         else:
             tokenizer = self.tokenizer
 
+        for key, value in _kwargs.items():
+            if key in train_config:
+                fprint("Override", key, "with", value, "according to the input kwargs")
+                train_config.update({key: value})
+
+            else:
+                warnings.warn(
+                    f"kwarg: {key} not found in train_config while setting {key} = {value}"
+                )
+                train_config.update({key: value})
+
+        for key, value in train_config.items():
+            if key in train_config and key in _kwargs:
+                _kwargs.pop(key)
+        fprint(
+            f"Autotrain Config for {self.dataset}:",
+            "\n".join([f"{k}: {v}" for k, v in train_config.items()]),
+        )
+
         if not isinstance(train_config["seeds"], list):
             train_config["seeds"] = [train_config["seeds"]]
 
         random_seeds = train_config["seeds"]
         for seed in random_seeds:
-            for key, value in _kwargs.items():
-                if key in train_config:
-                    fprint(
-                        "Override", key, "with", value, "according to the input kwargs"
-                    )
-                    train_config.update({key: value})
-
-                else:
-                    warnings.warn(
-                        f"kwarg: {key} not found in train_config while setting {key} = {value}"
-                    )
-                    train_config.update({key: value})
-
-            for key, value in train_config.items():
-                if key in train_config and key in _kwargs:
-                    _kwargs.pop(key)
-
-            fprint(
-                f"Autotrain Config for {self.dataset}:",
-                "\n".join([f"{k}: {v}" for k, v in train_config.items()]),
-            )
-            for key, value in _kwargs.items():
-                if key in train_config:
-                    fprint(
-                        "Override", key, "with", value, "according to the input kwargs"
-                    )
-                    train_config.update({key: value})
-
-                else:
-                    warnings.warn(
-                        f"kwarg: {key} not found in train_config while setting {key} = {value}"
-                    )
-                    train_config.update({key: value})
-
-            for key, value in train_config.items():
-                if key in train_config and key in _kwargs:
-                    _kwargs.pop(key)
-            fprint(
-                f"Autotrain Config for {self.dataset}:",
-                "\n".join([f"{k}: {v}" for k, v in train_config.items()]),
-            )
 
             batch_size = (
                 train_config["batch_size"] if "batch_size" in train_config else 8
@@ -239,10 +219,11 @@ class AutoTrain:
             record_name = f"{os.path.basename(self.dataset)}-{self.model_name}".split(
                 "/"
             )[-1]
+
             # check if the record exists
             if record_name in self.mv.transpose() and len(
                 list(self.mv.transpose()[record_name].values())[0]
-            ) >= len(train_config["seeds"]):
+            ) >= len(random_seeds):
                 continue
 
             seed_everything(seed)

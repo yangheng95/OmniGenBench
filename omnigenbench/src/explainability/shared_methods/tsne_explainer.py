@@ -9,15 +9,23 @@ from typing import List, Union, Optional
 from ...abc.abstract_explainer import AbstractExplainer
 from ...misc.utils import fprint
 
+
 class TSNEExplainer(AbstractExplainer):
     """
     TSNEExplainer is a class that uses t-SNE to visualize the dataset embedding in two dimensions.
     """
+
     def __init__(self, model, **kwargs):
         super().__init__(model)
         self.tsne = TSNE(n_components=2, **kwargs)
 
-    def explain(self, sequences: List[str], labels: List[Union[int, str]], embedding_file: Optional[str] = None,  **kwargs):
+    def explain(
+        self,
+        sequences: List[str],
+        labels: List[Union[int, str]],
+        embedding_file: Optional[str] = None,
+        **kwargs,
+    ):
         """
         Execute the t-SNE algorithm on the dataset.
 
