@@ -101,7 +101,7 @@
 .. _cli:
 
 #######################
-Command-Line Interface
+Command Line Interface
 #######################
 
 .. rst-class:: lead
