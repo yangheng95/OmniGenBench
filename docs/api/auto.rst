@@ -48,11 +48,11 @@ Auto Bench
     :show-inheritance:
     :noindex:
 
-.. automodule:: omnigenbench.auto.auto_bench.auto_bench_config
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :noindex:
+.. .. automodule:: omnigenbench.auto.auto_bench.auto_bench_config
+..     :members:
+..     :undoc-members:
+..     :show-inheritance:
+..     :noindex:
 
 .. automodule:: omnigenbench.auto.auto_bench.config_check
     :members:

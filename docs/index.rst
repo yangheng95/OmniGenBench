@@ -448,95 +448,95 @@
 
 
 
-.. raw:: html
+.. .. raw:: html
 
-   <style>
-     /* --- 1. 动态背景动画 --- 
-     @keyframes gradient-animation {
-       0% { background-position: 0% 50%; }
-       50% { background-position: 100% 50%; }
-       100% { background-position: 0% 50%; }
-     }*/
+..    <style>
+..      /* --- 1. 动态背景动画 --- 
+..      @keyframes gradient-animation {
+..        0% { background-position: 0% 50%; }
+..        50% { background-position: 100% 50%; }
+..        100% { background-position: 0% 50%; }
+..      }*/
 
-     /*body {
-       background: linear-gradient(-45deg, #e7f0ff, #f5f7fa, #e8f5e9, #fff3e0);
-       background-size: 400% 400%;
-       animation: gradient-animation 25s ease infinite;
-     }*/
+..      /*body {
+..        background: linear-gradient(-45deg, #e7f0ff, #f5f7fa, #e8f5e9, #fff3e0);
+..        background-size: 400% 400%;
+..        animation: gradient-animation 25s ease infinite;
+..      }*/
      
 
-     /* --- 2. [新] 强制居中页面主标题 --- */
-     /* 我们通过选择 Furo 主题生成的主要内容容器内的 h2 元素来实现 */
-     .page .article-container h2 {
-         text-align: center;
-     }
+..      /* --- 2. [新] 强制居中页面主标题 --- */
+..      /* 我们通过选择 Furo 主题生成的主要内容容器内的 h2 元素来实现 */
+..      .page .article-container h2 {
+..          text-align: center;
+..      }
 
-     /* --- 3. [新] 导航卡片样式 --- */
-     .nav-card {
-       display: block; text-decoration: none; color: inherit;
-       background: rgba(255, 255, 255, 0.85);
-       padding: 1.5em; border-radius: 12px;
-       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-       border: 1px solid rgba(255, 255, 255, 0.2);
-       transition: transform 0.2s ease, box-shadow 0.2s ease;
-     }
-     .nav-card:hover {
-       transform: translateY(-5px);
-       box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-     }
-   </style>
+..      /* --- 3. [新] 导航卡片样式 --- */
+..      .nav-card {
+..        display: block; text-decoration: none; color: inherit;
+..        background: rgba(255, 255, 255, 0.85);
+..        padding: 1.5em; border-radius: 12px;
+..        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+..        border: 1px solid rgba(255, 255, 255, 0.2);
+..        transition: transform 0.2s ease, box-shadow 0.2s ease;
+..      }
+..      .nav-card:hover {
+..        transform: translateY(-5px);
+..        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+..      }
+..    </style>
 
-.. raw:: html
+.. .. raw:: html
 
-   <div style="padding: 2.5em; margin-top: 1em; margin-bottom: 3em; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 12px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1); border: 1px solid rgba(255, 255, 255, 0.18);">
-      <div style="text-align: center;">
-         <h1 style="font-size: 2.8em; font-weight: bold; margin: 0;">OmniGenBench</h1>
-      </div>
-      <div style="text-align: center; margin: 1.5em 0; width: 100%; display: flex; flex-direction: column; align-items: center;">
-         <p style="font-size: 1.25em; color: #333; max-width: 800px; margin: 0 auto; line-height: 1.6;">An all-in-one solution for genomic foundation model finetuning, inference, deployment, and automated benchmarking.</p>
-      </div>
-      <div style="text-align: center; margin-top: 2em; margin-bottom: 1em; display: flex; justify-content: center; gap: 0.8em;">
-         <a href="installation.rst" class="btn btn-primary" style="font-size: 1em; padding: 0.7em 1.5em; border-radius: 8px;">Get Started</a>
-         <a href="https://github.com/your-repo/OmniGenBench" class="btn btn-secondary" style="font-size: 1em; padding: 0.7em 1.5em; border-radius: 8px;">View on GitHub</a>
-      </div>
-   </div>
+..    <div style="padding: 2.5em; margin-top: 1em; margin-bottom: 3em; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 12px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1); border: 1px solid rgba(255, 255, 255, 0.18);">
+..       <div style="text-align: center;">
+..          <h1 style="font-size: 2.8em; font-weight: bold; margin: 0;">OmniGenBench</h1>
+..       </div>
+..       <div style="text-align: center; margin: 1.5em 0; width: 100%; display: flex; flex-direction: column; align-items: center;">
+..          <p style="font-size: 1.25em; color: #333; max-width: 800px; margin: 0 auto; line-height: 1.6;">An all-in-one solution for genomic foundation model finetuning, inference, deployment, and automated benchmarking.</p>
+..       </div>
+..       <div style="text-align: center; margin-top: 2em; margin-bottom: 1em; display: flex; justify-content: center; gap: 0.8em;">
+..          <a href="installation.rst" class="btn btn-primary" style="font-size: 1em; padding: 0.7em 1.5em; border-radius: 8px;">Get Started</a>
+..          <a href="https://github.com/your-repo/OmniGenBench" class="btn btn-secondary" style="font-size: 1em; padding: 0.7em 1.5em; border-radius: 8px;">View on GitHub</a>
+..       </div>
+..    </div>
 
-..
-   #########################################################################
-   # 这些标准的 RST 标题是为右侧“页内导航”准备的。
-   # 上面的 CSS 会让它们居中显示。
-   #########################################################################
 
-Key Features
-------------
+.. Key Features
+.. ------------
 
-.. raw:: html
+.. .. raw:: html
 
-   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5em;">
-      <!-- 卡片1: Multi-Modal Support -->
-      <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> 
-         <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">🧬 Multi-Modal Support</h4> 
-         <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Available for both <strong>RNA and DNA</strong> modalities with comprehensive downstream tasks and foundation models, including fine-tuning and evaluation.</p> 
-      </div>
-      <!-- 卡片2: Efficient Fine-tuning -->
-      <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> 
-         <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">⚡ Efficient Fine-tuning</h4> 
-         <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Full <strong>LoRA integration</strong> for efficient foundation model fine-tuning with up to 90% reduced computational requirements. A 24GB GPU is enough for all models.</p> 
-      </div>
-      <!-- 卡片3: Interpretability -->
-      <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> 
-         <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">🔍 Interpretability</h4> 
-         <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Diverse explanation methods for better model interpretability, including <strong>attention visualization</strong> and <strong>motif discovery</strong>.</p> 
-      </div>
-      <!-- 卡片4: Rich Benchmarks -->
-      <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> 
-         <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">📊 Rich Benchmarks</h4> 
-         <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Includes <strong>5 curated benchmarks</strong> covering structure prediction, classification, and cross-species analysis to serve as a robust evaluation tool.</p> 
-      </div>
-   </div>
+..    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5em;">
+..       <!-- 卡片1: Multi-Modal Support -->
+..       <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> 
+..          <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">🧬 Multi-Modal Support</h4> 
+..          <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Available for both <strong>RNA and DNA</strong> modalities with comprehensive downstream tasks and foundation models, including fine-tuning and evaluation.</p> 
+..       </div>
+..       <!-- 卡片2: Efficient Fine-tuning -->
+..       <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> 
+..          <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">⚡ Efficient Fine-tuning</h4> 
+..          <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Full <strong>LoRA integration</strong> for efficient foundation model fine-tuning with up to 90% reduced computational requirements. A 24GB GPU is enough for all models.</p> 
+..       </div>
+..       <!-- 卡片3: Interpretability -->
+..       <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> 
+..          <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">🔍 Interpretability</h4> 
+..          <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Diverse explanation methods for better model interpretability, including <strong>attention visualization</strong> and <strong>motif discovery</strong>.</p> 
+..       </div>
+..       <!-- 卡片4: Rich Benchmarks -->
+..       <div style="background: rgba(255, 255, 255, 0.85); padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.2);"> 
+..          <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">📊 Rich Benchmarks</h4> 
+..          <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Includes <strong>5 curated benchmarks</strong> covering structure prediction, classification, and cross-species analysis to serve as a robust evaluation tool.</p> 
+..       </div>
+..    </div>
 
-Explore the Documentation
--------------------------
+.. Explore the Documentation
+.. -------------------------
+
+
+
+
+
 
 .. raw:: html
 
@@ -549,35 +549,40 @@ Explore the Documentation
    </div>
 
 
-API Navigation
--------------------------
+.. API Navigation
+.. -------------------------
 
 .. toctree::
    :maxdepth: 1
-   :caption: Get started with OmniGenBench
+   :hidden:
+   :caption: Get Started
 
    installation
 
 .. toctree::
    :maxdepth: 1
-   :caption: Core usage guide for OmniGenBench
+   :hidden:
+   :caption: Core Usage Guide
 
    usage
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
    :caption: Command Usage Examples
 
    cli
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
    :caption: Package Design Principles
 
    design_principle
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
    :caption: API Reference
 
    api_reference
