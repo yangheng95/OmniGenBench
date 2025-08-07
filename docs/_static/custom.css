@@ -4,3 +4,53 @@
     width: 25px;           /* 让宽度自动缩放以保持比例 */
     margin: 0;             /* 移除任何可能存在的边距 */
 }
+
+
+.nav-grid {
+    display: flex; /* 启用 Flex 布局 */
+    flex-direction: column; /* 子项垂直排列 */
+    gap: 1rem; /* 设置卡片之间的垂直间距 */
+    margin-top: 1.5rem;
+    padding: 0;
+    list-style: none;
+}
+
+/* 卡片链接的基础样式 - 这部分几乎不变 */
+.nav-card {
+    /* 使用 Furo 的 CSS 变量来适应主题 */
+    background-color: var(--color-background-primary);
+    border: 1px solid var(--color-background-border);
+    color: var(--color-content-foreground);
+    
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    text-decoration: none !important;
+    display: block; /* 保持块级显示，占据全部宽度 */
+
+    /* 平滑过渡效果 */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
+    box-shadow: var(--color-shadow-primary-small);
+}
+
+/* 鼠标悬停时的特效 - 不变 */
+.nav-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--color-brand-primary);
+    box-shadow: var(--color-shadow-primary-large);
+}
+
+/* 卡片标题样式 - 不变 */
+.nav-card .nav-card-title {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: var(--color-content-foreground-primary);
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}
+
+/* 卡片描述文字样式 - 不变 */
+.nav-card .nav-card-description {
+    font-size: 0.95em;
+    line-height: 1.6;
+    margin-bottom: 0;
+}
