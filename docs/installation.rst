@@ -77,14 +77,16 @@
 
 .. _installation:
 
+
 ############
 Installation
 ############
+**OmniGenBench is an all-in-one solution for genomic foundation model finetuning, inference, deployment, and automated benchmarking.**
 
 Get started with OmniGenBench by installing it in your preferred environment. We recommend using a Python virtual environment to manage dependencies. Python 3.10 or higher is required.
 
-.. note::
-   The simplest way to install OmniGenBench is via ``pip``. This will install the latest stable release along with its core dependencies.
+
+The simplest way to install OmniGenBench is via ``pip``. This will install the latest stable release along with its core dependencies.
 
 **************************
 Installation with pip
@@ -172,3 +174,40 @@ If you face issues with package versions (e.g., ``transformers`` or ``accelerate
    pip install --upgrade transformers accelerate
 
 For any other issues, please feel free to `open an issue on our GitHub repository <https://github.com/yangheng95/OmniGenBench/issues>`_.
+
+
+
+.. toctree::
+   :maxdepth: 1
+   .. :hidden:
+   :caption: Get Started
+
+   installation
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Core Usage Guide
+
+   usage
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Command Usage Examples
+
+   cli
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Package Design Principles
+
+   design_principle
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: API Reference
+
+   api_reference

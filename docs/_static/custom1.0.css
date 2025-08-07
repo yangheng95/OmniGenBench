@@ -1,0 +1,466 @@
+/* Custom CSS for OmniGenBench Documentation - ReadTheDocs Theme Compatible */
+
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+}
+
+/* Improved headings */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-top: 2em;
+    margin-bottom: 1em;
+}
+
+h1 {
+    font-size: 2.5em;
+    /* border-bottom: 3px solid #ecf0f1; */
+    padding-bottom: 0.3em;
+}
+
+h2 {
+    font-size: 2em;
+    /* border-bottom: 2px solid #ecf0f1; */
+    padding-bottom: 0.2em;
+}
+
+h3 {
+    font-size: 1.5em;
+    border-bottom: 2px;
+    padding-bottom: 0.2em;
+}
+
+/* Enhanced code blocks */
+.highlight {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin: 1em 0;
+}
+
+.highlight pre {
+    border-radius: 8px;
+    padding: 1.5em;
+    background: linear-gradient(135deg, #f8f9fa 0%, #dcdddf 100%);
+    color: #333;
+}
+
+/* Improved admonitions */
+.admonition {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin: 2em 0;
+    transition: transform 0.2s ease-in-out;
+}
+
+.admonition:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+
+/* Enhanced navigation */
+.wy-nav-side {
+    background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.wy-nav-side a {
+    transition: color 0.2s ease;
+}
+
+
+.wy-nav-side a:hover {
+    color: #3498db !important;
+}
+
+/* Improved buttons and links */
+a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}
+
+/* Custom styling for the quick links section */
+.quick-links {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2em;
+    border-radius: 12px;
+    margin: 2em 0;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+.quick-links h3 {
+    color: white;
+    margin-top: 0;
+    font-size: 1.5em;
+}
+
+.quick-links a {
+    color: #f8f9fa;
+    text-decoration: none;
+    padding: 0.5em 1em;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.1);
+    transition: all 0.3s ease;
+    display: inline-block;
+    margin: 0.5em 0.5em 0.5em 0;
+}
+
+.quick-links a:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Enhanced table styling */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 2em 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+th {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    padding: 1em;
+    font-weight: 600;
+}
+
+td {
+    padding: 1em;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Improved image styling */
+img {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+img:hover {
+    transform: scale(1.02);
+}
+
+/* Enhanced sidebar */
+.wy-side-nav-search {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+    body {
+        font-size: 14px;
+    }
+    
+    h1 {
+        font-size: 2em;
+    }
+    
+    h2 {
+        font-size: 1.5em;
+    }
+    
+    .quick-links {
+        padding: 1.5em;
+    }
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Enhanced focus states for accessibility */
+a:focus,
+button:focus,
+input:focus,
+textarea:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+/* Loading animation for images */
+img {
+    opacity: 0;
+    animation: fadeIn 0.5s ease-in forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
+}
+
+/* Enhanced code syntax highlighting */
+.highlight .hll { background-color: #ffffcc }
+.highlight .c { color: #767666; font-style: italic }
+.highlight .err { color: #a61717; background-color: #e3d2d2 }
+.highlight .k { color: hwb(0 0% 99% / 0.908); font-weight: bold }
+.highlight .o { color: #000000; font-weight: bold }
+.highlight .n { color: #333 }
+.highlight .p { color: #333 }  /* 括号、标点符号 */
+.highlight .cm { color: #999988; font-style: italic }
+.highlight .cp { color: #999999; font-weight: bold; font-style: italic }
+.highlight .c1 { color: #999988; font-style: italic }
+.highlight .cs { color: #999999; font-weight: bold; font-style: italic }
+.highlight .gd { color: #000000; background-color: #ffdddd }
+.highlight .ge { color: #000000; font-style: italic }
+.highlight .gr { color: #aa0000 }
+.highlight .gh { color: #999999 }
+.highlight .gi { color: #000000; background-color: #ddffdd }
+.highlight .go { color: #888888 }
+.highlight .gp { color: #555555 }
+.highlight .gs { font-weight: bold }
+.highlight .gu { color: #aaaaaa }
+.highlight .gt { color: #aa0000 }
+.highlight .kc { color: #000000; font-weight: bold }
+.highlight .kd { color: #000000; font-weight: bold }
+.highlight .kn { color: #000000; font-weight: bold }
+.highlight .kp { color: #000000; font-weight: bold }
+.highlight .kr { color: #000000; font-weight: bold }
+.highlight .kt { color: #445588; font-weight: bold }
+.highlight .m { color: #009999 }
+.highlight .s { color: #d01040 }
+.highlight .na { color: #008080 }
+.highlight .nb { color: #0086B3 }
+.highlight .nc { color: #445588; font-weight: bold }
+.highlight .no { color: #008080 }
+.highlight .nd { color: #3c5d5d; font-weight: bold }
+.highlight .ni { color: #800080 }
+.highlight .ne { color: #990000; font-weight: bold }
+.highlight .nf { color: #990000; font-weight: bold }
+.highlight .nl { color: #990000; font-weight: bold }
+.highlight .nn { color: #555555 }
+.highlight .nt { color: #000080 }
+.highlight .nv { color: #008080 }
+.highlight .ow { color: #000000; font-weight: bold }
+.highlight .w { color: #bbbbbb }
+.highlight .mf { color: #009999 }
+.highlight .mh { color: #009999 }
+.highlight .mi { color: #009999 }
+.highlight .mo { color: #009999 }
+.highlight .sb { color: #d01040 }
+.highlight .sc { color: #d01040 }
+.highlight .sd { color: #d01040 }
+.highlight .s2 { color: #d01040 }
+.highlight .se { color: #d01040 }
+.highlight .sh { color: #d01040 }
+.highlight .si { color: #d01040 }
+.highlight .sx { color: #d01040 }
+.highlight .sr { color: #009926 }
+.highlight .s1 { color: #d01040 }
+.highlight .ss { color: #990073 }
+.highlight .bp { color: #999999 }
+.highlight .vc { color: #008080 }
+.highlight .vg { color: #008080 }
+.highlight .vi { color: #008080 }
+.highlight .il { color: #009999 }
+
+/* Version dropdown styling */
+.rst-versions {
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
+
+.rst-versions .rst-current-version {
+    background: #3498db;
+    color: rgb(255, 255, 255);
+}
+
+.rst-versions .rst-other-versions {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.rst-versions .rst-other-versions a {
+    color: #3498db;
+    padding: 0.5em 1em;
+    display: block;
+    transition: background-color 0.2s ease;
+}
+
+.rst-versions .rst-other-versions a:hover {
+    background-color: #f8f9fa;
+    color: #2980b9;
+}
+
+/* Custom version info styling */
+.version-info {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    padding: 1em;
+    margin: 1em 0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.version-label {
+    font-weight: bold;
+    margin-right: 0.5em;
+}
+
+.version-number {
+    background: rgba(255,255,255,0.2);
+    padding: 0.2em 0.5em;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.version-links {
+    margin-top: 0.5em;
+}
+
+.version-links a {
+    color: #f8f9fa;
+    text-decoration: none;
+    padding: 0.3em 0.8em;
+    margin: 0 0.3em;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.version-links a:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+} 
+
+.field-list dt {
+    font-weight: bold;
+    margin-top: 0.2em;
+}
+.field-list dd {
+    margin-left: 1em;
+    margin-bottom: 0.3em;
+}
+
+
+/* .py.class {
+    border: 1px solid #ddd;
+    padding: 1em;
+    background: #f8f8f8;
+    margin-bottom: 1em;
+    border-left: 5px solid #2980B9;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+
+.py.function {
+    border: 1px solid #ccc;
+    background-color: #f1f8ff;
+    padding: 6px 12px;
+    border-left: 4px solid #ffa601;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 14px;
+    display: block;         
+    width: 100%;            
+    margin-bottom: 6px;
+    box-sizing: border-box; 
+} */
+
+
+/* 整个类模块外框 */
+.py.class {
+    border: 1px solid #bdc3c7;
+    border-left: 6px solid #ec342e;
+    background-color: #fdfdfd;
+    margin: 2em 0;
+    padding: 1.2em 1.5em;
+    /* font-family: "Consolas", "Courier New", monospace; */
+    border-radius: 6px;
+    /* box-shadow: 0 2px 6px rgba(0,0,0,0.06); */
+}
+
+/* 类名标题 */
+.py.class-name {
+    font-size: 1.6em;
+    font-weight: bold;
+    color: #000000;
+    margin-bottom: 1em;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.3em;
+}
+
+
+
+/* 方法列表整体区域
+.py.method {
+    margin-left: 1em;
+    padding-left: 1em;
+    border-left: 3px solid #3498db;
+} */
+
+/* 方法列表整体区域 */
+.py.method {
+    margin-left: 1em;
+    padding-left: 1em;
+    border-left: 3px solid #3498db;
+    background-color: #f1f8ff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 14px;
+    display: block;         
+    width: 100%;            
+    margin-bottom: 6px;
+    box-sizing: border-box; 
+}
+
+/* 每个方法（函数）块 */
+.py.function {
+    margin-bottom: 1.5em;
+    background-color: #fdfdfd;
+    padding: 0.8em 1em;
+    border: 1px solid #bdc3c7;
+    border-left: 4px solid #dbac34;
+    border-radius: 4px;
+    box-shadow: inset 0 0 3px rgba(0,0,0,0.05);
+}
+
+/* 函数名 */
+.method-name {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #fd920f;
+    margin-bottom: 0.4em;
+}
+
+/* 函数文档注释 */
+.method-doc {
+    font-size: 0.95em;
+    color: #444;
+    line-height: 1.5;
+    margin-left: 0.5em;
+}
+
+
+.sig-name.descname {
+  word-break: break-all;
+  white-space: normal;
+}
+
+footer, .footer, .wy-footer, .bd-footer {
+    display: none !important;
+}
