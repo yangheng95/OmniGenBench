@@ -1,6 +1,6 @@
 ![favicon.png](asset/favicon.png)
 
-<h3 align="center">OmniGenBench offers an all-in-one solution for genomic foundation model finetuning, inference, deployment and automated benchmarking, designed for research and applications in genomics.</h3>
+<h3 align="center">OmniGenBench provides an all-in-one solution for genomic foundation model finetuning, inference, deployment and automated benchmarking, designed for research and applications in genomics.</h3>
 
 <div align="center">
 
