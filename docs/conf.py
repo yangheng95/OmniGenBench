@@ -65,37 +65,6 @@ html_theme = 'furo'
 # Add custom CSS for better styling
 html_static_path = ['_static']
 
-# def setup(app):
-#     app.add_css_file("custom.css")
-
-# Custom CSS to improve visual effects
-# html_css_files = [
-#     'custom.css',
-# ]
-
-# html_theme_options = {
-#     # "logo": "og_favicon.png",
-#     # "logo": {
-#     #     "link": "index.html", # 点击 Logo 后跳转的链接，通常是首页
-#     #     "image_light": "_static/og_favicon.png", # 浅色模式下显示的 Logo 图片路径
-#     #     "image_dark": "_static/og_favicon.png",  # 深色模式下显示的 Logo 图片路径
-#     # },
-#     # "project_name": "OmniGenBench",
-#     # "header_links": "Home|https://cola-szhou.github.io/OmniGenBench_web/,GitHub|https://github.com/COLA-Laboratory/OmniGenBench",
-# }
-
-# Version configuration for ReadTheDocs theme
-# html_context = {
-#     "display_github": True,
-#     "github_user": "COLA-Laboratory",
-#     "github_repo": "OmniGenBench",
-#     "github_version": "master",
-#     "conf_py_path": "/docs/",
-#     "source_suffix": ".rst",
-#     "github_url": "https://github.com/COLA-Laboratory/OmniGenBench",
-#     "github_banner": True,
-#     "display_version": False,
-# }
 
 # -- Napoleon settings -------------------------------------------------------
 napoleon_google_docstring = True
@@ -111,15 +80,24 @@ html_css_files = [
     'custom.css',
 ]
 
+
+# html_context = {
+#     "github_user": "COLA-Laboratory",
+#     "github_repo": "OmniGenBench",
+#     "github_version": "master", # 你的分支名
+#     "doc_path": "docs/",      # 你的文档源文件目录
+#     "sidebar_links": {
+#         "GitHub Repository": "https://github.com/COLA-Laboratory/OmniGenBench",
+#         # 你还可以添加其他链接
+#         # "Issue Tracker": "https://github.com/COLA-Laboratory/OmniGenBench/issues",
+#     },
+# }
+
 html_theme_options = {
-    # Furo 通过 source_repository 自动在右上角添加一个 GitHub 图标链接
+    "light_logo": "OMNIGENBENCH3.svg",
+    "dark_logo": "OMNIGENBENCH4.svg",
+    # 这个选项本身不会添加图标，但保留它是个好习惯
     "source_repository": "https://github.com/COLA-Laboratory/OmniGenBench",
     "source_branch": "master",
-    "source_directory": "docs/source/", # 从仓库根目录到 source 目录的路径
-    # "light_logo": "_static/OMNIGENBENCH.png",
-    # "dark_logo": "_static/OMNIGENBENCH.svg",
-}
-html_theme_options = {
-    "light_logo": "OMNIGENBENCH-light.svg",
-    "dark_logo": "OMNIGENBENCH-dark.svg",
+    "source_directory": "docs/",
 }

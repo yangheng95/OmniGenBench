@@ -54,3 +54,52 @@
     line-height: 1.6;
     margin-bottom: 0;
 }
+
+
+
+/* 1. 选中选项卡的容器 (sd-tab-set) */
+.sd-tab-set {
+    display: flex; /* 保持 flex 布局，但改变方向 */
+    flex-direction: column; /* ★ 核心改动：将主轴从横向变为纵向 */
+    gap: 1rem; /* 在垂直排列的卡片之间增加间距 */
+}
+
+/* 2. 针对每一个选项卡按钮 (sd-tab-item) 进行样式美化 */
+.sd-tab-item {
+    /* 覆盖 sphinx-design 的默认边框和内边距 */
+    border: 1px solid var(--color-background-border) !important;
+    border-radius: 0.5rem !important; /* 圆角 */
+    padding: 1.25rem 1.5rem !important; /* 增加内边距，让它看起来像个卡片 */
+    margin: 0 !important; /* 移除默认的外边距 */
+    width: 100%; /* 确保卡片占据整行宽度 */
+    text-align: left; /* 标题居左对齐 */
+    font-weight: 600; /* 让标题文字稍微加粗 */
+    
+    /* 添加平滑过渡效果，用于悬停和选中 */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+/* 3. 鼠标悬停在未选中的选项卡上时的效果 */
+.sd-tab-item:not([aria-selected="true"]):hover {
+    border-color: var(--color-brand-primary); /* 边框变为主题色 */
+    transform: translateY(-2px); /* 轻微向上浮动 */
+    box-shadow: var(--color-shadow-primary-large); /* 添加阴影 */
+}
+
+/* 4. “当前选中”的选项卡的样式 */
+.sd-tab-item[aria-selected="true"] {
+    /* 使用 Furo 主题的品牌色作为背景和边框，使其突出显示 */
+    background-color: var(--color-brand-primary) !important;
+    border-color: var(--color-brand-primary) !important;
+    color: var(--color-brand-content) !important; /* 使用适合在品牌色上显示的文字颜色 */
+    box-shadow: none; /* 选中的卡片不需要阴影 */
+}
+
+/* 5. 选项卡对应的内容面板 (sd-tab-content) 的样式 */
+.sd-tab-content {
+    /* 为内容区域也添加一个边框和圆角，与卡片设计匹配 */
+    border: 1px solid var(--color-background-border);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-top: 0 !important; /* 移除与上方选项卡的默认间距 */
+}

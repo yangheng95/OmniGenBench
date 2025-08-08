@@ -609,128 +609,254 @@ The entire framework is built upon a set of abstract base classes (ABCs). These 
 The Core Components
 ***********************
 
+.. OmniGenBench is built around four fundamental abstract classes. Understanding these is key to mastering the library.
+
+.. .. design:tab-set::
+..    :key: core-components
+
+..    .. design:tab-item:: Abstract Model (`OmniModel`)
+..       :sync: model-tab
+
+..       The ``OmniModel`` class is the foundation for all models, providing a unified interface for initialization, forward passes, and inference.
+
+..       **Key Features:**
+..       *   Flexible initialization from pre-trained weights, configs, or PyTorch modules.
+..       *   Automatic loss computation for various task types.
+..       *   Standardized ``predict()`` and ``inference()`` methods.
+..       *   Built-in support for saving and loading.
+
+..       **Core Methods:**
+..       *   ``__init__(config_or_model, tokenizer, **kwargs)``
+..       *   ``forward(**inputs)``
+..       *   ``predict(sequence)``
+..       *   ``save_model(path)`` / ``load_model(path)``
+
+..       **Usage Example:**
+..       .. code-block:: python
+
+..          from omnigenbench import OmniModelForSequenceClassification
+
+..          model = OmniModelForSequenceClassification("model_path", tokenizer)
+..          # Training: forward pass with labels
+..          outputs = model(input_ids=..., attention_mask=..., labels=...)
+..          loss = outputs.loss
+..          # Inference
+..          predictions = model.predict("ACGU...")
+..          print(predictions)
+
+
+..    .. design:tab-item:: Abstract Dataset (`OmniDataset`)
+..       :sync: dataset-tab
+
+..       The ``OmniDataset`` class standardizes data handling, supporting various file formats and integrating seamlessly with tokenizers and PyTorch DataLoaders.
+
+..       **Key Features:**
+..       *   Handles multiple data formats (JSON, CSV, Parquet, TXT).
+..       *   Integrates tokenization directly into the data loading pipeline.
+..       *   Automatic mapping between string labels and integer indices.
+..       *   Built-in data validation and flexible configuration.
+
+..       **Core Methods:**
+..       *   ``__init__(data_path, tokenizer, **kwargs)``
+..       *   ``__getitem__(index)`` & ``__len__()``
+..       *   ``get_labels()``
+..       *   ``get_label_mapping()``
+
+..       **Usage Example:**
+..       .. code-block:: python
+
+..          from omnigenbench import OmniDatasetForSequenceClassification
+
+..          dataset = OmniDatasetForSequenceClassification("data.json", tokenizer, max_length=512)
+..          # Access a sample
+..          sample = dataset[0]
+..          print(sample['input_ids'].shape) # torch.Size([512])
+..          # Get dataset info
+..          print(f"Dataset size: {len(dataset)}")
+
+
+..    .. design:tab-item:: Abstract Tokenizer (`OmniTokenizer`)
+..       :sync: tokenizer-tab
+
+..       The ``OmniTokenizer`` class provides a consistent wrapper for various tokenization strategies, from simple k-mers to complex pre-trained tokenizers.
+
+..       **Key Features:**
+..       *   Consistent API regardless of the underlying tokenization logic.
+..       *   Automatic handling of special tokens (BOS, EOS, PAD).
+..       *   Built-in preprocessing options (e.g., U-to-T conversion).
+..       *   Easy integration with custom tokenization logic.
+
+..       **Core Methods:**
+..       *   ``__init__(base_tokenizer, **kwargs)``
+..       *   ``tokenize(sequence, **kwargs)``
+..       *   ``encode(sequence, **kwargs)`` & ``decode(token_ids, **kwargs)``
+..       *   ``from_pretrained(model_name)``
+
+..       **Usage Example:**
+..       .. code-block:: python
+
+..          from omnigenbench import OmniSingleNucleotideTokenizer
+
+..          tokenizer = OmniSingleNucleotideTokenizer.from_pretrained("model_name")
+..          # Tokenize a sequence
+..          inputs = tokenizer("ATCG", max_length=128, padding=True)
+..          print(inputs['input_ids'].shape)
+..          # Decode back to string
+..          decoded = tokenizer.decode(inputs['input_ids'][0])
+
+
+..    .. design:tab-item:: Abstract Metric (`OmniMetric`)
+..       :sync: metric-tab
+
+..       The ``OmniMetric`` class standardizes evaluation, leveraging powerful libraries like `scikit-learn` while providing a consistent interface.
+
+..       **Key Features:**
+..       *   Seamless integration with `scikit-learn`'s metric collection.
+..       *   Proper handling of ignored labels (e.g., -100 in PyTorch).
+..       *   Standardized result dictionary format.
+..       *   Support for classification, regression, and ranking metrics.
+
+..       **Core Methods:**
+..       *   ``__init__(ignore_y=None, **kwargs)``
+..       *   ``compute_metric(y_true, y_pred, **kwargs)``
+..       *   ``get_metric_name()``
+
+..       **Usage Example:**
+..       .. code-block:: python
+
+..          from omnigenbench import ClassificationMetric
+
+..          metric = ClassificationMetric(ignore_y=-100)
+..          y_true = [0, 1, -100, 1]
+..          y_pred = [0, 1, 0, 0]
+..          results = metric.compute_metric(y_true, y_pred)
+..          print(results) # {'accuracy_score': 0.66, ...}
+
+
 OmniGenBench is built around four fundamental abstract classes. Understanding these is key to mastering the library.
 
-.. design:tab-set::
-   :key: core-components
+.. card:: Abstract Model (`OmniModel`)
+   :shadow: md
 
-   .. design:tab-item:: Abstract Model (`OmniModel`)
-      :sync: model-tab
+   The ``OmniModel`` class is the foundation for all models, providing a unified interface for initialization, forward passes, and inference.
 
-      The ``OmniModel`` class is the foundation for all models, providing a unified interface for initialization, forward passes, and inference.
+   **Key Features:**
+   *   Flexible initialization from pre-trained weights, configs, or PyTorch modules.
+   *   Automatic loss computation for various task types.
+   *   Standardized ``predict()`` and ``inference()`` methods.
+   *   Built-in support for saving and loading.
 
-      **Key Features:**
-      *   Flexible initialization from pre-trained weights, configs, or PyTorch modules.
-      *   Automatic loss computation for various task types.
-      *   Standardized ``predict()`` and ``inference()`` methods.
-      *   Built-in support for saving and loading.
+   **Core Methods:**
+   *   ``__init__(config_or_model, tokenizer, **kwargs)``
+   *   ``forward(**inputs)``
+   *   ``predict(sequence)``
+   *   ``save_model(path)`` / ``load_model(path)``
 
-      **Core Methods:**
-      *   ``__init__(config_or_model, tokenizer, **kwargs)``
-      *   ``forward(**inputs)``
-      *   ``predict(sequence)``
-      *   ``save_model(path)`` / ``load_model(path)``
+   **Usage Example:**
 
-      **Usage Example:**
-      .. code-block:: python
+   .. code-block:: python
 
-         from omnigenbench import OmniModelForSequenceClassification
+      from omnigenbench import OmniModelForSequenceClassification
 
-         model = OmniModelForSequenceClassification("model_path", tokenizer)
-         # Training: forward pass with labels
-         outputs = model(input_ids=..., attention_mask=..., labels=...)
-         loss = outputs.loss
-         # Inference
-         predictions = model.predict("ACGU...")
-         print(predictions)
+      model = OmniModelForSequenceClassification("model_path", tokenizer)
+      # Training: forward pass with labels
+      outputs = model(input_ids=..., attention_mask=..., labels=...)
+      loss = outputs.loss
+      # Inference
+      predictions = model.predict("ACGU...")
+      print(predictions)
 
 
-   .. design:tab-item:: Abstract Dataset (`OmniDataset`)
-      :sync: dataset-tab
+.. card:: Abstract Dataset (`OmniDataset`)
+   :shadow: md
 
-      The ``OmniDataset`` class standardizes data handling, supporting various file formats and integrating seamlessly with tokenizers and PyTorch DataLoaders.
+   The ``OmniDataset`` class standardizes data handling, supporting various file formats and integrating seamlessly with tokenizers and PyTorch DataLoaders.
 
-      **Key Features:**
-      *   Handles multiple data formats (JSON, CSV, Parquet, TXT).
-      *   Integrates tokenization directly into the data loading pipeline.
-      *   Automatic mapping between string labels and integer indices.
-      *   Built-in data validation and flexible configuration.
+   **Key Features:**
+   *   Handles multiple data formats (JSON, CSV, Parquet, TXT).
+   *   Integrates tokenization directly into the data loading pipeline.
+   *   Automatic mapping between string labels and integer indices.
+   *   Built-in data validation and flexible configuration.
 
-      **Core Methods:**
-      *   ``__init__(data_path, tokenizer, **kwargs)``
-      *   ``__getitem__(index)`` & ``__len__()``
-      *   ``get_labels()``
-      *   ``get_label_mapping()``
+   **Core Methods:**
+   *   ``__init__(data_path, tokenizer, **kwargs)``
+   *   ``__getitem__(index)`` & ``__len__()``
+   *   ``get_labels()``
+   *   ``get_label_mapping()``
 
-      **Usage Example:**
-      .. code-block:: python
+   **Usage Example:**
 
-         from omnigenbench import OmniDatasetForSequenceClassification
+   .. code-block:: python
 
-         dataset = OmniDatasetForSequenceClassification("data.json", tokenizer, max_length=512)
-         # Access a sample
-         sample = dataset[0]
-         print(sample['input_ids'].shape) # torch.Size([512])
-         # Get dataset info
-         print(f"Dataset size: {len(dataset)}")
+      from omnigenbench import OmniDatasetForSequenceClassification
 
-
-   .. design:tab-item:: Abstract Tokenizer (`OmniTokenizer`)
-      :sync: tokenizer-tab
-
-      The ``OmniTokenizer`` class provides a consistent wrapper for various tokenization strategies, from simple k-mers to complex pre-trained tokenizers.
-
-      **Key Features:**
-      *   Consistent API regardless of the underlying tokenization logic.
-      *   Automatic handling of special tokens (BOS, EOS, PAD).
-      *   Built-in preprocessing options (e.g., U-to-T conversion).
-      *   Easy integration with custom tokenization logic.
-
-      **Core Methods:**
-      *   ``__init__(base_tokenizer, **kwargs)``
-      *   ``tokenize(sequence, **kwargs)``
-      *   ``encode(sequence, **kwargs)`` & ``decode(token_ids, **kwargs)``
-      *   ``from_pretrained(model_name)``
-
-      **Usage Example:**
-      .. code-block:: python
-
-         from omnigenbench import OmniSingleNucleotideTokenizer
-
-         tokenizer = OmniSingleNucleotideTokenizer.from_pretrained("model_name")
-         # Tokenize a sequence
-         inputs = tokenizer("ATCG", max_length=128, padding=True)
-         print(inputs['input_ids'].shape)
-         # Decode back to string
-         decoded = tokenizer.decode(inputs['input_ids'][0])
+      dataset = OmniDatasetForSequenceClassification("data.json", tokenizer, max_length=512)
+      # Access a sample
+      sample = dataset[0]
+      print(sample['input_ids'].shape) # torch.Size([512])
+      # Get dataset info
+      print(f"Dataset size: {len(dataset)}")
 
 
-   .. design:tab-item:: Abstract Metric (`OmniMetric`)
-      :sync: metric-tab
+.. card:: Abstract Tokenizer (`OmniTokenizer`)
+   :shadow: md
 
-      The ``OmniMetric`` class standardizes evaluation, leveraging powerful libraries like `scikit-learn` while providing a consistent interface.
+   The ``OmniTokenizer`` class provides a consistent wrapper for various tokenization strategies, from simple k-mers to complex pre-trained tokenizers.
 
-      **Key Features:**
-      *   Seamless integration with `scikit-learn`'s metric collection.
-      *   Proper handling of ignored labels (e.g., -100 in PyTorch).
-      *   Standardized result dictionary format.
-      *   Support for classification, regression, and ranking metrics.
+   **Key Features:**
+   *   Consistent API regardless of the underlying tokenization logic.
+   *   Automatic handling of special tokens (BOS, EOS, PAD).
+   *   Built-in preprocessing options (e.g., U-to-T conversion).
+   *   Easy integration with custom tokenization logic.
 
-      **Core Methods:**
-      *   ``__init__(ignore_y=None, **kwargs)``
-      *   ``compute_metric(y_true, y_pred, **kwargs)``
-      *   ``get_metric_name()``
+   **Core Methods:**
+   *   ``__init__(base_tokenizer, **kwargs)``
+   *   ``tokenize(sequence, **kwargs)``
+   *   ``encode(sequence, **kwargs)`` & ``decode(token_ids, **kwargs)``
+   *   ``from_pretrained(model_name)``
 
-      **Usage Example:**
-      .. code-block:: python
+   **Usage Example:**
 
-         from omnigenbench import ClassificationMetric
+   .. code-block:: python
 
-         metric = ClassificationMetric(ignore_y=-100)
-         y_true = [0, 1, -100, 1]
-         y_pred = [0, 1, 0, 0]
-         results = metric.compute_metric(y_true, y_pred)
-         print(results) # {'accuracy_score': 0.66, ...}
+      from omnigenbench import OmniSingleNucleotideTokenizer
+
+      tokenizer = OmniSingleNucleotideTokenizer.from_pretrained("model_name")
+      # Tokenize a sequence
+      inputs = tokenizer("ATCG", max_length=128, padding=True)
+      print(inputs['input_ids'].shape)
+      # Decode back to string
+      decoded = tokenizer.decode(inputs['input_ids'][0])
+
+
+.. card:: Abstract Metric (`OmniMetric`)
+   :icon: tachometer-alt
+   :shadow: md
+
+   The ``OmniMetric`` class standardizes evaluation, leveraging powerful libraries like `scikit-learn` while providing a consistent interface.
+
+   **Key Features:**
+   *   Seamless integration with `scikit-learn`'s metric collection.
+   *   Proper handling of ignored labels (e.g., -100 in PyTorch).
+   *   Standardized result dictionary format.
+   *   Support for classification, regression, and ranking metrics.
+
+   **Core Methods:**
+   *   ``__init__(ignore_y=None, **kwargs)``
+   *   ``compute_metric(y_true, y_pred, **kwargs)``
+   *   ``get_metric_name()``
+
+   **Usage Example:**
+   
+   .. code-block:: python
+
+      from omnigenbench import ClassificationMetric
+
+      metric = ClassificationMetric(ignore_y=-100)
+      y_true = [0, 1, -100, 1]
+      y_pred = [0, 1, 0, 0]
+      results = metric.compute_metric(y_true, y_pred)
+      print(results) # {'accuracy_score': 0.66, ...}
 
 
 **********************************
@@ -741,74 +867,145 @@ The true power of OmniGenBench lies in its extensibility. To add a custom compon
 
 Below are implementation patterns for each component type.
 
-.. grid:: 2 2 2 2
-   :gutter: 3
+.. .. grid:: 2 2 2 2
+..    :gutter: 3
 
-   .. grid-item-card:: Custom Model
-      :shadow: md
+..    .. grid-item-card:: Custom Model
+..       :shadow: md
 
-      Inherit from ``OmniModel`` and override the ``forward`` method to add your custom layers or logic.
+..       Inherit from ``OmniModel`` and override the ``forward`` method to add your custom layers or logic.
 
-      .. code-block:: python
+..       .. code-block:: python
 
-         from omnigenbench import OmniModel
-         import torch
+..          from omnigenbench import OmniModel
+..          import torch
 
-         class CustomModel(OmniModel):
-             def __init__(self, config, tok, **kw):
-                 super().__init__(config, tok, **kw)
-                 self.classifier = torch.nn.Linear(...)
+..          class CustomModel(OmniModel):
+..              def __init__(self, config, tok, **kw):
+..                  super().__init__(config, tok, **kw)
+..                  self.classifier = torch.nn.Linear(...)
 
-             def forward(self, **inputs):
-                 outputs = self.base_model(**inputs)
-                 logits = self.classifier(outputs.last_hidden_state)
-                 # ... compute loss ...
-                 return loss, logits
+..              def forward(self, **inputs):
+..                  outputs = self.base_model(**inputs)
+..                  logits = self.classifier(outputs.last_hidden_state)
+..                  # ... compute loss ...
+..                  return loss, logits
 
-   .. grid-item-card:: Custom Dataset
-      :shadow: md
+..    .. grid-item-card:: Custom Dataset
+..       :shadow: md
 
-      Inherit from an ``OmniDataset`` subclass and override ``_load_data`` or ``_process_data`` to handle your specific data format or structure.
+..       Inherit from an ``OmniDataset`` subclass and override ``_load_data`` or ``_process_data`` to handle your specific data format or structure.
 
-      .. code-block:: python
+..       .. code-block:: python
 
-         from omnigenbench import OmniDatasetForSequenceClassification
+..          from omnigenbench import OmniDatasetForSequenceClassification
 
-         class CustomDataset(OmniDatasetForSequenceClassification):
-             def _load_data(self, data_path):
-                 # Your custom logic to read a file
-                 # and return a list of examples.
-                 ...
-                 return processed_data
+..          class CustomDataset(OmniDatasetForSequenceClassification):
+..              def _load_data(self, data_path):
+..                  # Your custom logic to read a file
+..                  # and return a list of examples.
+..                  ...
+..                  return processed_data
 
-   .. grid-item-card:: Custom Tokenizer
-      :shadow: md
+..    .. grid-item-card:: Custom Tokenizer
+..       :shadow: md
 
-      Inherit from ``OmniTokenizer`` and implement the core ``tokenize`` method with your unique tokenization strategy.
+..       Inherit from ``OmniTokenizer`` and implement the core ``tokenize`` method with your unique tokenization strategy.
 
-      .. code-block:: python
+..       .. code-block:: python
 
-         from omnigenbench import OmniTokenizer
+..          from omnigenbench import OmniTokenizer
 
-         class KmerTokenizer(OmniTokenizer):
-             def tokenize(self, seq, **kw):
-                 k = self.k
-                 return [seq[i:i+k] for i in ...]
+..          class KmerTokenizer(OmniTokenizer):
+..              def tokenize(self, seq, **kw):
+..                  k = self.k
+..                  return [seq[i:i+k] for i in ...]
 
-   .. grid-item-card:: Custom Metric
-      :shadow: md
+..    .. grid-item-card:: Custom Metric
+..       :shadow: md
 
-      Inherit from ``OmniMetric`` and implement ``compute_metric`` to calculate your custom evaluation score.
+..       Inherit from ``OmniMetric`` and implement ``compute_metric`` to calculate your custom evaluation score.
 
-      .. code-block:: python
+..       .. code-block:: python
 
-         from omnigenbench import OmniMetric
-         from your_lib import special_metric
+..          from omnigenbench import OmniMetric
+..          from your_lib import special_metric
 
-         class MyMetric(OmniMetric):
-             def compute_metric(self, y_true, y_pred):
-                 score = special_metric(y_true, y_pred)
-                 return {"my_special_metric": score}
+..          class MyMetric(OmniMetric):
+..              def compute_metric(self, y_true, y_pred):
+..                  score = special_metric(y_true, y_pred)
+..                  return {"my_special_metric": score}
+
+.. card:: Custom Model
+   :shadow: md
+
+   Inherit from ``OmniModel`` and override the ``forward`` method to add your custom layers or logic.
+
+   .. code-block:: python
+
+      from omnigenbench import OmniModel
+      import torch
+
+      class CustomModel(OmniModel):
+          def __init__(self, config, tok, **kw):
+              super().__init__(config, tok, **kw)
+              self.classifier = torch.nn.Linear(...)
+
+          def forward(self, **inputs):
+              outputs = self.base_model(**inputs)
+              logits = self.classifier(outputs.last_hidden_state)
+              # ... compute loss ...
+              return loss, logits
+
+
+
+.. card:: Custom Dataset
+   :shadow: md
+
+   Inherit from an ``OmniDataset`` subclass and override ``_load_data`` or ``_process_data`` to handle your specific data format or structure.
+
+   .. code-block:: python
+
+      from omnigenbench import OmniDatasetForSequenceClassification
+
+      class CustomDataset(OmniDatasetForSequenceClassification):
+          def _load_data(self, data_path):
+              # Your custom logic to read a file
+              # and return a list of examples.
+              ...
+              return processed_data
+
+
+
+.. card:: Custom Tokenizer
+   :shadow: md
+
+   Inherit from ``OmniTokenizer`` and implement the core ``tokenize`` method with your unique tokenization strategy.
+
+   .. code-block:: python
+
+      from omnigenbench import OmniTokenizer
+
+      class KmerTokenizer(OmniTokenizer):
+          def tokenize(self, seq, **kw):
+              k = self.k
+              return [seq[i:i+k] for i in ...]
+
+
+.. card:: Custom Metric
+   :shadow: md
+
+   Inherit from ``OmniMetric`` and implement ``compute_metric`` to calculate your custom evaluation score.
+
+   .. code-block:: python
+
+      from omnigenbench import OmniMetric
+      from your_lib import special_metric
+
+      class MyMetric(OmniMetric):
+          def compute_metric(self, y_true, y_pred):
+              score = special_metric(y_true, y_pred)
+              return {"my_special_metric": score}
 
 
 ********************************

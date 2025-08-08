@@ -555,23 +555,23 @@ OmniGenBench is an **All-in-One** solution for genomic foundation model finetuni
 .. raw:: html
 
    <div class="nav-grid">
-       <a href="installation.rst" class="nav-card">
+       <a href="installation.html" class="nav-card">
            <h4 class="nav-card-title">🚀 Installation</h4>
            <p class="nav-card-description">Start your journey by setting up OmniGenBench on your system.</p>
        </a>
-       <a href="usage.rst" class="nav-card">
+       <a href="usage.html" class="nav-card">
            <h4 class="nav-card-title">📖 Basic Usage</h4>
            <p class="nav-card-description">Learn the fundamental workflows and how to run your first task.</p>
        </a>
-       <a href="cli.rst" class="nav-card">
+       <a href="cli.html" class="nav-card">
            <h4 class="nav-card-title">🛠️ Command Usage (CLI)</h4>
            <p class="nav-card-description">Master the command-line interface for powerful and flexible operations.</p>
        </a>
-       <a href="design_principle.rst" class="nav-card">
+       <a href="design_principle.html" class="nav-card">
            <h4 class="nav-card-title">🏗️ Design Principles</h4>
            <p class="nav-card-description">Understand the core architecture and design choices behind the library.</p>
        </a>
-       <a href="api_reference.rst" class="nav-card">
+       <a href="api_reference.html" class="nav-card">
            <h4 class="nav-card-title">📚 API Reference</h4>
            <p class="nav-card-description">Get detailed information about all public classes, functions, and methods.</p>
        </a>
