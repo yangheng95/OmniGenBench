@@ -569,9 +569,9 @@
 Package Design Principles
 ###########################
 
-.. rst-class:: lead
 
-   OmniGenBench is designed to be a unified, extensible, and robust framework for genomic foundation models. Our core philosophy centers on **abstraction**, **modularity**, and **interoperability**, enabling you to build, extend, and integrate complex genomic pipelines with minimal friction.
+
+OmniGenBench is designed to be a unified, extensible, and robust framework for genomic foundation models. Our core philosophy centers on **abstraction**, **modularity**, and **interoperability**, enabling you to build, extend, and integrate complex genomic pipelines with minimal friction.
 
 This guide explores the core architecture, the main abstract classes, and the patterns you can follow to extend the library for your own needs.
 
@@ -741,12 +741,14 @@ OmniGenBench is built around four fundamental abstract classes. Understanding th
    The ``OmniModel`` class is the foundation for all models, providing a unified interface for initialization, forward passes, and inference.
 
    **Key Features:**
+
    *   Flexible initialization from pre-trained weights, configs, or PyTorch modules.
    *   Automatic loss computation for various task types.
    *   Standardized ``predict()`` and ``inference()`` methods.
    *   Built-in support for saving and loading.
 
    **Core Methods:**
+
    *   ``__init__(config_or_model, tokenizer, **kwargs)``
    *   ``forward(**inputs)``
    *   ``predict(sequence)``
@@ -773,12 +775,14 @@ OmniGenBench is built around four fundamental abstract classes. Understanding th
    The ``OmniDataset`` class standardizes data handling, supporting various file formats and integrating seamlessly with tokenizers and PyTorch DataLoaders.
 
    **Key Features:**
+
    *   Handles multiple data formats (JSON, CSV, Parquet, TXT).
    *   Integrates tokenization directly into the data loading pipeline.
    *   Automatic mapping between string labels and integer indices.
    *   Built-in data validation and flexible configuration.
 
    **Core Methods:**
+   
    *   ``__init__(data_path, tokenizer, **kwargs)``
    *   ``__getitem__(index)`` & ``__len__()``
    *   ``get_labels()``
@@ -804,12 +808,14 @@ OmniGenBench is built around four fundamental abstract classes. Understanding th
    The ``OmniTokenizer`` class provides a consistent wrapper for various tokenization strategies, from simple k-mers to complex pre-trained tokenizers.
 
    **Key Features:**
+   
    *   Consistent API regardless of the underlying tokenization logic.
    *   Automatic handling of special tokens (BOS, EOS, PAD).
    *   Built-in preprocessing options (e.g., U-to-T conversion).
    *   Easy integration with custom tokenization logic.
 
    **Core Methods:**
+
    *   ``__init__(base_tokenizer, **kwargs)``
    *   ``tokenize(sequence, **kwargs)``
    *   ``encode(sequence, **kwargs)`` & ``decode(token_ids, **kwargs)``
@@ -836,12 +842,14 @@ OmniGenBench is built around four fundamental abstract classes. Understanding th
    The ``OmniMetric`` class standardizes evaluation, leveraging powerful libraries like `scikit-learn` while providing a consistent interface.
 
    **Key Features:**
+
    *   Seamless integration with `scikit-learn`'s metric collection.
    *   Proper handling of ignored labels (e.g., -100 in PyTorch).
    *   Standardized result dictionary format.
    *   Support for classification, regression, and ranking metrics.
 
    **Core Methods:**
+
    *   ``__init__(ignore_y=None, **kwargs)``
    *   ``compute_metric(y_true, y_pred, **kwargs)``
    *   ``get_metric_name()``

@@ -50,10 +50,8 @@
 Basic Usage
 ###########
 
-Welcome to the core usage guide for **OmniGenBench**! This page provides a hands-on introduction to the main functionalities of the library. You'll learn how to perform end-to-end benchmarking, train your own models, run inference, and manage datasets.
-
-.. note::
-   All examples assume you have already installed OmniGenBench. If you haven't, please see the :doc:`installation` guide first.
+Welcome to the core usage guide for OmniGenBench! This page provides a hands-on introduction to the main functionalities of the library. You'll learn how to perform end-to-end benchmarking, train your own models, run inference, and manage datasets.
+All examples assume you have already installed OmniGenBench. If you haven't, please see the :doc:`installation` guide first.
 
 The library is designed around a few key components: `AutoBench` for evaluation, `AutoTrain` for training, and model classes for inference. Let's see them in action.
 

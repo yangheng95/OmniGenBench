@@ -103,3 +103,112 @@
     padding: 1.5rem;
     margin-top: 0 !important; /* 移除与上方选项卡的默认间距 */
 }
+
+
+/* ==========================================================================
+   Custom styles for Furo Code Blocks
+   ========================================================================== */
+
+/* --- 1. Main Code Block Container --- */
+div.highlight {
+    /* Add rounded corners */
+    border-radius: 8px; 
+    
+    /* Add a subtle shadow for depth */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+    
+    /* Add a border */
+    border: 1px solid var(--color-code-border);
+    
+    /* Add some space around the code block */
+    margin-bottom: 1.5em; 
+}
+
+/* --- 2. Code Area Background and Font --- */
+div.highlight pre {
+    /* Inner padding inside the code block */
+    padding: 1.2em; 
+    
+    /* Set a custom font for code, e.g., Fira Code, JetBrains Mono */
+    /* Make sure to import the font if it's not a system font */
+    font-family: "JetBrains Mono", "Fira Code", monospace; 
+    
+    /* Adjust font size */
+    font-size: 0.9em; 
+}
+
+/* --- 3. Light and Dark Mode Background Colors --- */
+/* For Light Mode */
+:root {
+    --color-code-background: #f8f9fa; /* A slightly off-white color */
+    --color-code-border: #e9ecef;
+}
+
+/* For Dark Mode */
+:root[data-theme="dark"] {
+    --color-code-background: #212529; /* A darker background for dark mode */
+    --color-code-border: #495057;
+}
+
+/* --- 4. Custom "Copy" Button --- */
+div.highlight .copybutton {
+    /* Style the button itself */
+    background-color: var(--color-brand-primary);
+    color: white;
+    border-radius: 4px;
+    border: none;
+    opacity: 0.8;
+    transition: opacity 0.2s ease-in-out;
+}
+
+div.highlight .copybutton:hover {
+    /* Make it more visible on hover */
+    opacity: 1;
+    background-color: var(--color-brand-content);
+}
+
+/* --- 5. Code Block Caption/Title Styling --- */
+.code-block-caption {
+    /* Make the title stand out */
+    padding: 0.5em 1em;
+    font-family: sans-serif;
+    font-size: 0.9em;
+    font-weight: bold;
+    color: var(--color-sidebar-brand-text);
+    background-color: var(--color-background-secondary);
+    
+    /* Match the top corners with the code block */
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    
+    /* Add a border to separate it from the code */
+    border-bottom: 1px solid var(--color-code-border);
+}
+
+
+/* --- 6. Scrollbar Styling (for Webkit browsers like Chrome, Safari, Edge) --- */
+div.highlight pre::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+div.highlight pre::-webkit-scrollbar-track {
+  background: var(--color-background-secondary);
+}
+
+div.highlight pre::-webkit-scrollbar-thumb {
+  background-color: var(--color-brand-primary);
+  border-radius: 10px;
+  border: 2px solid var(--color-background-secondary);
+}
+
+
+
+
+/* 尝试使用ID选择器，它的权重更高 */
+#search-sidebar-wrapper .sidebar-search-input {
+    border-radius: 25px !important; /* 使用 !important 提升优先级 */
+    border: 1px solid #ccc; /* 给个明显的颜色便于观察 */
+}
+
+

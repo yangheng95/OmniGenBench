@@ -1,6 +1,16 @@
 Downstream Models
 -----------------
 
+.. This module provides some templated model classes inherited from the abstract `OmniModel` class, which is used to handle models in the OmniGenBench framework.
+
+.. **Categories:**
+
+.. - OmniModelForMultiLabelSequenceClassification: A dataset class for sequence classification tasks.
+.. - OmniDatasetForRegression: A dataset class for sequence regression tasks.
+.. - OmniDatasetForTokenClassification: A dataset class for token (nucleotide) classification tasks.
+.. - OmniDatasetForTokenRegression: A dataset class for token (nucleotide) regression tasks.
+
+
 Classification Models
 ~~~~~~~~~~~~~~~~~~~~~
 
