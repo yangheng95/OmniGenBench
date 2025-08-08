@@ -1,5 +1,5 @@
-.. API Reference
-.. =============
+API Reference
+=============
 
 OmniGenBench is a comprehensive toolkit for genomic foundation models. It provides automated benchmarking and training pipelines, a hub for accessing pre-trained models, datasets, and pipelines, and a flexible framework for building custom models and tasks.
 
@@ -21,45 +21,50 @@ OmniGenBench is a comprehensive toolkit for genomic foundation models. It provid
 
     Refer to each section below for detailed documentation and usage instructions.
 
-Abstract Classes
-----------------
+.. Abstract Classes
+.. ----------------
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
+    :hidden:
 
     api/abstract_class
 
-Auto-Pipelines
---------------
+.. Auto-Pipelines
+.. --------------
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
+    :hidden:
 
     api/auto
 
 
-CLI Commands
-------------
+.. CLI Commands
+.. ------------
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
+    :hidden:
 
     api/commands
 
 
-Online Hubs
------------
+.. Online Hubs
+.. -----------
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
+    :hidden:
 
     api/online_hub
 
 
-Low-level Modules
------------------
+.. Low-level Modules
+.. -----------------
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
+    :hidden:
 
     api/modules

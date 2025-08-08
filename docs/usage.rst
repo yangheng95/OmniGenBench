@@ -185,5 +185,5 @@ What's Next?
 
 You've now seen the basic workflows in OmniGenBench! To dive deeper, check out these resources:
 
-*   **Command-Line Interface**: See how to run benchmarking and training directly from your terminal in the :doc:`cli` guide.
+*   **Command Line Interface**: See how to run benchmarking and training directly from your terminal in the :doc:`cli` guide.
 *   **API Reference**: Explore all classes and functions in detail in the :doc:`api_reference`.

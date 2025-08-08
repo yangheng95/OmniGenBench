@@ -86,20 +86,19 @@ Installation
 Get started with OmniGenBench by installing it in your preferred environment. We recommend using a Python virtual environment to manage dependencies. Python 3.10 or higher is required.
 
 
-The simplest way to install OmniGenBench is via ``pip``. This will install the latest stable release along with its core dependencies.
-
 **************************
 Installation with pip
 **************************
 
-We recommend installing OmniGenBench in a virtual environment. If you're not familiar with Python virtual environments, check out this `guide <https://docs.python.org/3/guide/ecl.html#virtual-environments-and-packages>`_.
+The simplest way to install OmniGenBench is via ``pip``. This will install the latest stable release along with its core dependencies.
+We recommend installing OmniGenBench in a dedicated conda environment to manage its dependencies effectively.
 
-Create a virtual environment and activate it:
+Create and activate a new Conda environment:
 
 .. code-block:: bash
 
-   python3 -m venv .env
-   source .env/bin/activate
+   conda create -n omnigen_env python==3.12.0
+   conda activate omnigen_env
 
 Now, install OmniGenBench from PyPI with the following command:
 
@@ -125,7 +124,7 @@ Installing from the source is recommended if you plan to contribute to the proje
 .. code-block:: bash
 
    # Clone the repository from GitHub
-   git clone https://github.com/yangheng95/OmniGenBench.git
+   git clone https://github.com/COLA-Laboratory/OmniGenBench.git
    cd OmniGenBench
 
    # Install in editable mode with all development dependencies
