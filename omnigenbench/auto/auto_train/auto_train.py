@@ -394,14 +394,15 @@ class AutoTrain:
                 )
                 metrics = trainer.train()
                 print(_kwargs)
-                if _kwargs["save_model"]:
+                if _kwargs.get("save_model", True):
                     fprint(
                         f"Saving model to {autotrain_evaluations}/{self.dataset}/{self.model_name}"
                     )
                     save_path = os.path.join(
                         autotrain_evaluations, self.dataset, self.model_name
                     )
-                    trainer.save_model(save_path)
+                    os.makedirs(save_path, exist_ok=True)
+                    trainer.save_model(save_path, overwrite=True)
 
                 if metrics:
                     for key, value in metrics["test"][-1].items():

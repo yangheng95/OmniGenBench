@@ -116,6 +116,43 @@ class OmniModelForEmbedding(torch.nn.Module):
         fprint(f"Generated embeddings for {len(sequences)} sequences.")
         return embeddings
 
+    def batch_encode_tokens(self, sequences, batch_size=8, max_length=512, use_autocast=False, amp_dtype=None):
+        """
+        Encode sequences to token-level embeddings (last_hidden_state).
+
+        Args:
+            sequences (list[str]): Raw input sequences (e.g., "ATCG...")
+            batch_size (int): Batch size
+            max_length (int): Sequence length to encode (truncate/pad by tokenizer)
+            use_autocast (bool): Whether to use autocast for mixed precision
+            amp_dtype (torch.dtype, optional): Data type for autocast, e.g., torch
+
+        Returns:
+            Union[np.ndarray, torch.Tensor]: Shape (n_sequences, max_length, hidden_size)
+        """
+        outputs = []
+        for i in range(0, len(sequences), batch_size):
+            batch_sequences = sequences[i : i + batch_size]
+            inputs = self.tokenizer(
+                batch_sequences,
+                return_tensors="pt",
+                padding="max_length",
+                truncation=True,
+                max_length=max_length,
+            )
+            inputs = {key: value.to(self.device) for key, value in inputs.items()}
+
+            with torch.no_grad():
+                if use_autocast and isinstance(self.device, torch.device) and self.device.type == 'cuda':
+                    with torch.autocast(device_type='cuda', dtype=amp_dtype):
+                        last_hidden = self.model(**inputs).last_hidden_state  # (B, L, H)
+                else:
+                    last_hidden = self.model(**inputs).last_hidden_state  # (B, L, H)
+            outputs.append(last_hidden.cpu())
+
+        out = torch.cat(outputs, dim=0)
+        return out
+
     def encode(self, sequence, max_length=512, agg="head", keep_dim=False):
         """
         Encode a single sequence to its corresponding embedding.

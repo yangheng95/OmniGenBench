@@ -15,7 +15,8 @@ from typing import Optional
 # Handle both relative and absolute imports
 try:
     from ..auto_train.auto_train import AutoTrain
-    from ...src.misc.utils import fprint
+    from ...src.misc.utils import fprint, load_module_from_path
+    from ..config.auto_config import AutoConfig
 except ImportError:
     # Fallback for direct execution
     import sys

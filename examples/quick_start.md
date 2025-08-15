@@ -40,6 +40,48 @@ The heavy lifting, backbone management, batching, distributed training, is abstr
 
 ---
 
+## 3· Data Template & Supported Formats
+
+OmniGenBench supports flexible data loading for genomic machine learning tasks. To ensure compatibility, your data should follow a simple template and be saved in one of the supported formats.
+For more details, see the documentation.
+
+### Data Template: `{sequence, label}` Structure
+Each data sample should be a dictionary with at least two keys:
+- `sequence`: The biological sequence (DNA, RNA, or protein) as a string.
+- `label`: The target value for the task (classification, regression, etc.).
+
+#### Example for Classification
+```json
+[
+  {"sequence": "ATCGATCGATCG", "label": "0"},
+  {"sequence": "GCTAGCTAGCTA", "label": "1"}
+]
+```
+
+#### Example for Regression
+```json
+[
+  {"sequence": "ATCGATCGATCG", "label": 0.75},
+  {"sequence": "GCTAGCTAGCTA", "label": -1.2}
+]
+```
+
+OmniGenBench will automatically standardize common key names. For example, `seq` or `text` will be treated as `sequence`, and `label` will be standardized to `labels` internally.
+
+### Supported Data Formats
+OmniGenBench can load data from the following formats:
+1. **JSON (`.json`)**: Recommended. A list of dictionaries as shown above. Also supports JSON Lines (`.jsonl`).
+2. **CSV (`.csv`)**: Must have columns for `sequence` and `label`.
+3. **Parquet (`.parquet`)**: Columns for `sequence` and `label`.
+4. **FASTA (`.fasta`, `.fa`, etc.)**: Sequence data only. Labels must be provided separately or inferred.
+5. **FASTQ (`.fastq`, `.fq`)**: Sequence and quality scores. Labels must be provided separately or inferred.
+6. **BED (`.bed`)**: Genomic intervals. Sequence and label columns may need to be added.
+7. **Numpy (`.npy`, `.npz`)**: Array of dictionaries with `sequence` and optional `label`.
+
+For supervised tasks, ensure every sample has both a `sequence` and a `label`. For unsupervised or sequence-only tasks, only the `sequence` key is required.
+
+---
+
 ## 4· From Theory to Practice: Demonstrating Unmatched Extensibility
 
 OmniGenBench’s flexibility is proven across diverse examples:

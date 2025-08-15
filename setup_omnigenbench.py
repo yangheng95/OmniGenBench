@@ -9,7 +9,21 @@
 
 from pathlib import Path
 from setuptools import setup, find_packages
-from omnigenbench import __version__
+
+# Avoid importing the package at build time to prevent executing heavy imports
+# and side effects in omnigenbench/__init__.py before dependencies are installed.
+def read_version_from_init() -> str:
+    init_path = Path(__file__).parent / "omnigenbench" / "__init__.py"
+    text = init_path.read_text(encoding="utf8")
+    for line in text.splitlines():
+        if line.startswith("__version__"):
+            # Expected format: __version__ = "x.y.z"
+            import re
+
+            match = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", line)
+            if match:
+                return match.group(1)
+    raise RuntimeError("Unable to find __version__ in omnigenbench/__init__.py")
 
 cwd = Path(__file__).parent
 long_description = (cwd / "README.MD").read_text(encoding="utf8")
@@ -23,7 +37,7 @@ extras = {
 
 setup(
     name="omnigenbench",
-    version=__version__,
+    version=read_version_from_init(),
     description="OmniGenBench: A comprehensive toolkit for genome analysis benchmarking.",
     long_description=long_description,
     long_description_content_type="text/markdown",
