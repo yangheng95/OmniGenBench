@@ -9,6 +9,7 @@
 import json
 import os
 import shutil
+import time
 import warnings
 import inspect
 from importlib import import_module
@@ -542,10 +543,11 @@ class OmniModel(torch.nn.Module):
         self.eval()
 
         if os.path.exists(path) and not overwrite:
-            raise FileExistsError(
-                f"The path {path} already exists, please set overwrite=True to overwrite it."
+            fprint(
+                f"The path {path} already exists, please set overwrite=True to overwrite it. "
+                f"Rename the path to {path}_{time.strftime('%Y%m%d_%H%M%S')} to save it with a timestamp."
             )
-
+            path = f"{path}_{time.strftime('%Y%m%d_%H%M%S')}"
         if not os.path.exists(path):
             os.makedirs(path)
 

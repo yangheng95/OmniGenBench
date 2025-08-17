@@ -226,7 +226,9 @@ class BaseTrainer(ABC):
             else []
         )
         if not self.compute_metrics:
-            warnings.warn("No compute metrics provided. Metrics will not be calculated during training.")
+            warnings.warn(
+                "No compute metrics provided. Metrics will not be calculated during training."
+            )
         self.seed = seed
         self.autocast = autocast
 

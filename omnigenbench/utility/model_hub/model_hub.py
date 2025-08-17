@@ -15,6 +15,7 @@ from transformers import AutoConfig, AutoModel
 
 from ..hub_utils import query_models_info, download_model
 from ...src.misc.utils import env_meta_info, fprint
+from ...src.abc.abstract_tokenizer import OmniTokenizer
 
 
 class ModelHub:
@@ -145,14 +146,7 @@ class ModelHub:
         with open(f"{path}/metadata.json", "r", encoding="utf8") as f:
             metadata = json.load(f)
 
-        if "Omni" in metadata["tokenizer_cls"]:
-            lib = importlib.import_module(metadata["library_name"].lower())
-            tokenizer_cls = getattr(lib, metadata["tokenizer_cls"])
-            tokenizer = tokenizer_cls.from_pretrained(path, **kwargs)
-        else:
-            from multimolecule import RnaTokenizer
-
-            tokenizer = RnaTokenizer.from_pretrained(path, **kwargs)
+        tokenizer = OmniTokenizer.from_pretrained(path, **kwargs)
 
         config.metadata = metadata
 

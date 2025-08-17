@@ -401,7 +401,6 @@ def fprint(*objects, sep=" ", end="\n", file=sys.stdout, flush=False):
     )
 
 
-
 def clean_temp_checkpoint(days_threshold=7):
     """
     Clean up temporary checkpoint files older than specified days.

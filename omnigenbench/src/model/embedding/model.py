@@ -51,9 +51,17 @@ class OmniModelForEmbedding(torch.nn.Module):
         self.model.to(self._device)
         self.model.eval()  # Set model to evaluation mode
 
-    def batch_encode(self, sequences, batch_size=8, max_length=512, agg="head",
-                      require_grad: bool = False, return_on_cpu: bool = True,
-                      use_autocast: bool = False, amp_dtype=None):
+    def batch_encode(
+        self,
+        sequences,
+        batch_size=8,
+        max_length=512,
+        agg="head",
+        require_grad: bool = False,
+        return_on_cpu: bool = True,
+        use_autocast: bool = False,
+        amp_dtype=None,
+    ):
         """批量编码序列为 pooled 向量。
 
         Batch encode sequences into aggregated (pooled) embeddings.
@@ -76,9 +84,9 @@ class OmniModelForEmbedding(torch.nn.Module):
         """
         embeds = []
         device = self.device
-        is_cuda = isinstance(device, torch.device) and device.type == 'cuda'
+        is_cuda = isinstance(device, torch.device) and device.type == "cuda"
         for i in range(0, len(sequences), batch_size):
-            batch_sequences = sequences[i:i+batch_size]
+            batch_sequences = sequences[i : i + batch_size]
             inputs = self.tokenizer(
                 batch_sequences,
                 return_tensors="pt",
@@ -87,17 +95,31 @@ class OmniModelForEmbedding(torch.nn.Module):
                 max_length=max_length,
             )
             inputs = {k: v.to(device) for k, v in inputs.items()}
-            ctx = (torch.autocast(device_type='cuda', dtype=amp_dtype) if (use_autocast and is_cuda) else torch.enable_grad()) if require_grad else torch.no_grad()
+            ctx = (
+                (
+                    torch.autocast(device_type="cuda", dtype=amp_dtype)
+                    if (use_autocast and is_cuda)
+                    else torch.enable_grad()
+                )
+                if require_grad
+                else torch.no_grad()
+            )
             with ctx:
                 outputs = self.model(**inputs).last_hidden_state  # (B,L,H)
             hidden = outputs if not return_on_cpu else outputs.cpu()
-            if agg == 'head':
+            if agg == "head":
                 pooled = hidden[:, 0, :]
-            elif agg == 'mean':
-                mask = inputs['attention_mask'] if not return_on_cpu else inputs['attention_mask'].cpu()
-                pooled = (hidden * mask.unsqueeze(-1)).sum(1) / mask.sum(1, keepdim=True)
-            elif agg == 'tail':
-                mask = inputs['attention_mask']
+            elif agg == "mean":
+                mask = (
+                    inputs["attention_mask"]
+                    if not return_on_cpu
+                    else inputs["attention_mask"].cpu()
+                )
+                pooled = (hidden * mask.unsqueeze(-1)).sum(1) / mask.sum(
+                    1, keepdim=True
+                )
+            elif agg == "tail":
+                mask = inputs["attention_mask"]
                 lengths = mask.sum(1) - 1
                 pooled_list = []
                 for bi, l in enumerate(lengths):
@@ -109,8 +131,16 @@ class OmniModelForEmbedding(torch.nn.Module):
         out = torch.cat(embeds, 0)
         return out
 
-    def batch_encode_tokens(self, sequences, batch_size=8, max_length=512, use_autocast=False, amp_dtype=None,
-                             require_grad: bool = False, return_on_cpu: bool = True):
+    def batch_encode_tokens(
+        self,
+        sequences,
+        batch_size=8,
+        max_length=512,
+        use_autocast=False,
+        amp_dtype=None,
+        require_grad: bool = False,
+        return_on_cpu: bool = True,
+    ):
         """
         Encode sequences to token-level embeddings (last_hidden_state).
 
@@ -141,7 +171,19 @@ class OmniModelForEmbedding(torch.nn.Module):
                 max_length=max_length,
             )
             inputs = {key: value.to(self.device) for key, value in inputs.items()}
-            ctx = (torch.autocast(device_type='cuda', dtype=amp_dtype) if (use_autocast and isinstance(self.device, torch.device) and self.device.type == 'cuda') else torch.enable_grad()) if require_grad else torch.no_grad()
+            ctx = (
+                (
+                    torch.autocast(device_type="cuda", dtype=amp_dtype)
+                    if (
+                        use_autocast
+                        and isinstance(self.device, torch.device)
+                        and self.device.type == "cuda"
+                    )
+                    else torch.enable_grad()
+                )
+                if require_grad
+                else torch.no_grad()
+            )
             with ctx:
                 last_hidden = self.model(**inputs).last_hidden_state  # (B, L, H)
             if return_on_cpu:
@@ -150,8 +192,15 @@ class OmniModelForEmbedding(torch.nn.Module):
         out = torch.cat(outputs, dim=0)
         return out
 
-    def encode_tokens(self, sequence, max_length=512, use_autocast=False, amp_dtype=None,
-                      require_grad: bool = False, return_on_cpu: bool = True):
+    def encode_tokens(
+        self,
+        sequence,
+        max_length=512,
+        use_autocast=False,
+        amp_dtype=None,
+        require_grad: bool = False,
+        return_on_cpu: bool = True,
+    ):
         """
         Encode a single sequence to token-level embeddings.
 
@@ -183,8 +232,16 @@ class OmniModelForEmbedding(torch.nn.Module):
         )
         inputs = {k: v.to(device) for k, v in inputs.items()}
 
-        is_cuda = isinstance(device, torch.device) and device.type == 'cuda'
-        ctx = (torch.autocast(device_type='cuda', dtype=amp_dtype) if (use_autocast and is_cuda) else torch.enable_grad()) if require_grad else torch.no_grad()
+        is_cuda = isinstance(device, torch.device) and device.type == "cuda"
+        ctx = (
+            (
+                torch.autocast(device_type="cuda", dtype=amp_dtype)
+                if (use_autocast and is_cuda)
+                else torch.enable_grad()
+            )
+            if require_grad
+            else torch.no_grad()
+        )
 
         with ctx:
             hidden = self.model(**inputs).last_hidden_state  # (1, L, H)
@@ -195,9 +252,17 @@ class OmniModelForEmbedding(torch.nn.Module):
         # Remove batch dimension for single sequence
         return hidden.squeeze(0)  # (L, H)
 
-    def encode(self, sequence, max_length=512, agg="head", keep_dim=False,
-               require_grad: bool = False, return_on_cpu: bool = True,
-               use_autocast: bool = False, amp_dtype=None):
+    def encode(
+        self,
+        sequence,
+        max_length=512,
+        agg="head",
+        keep_dim=False,
+        require_grad: bool = False,
+        return_on_cpu: bool = True,
+        use_autocast: bool = False,
+        amp_dtype=None,
+    ):
         """编码单个序列 / Encode a single sequence.
 
         参数 / Args:
@@ -222,18 +287,30 @@ class OmniModelForEmbedding(torch.nn.Module):
             max_length=max_length,
         )
         inputs = {k: v.to(device) for k, v in inputs.items()}
-        is_cuda = isinstance(device, torch.device) and device.type == 'cuda'
-        ctx = (torch.autocast(device_type='cuda', dtype=amp_dtype) if (use_autocast and is_cuda) else torch.enable_grad()) if require_grad else torch.no_grad()
+        is_cuda = isinstance(device, torch.device) and device.type == "cuda"
+        ctx = (
+            (
+                torch.autocast(device_type="cuda", dtype=amp_dtype)
+                if (use_autocast and is_cuda)
+                else torch.enable_grad()
+            )
+            if require_grad
+            else torch.no_grad()
+        )
         with ctx:
             hidden = self.model(**inputs).last_hidden_state  # (1,L,H)
         hidden = hidden if not return_on_cpu else hidden.cpu()
-        if agg == 'head':
+        if agg == "head":
             emb = hidden[:, 0, :]
-        elif agg == 'mean':
-            mask = inputs['attention_mask'] if not return_on_cpu else inputs['attention_mask'].cpu()
+        elif agg == "mean":
+            mask = (
+                inputs["attention_mask"]
+                if not return_on_cpu
+                else inputs["attention_mask"].cpu()
+            )
             emb = (hidden * mask.unsqueeze(-1)).sum(1) / mask.sum(1, keepdim=True)
-        elif agg == 'tail':
-            mask = inputs['attention_mask']
+        elif agg == "tail":
+            mask = inputs["attention_mask"]
             l = int(mask.sum(1).item()) - 1
             emb = hidden[:, l, :]
         else:

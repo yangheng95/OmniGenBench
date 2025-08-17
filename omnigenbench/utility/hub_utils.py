@@ -262,8 +262,14 @@ def download_model(
         return os.path.dirname(ckpt_config[0])
 
     if local_only:
-        with open("./models_info.json", "r", encoding="utf8") as f:
-            models_info = json.load(f)
+        try:
+            with open("./models_info.json", "r", encoding="utf8") as f:
+                models_info = json.load(f)
+        except FileNotFoundError:
+            fprint(
+                "Local models_info.json not found. Please run the script without local_only=True to download it."
+            )
+            raise FileNotFoundError("models_info.json not found in local cache.")
     else:
         repo = (repo if repo else default_omnigenome_repo) + "resolve/main/"
         try:
@@ -277,8 +283,16 @@ def download_model(
                     e
                 )
             )
-            with open("./models_info.json", "r", encoding="utf8") as f:
-                models_info = json.load(f)
+            # Fallback to local cache if remote download fails
+            fprint("Using local cache for models_info.json. Ensure it is up-to-date.")
+            try:
+                with open("./models_info.json", "r", encoding="utf8") as f:
+                    models_info = json.load(f)
+            except FileNotFoundError:
+                fprint(
+                    "Local models_info.json not found. Please run the script without local_only=True to download it."
+                )
+                raise FileNotFoundError("models_info.json not found in local cache.")
 
     if model_name_or_path in models_info:
         model_info = models_info[model_name_or_path]

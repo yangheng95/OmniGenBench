@@ -450,7 +450,7 @@ class OmniModelForMultiLabelSequenceClassification(OmniModelForSequenceClassific
         Example:
             >>> model = OmniModelForMultiLabelSequenceClassification("model_path", tokenizer)
         """
-        self.threshold = kwargs.pop('threshold', 0.5)
+        self.threshold = kwargs.pop("threshold", 0.5)
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.softmax = torch.nn.Sigmoid()
@@ -627,7 +627,7 @@ class OmniModelForMultiLabelSequenceClassificationWith2DStructure(
     OmniModelForSequenceClassificationWith2DStructure
 ):
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
-        self.threshold = kwargs.pop('threshold', 0.5)
+        self.threshold = kwargs.pop("threshold", 0.5)
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.softmax = torch.nn.Sigmoid()
@@ -684,7 +684,6 @@ class OmniModelForMultiLabelSequenceClassificationWith2DStructure(
             }
 
         return outputs
-
 
     def loss_function(self, logits, labels):
         loss = self.loss_fn(logits.view(-1), labels.view(-1).to(torch.float32))
