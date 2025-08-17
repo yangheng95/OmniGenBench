@@ -51,35 +51,34 @@ class OmniModelForEmbedding(torch.nn.Module):
         self.model.to(self._device)
         self.model.eval()  # Set model to evaluation mode
 
-    def batch_encode(self, sequences, batch_size=8, max_length=512, agg="head"):
+    def batch_encode(self, sequences, batch_size=8, max_length=512, agg="head",
+                      require_grad: bool = False, return_on_cpu: bool = True,
+                      use_autocast: bool = False, amp_dtype=None):
+        """批量编码序列为 pooled 向量。
+
+        Batch encode sequences into aggregated (pooled) embeddings.
+
+        参数 / Args:
+            sequences (List[str]): 输入序列 / input DNA (or RNA) sequences.
+            batch_size (int): 批大小 / processing batch size.
+            max_length (int): tokenizer 截断/填充长度 / truncate/pad length.
+            agg (str): 聚合方式 head|mean|tail / aggregation method.
+            require_grad (bool): 是否需要梯度; True 时允许反向传播 / keep graph for finetuning.
+            return_on_cpu (bool): 若 True 输出放到 CPU, 否则保持在模型设备 / move result to CPU for memory relief.
+            use_autocast (bool): 使用混合精度 / enable autocast (CUDA only).
+            amp_dtype (torch.dtype|None): autocast 精度类型 / dtype for autocast.
+
+        返回 / Returns:
+            torch.Tensor 形状 (N, H) / shape (num_sequences, hidden_size)
+
+        兼容性 / Compatibility:
+            旧调用无需修改; 新参数有默认值。
         """
-        Encode a list of sequences to their corresponding embeddings.
-
-        This method processes sequences in batches for memory efficiency and
-        supports different aggregation methods for the final embeddings.
-
-        Args:
-            sequences (list of str): List of input sequences to encode
-            batch_size (int, optional): Batch size for processing. Defaults to 8
-            max_length (int, optional): Maximum sequence length for encoding. Defaults to 512
-            agg (str, optional): Aggregation method for embeddings. Options are 'head', 'mean', 'tail'. Defaults to 'head'
-
-        Returns:
-            torch.Tensor: Embeddings for the input sequences with shape (n_sequences, embedding_dim)
-
-        Raises:
-            ValueError: If unsupported aggregation method is provided
-
-        Example:
-            >>> sequences = ["ATCGGCTA", "GGCTAGCTA", "TATCGCTA"]
-            >>> embeddings = model.batch_encode(sequences, batch_size=2, agg='mean')
-            >>> print(f"Embeddings shape: {embeddings.shape}")
-            torch.Size([3, 768])
-        """
-        embeddings = []
-
+        embeds = []
+        device = self.device
+        is_cuda = isinstance(device, torch.device) and device.type == 'cuda'
         for i in range(0, len(sequences), batch_size):
-            batch_sequences = sequences[i : i + batch_size]
+            batch_sequences = sequences[i:i+batch_size]
             inputs = self.tokenizer(
                 batch_sequences,
                 return_tensors="pt",
@@ -87,48 +86,49 @@ class OmniModelForEmbedding(torch.nn.Module):
                 truncation=True,
                 max_length=max_length,
             )
-            inputs = {key: value.to(self.device) for key, value in inputs.items()}
-
-            with torch.no_grad():
-                outputs = self.model(**inputs)
-
-            batch_embeddings = outputs.last_hidden_state.cpu()
-
-            if agg == "head":
-                emb = batch_embeddings[:, 0, :]
-            elif agg == "mean":
-                attention_mask = inputs["attention_mask"].cpu()
-                masked_embeddings = batch_embeddings * attention_mask.unsqueeze(-1)
-                lengths = attention_mask.sum(dim=1).unsqueeze(1)
-                emb = masked_embeddings.sum(dim=1) / lengths
-            elif agg == "tail":
-                attention_mask = inputs["attention_mask"]
-                lengths = attention_mask.sum(dim=1) - 1
-                emb = torch.stack(
-                    [batch_embeddings[i, l.item()] for i, l in enumerate(lengths)]
-                )
+            inputs = {k: v.to(device) for k, v in inputs.items()}
+            ctx = (torch.autocast(device_type='cuda', dtype=amp_dtype) if (use_autocast and is_cuda) else torch.enable_grad()) if require_grad else torch.no_grad()
+            with ctx:
+                outputs = self.model(**inputs).last_hidden_state  # (B,L,H)
+            hidden = outputs if not return_on_cpu else outputs.cpu()
+            if agg == 'head':
+                pooled = hidden[:, 0, :]
+            elif agg == 'mean':
+                mask = inputs['attention_mask'] if not return_on_cpu else inputs['attention_mask'].cpu()
+                pooled = (hidden * mask.unsqueeze(-1)).sum(1) / mask.sum(1, keepdim=True)
+            elif agg == 'tail':
+                mask = inputs['attention_mask']
+                lengths = mask.sum(1) - 1
+                pooled_list = []
+                for bi, l in enumerate(lengths):
+                    pooled_list.append(hidden[bi, int(l.item()), :])
+                pooled = torch.stack(pooled_list, 0)
             else:
-                raise ValueError(f"Unsupported aggregation method: {agg}")
+                raise ValueError(f"Unsupported agg: {agg}")
+            embeds.append(pooled)
+        out = torch.cat(embeds, 0)
+        return out
 
-            embeddings.append(emb)
-
-        embeddings = torch.cat(embeddings, dim=0)
-        fprint(f"Generated embeddings for {len(sequences)} sequences.")
-        return embeddings
-
-    def batch_encode_tokens(self, sequences, batch_size=8, max_length=512, use_autocast=False, amp_dtype=None):
+    def batch_encode_tokens(self, sequences, batch_size=8, max_length=512, use_autocast=False, amp_dtype=None,
+                             require_grad: bool = False, return_on_cpu: bool = True):
         """
         Encode sequences to token-level embeddings (last_hidden_state).
 
         Args:
-            sequences (list[str]): Raw input sequences (e.g., "ATCG...")
-            batch_size (int): Batch size
-            max_length (int): Sequence length to encode (truncate/pad by tokenizer)
-            use_autocast (bool): Whether to use autocast for mixed precision
-            amp_dtype (torch.dtype, optional): Data type for autocast, e.g., torch
+            sequences (List[str]): Input DNA/RNA sequences for token-level encoding
+            batch_size (int, default=8): Number of sequences to process per batch
+            max_length (int, default=512): Maximum sequence length for tokenization
+            use_autocast (bool, default=False): Enable mixed precision training (CUDA only)
+            amp_dtype (torch.dtype, optional): Data type for automatic mixed precision
+            require_grad (bool, default=False): Preserve gradient computation graph for fine-tuning
+            return_on_cpu (bool, default=True): Transfer outputs to CPU memory
 
         Returns:
-            Union[np.ndarray, torch.Tensor]: Shape (n_sequences, max_length, hidden_size)
+            torch.Tensor: Token embeddings with shape (num_sequences, max_length, hidden_size)
+
+        Note:
+            When require_grad=True, gradients flow through the transformer model for end-to-end training.
+            Set return_on_cpu=False to keep tensors on GPU device for downstream processing.
         """
         outputs = []
         for i in range(0, len(sequences), batch_size):
@@ -141,40 +141,79 @@ class OmniModelForEmbedding(torch.nn.Module):
                 max_length=max_length,
             )
             inputs = {key: value.to(self.device) for key, value in inputs.items()}
-
-            with torch.no_grad():
-                if use_autocast and isinstance(self.device, torch.device) and self.device.type == 'cuda':
-                    with torch.autocast(device_type='cuda', dtype=amp_dtype):
-                        last_hidden = self.model(**inputs).last_hidden_state  # (B, L, H)
-                else:
-                    last_hidden = self.model(**inputs).last_hidden_state  # (B, L, H)
-            outputs.append(last_hidden.cpu())
-
+            ctx = (torch.autocast(device_type='cuda', dtype=amp_dtype) if (use_autocast and isinstance(self.device, torch.device) and self.device.type == 'cuda') else torch.enable_grad()) if require_grad else torch.no_grad()
+            with ctx:
+                last_hidden = self.model(**inputs).last_hidden_state  # (B, L, H)
+            if return_on_cpu:
+                last_hidden = last_hidden.cpu()
+            outputs.append(last_hidden)
         out = torch.cat(outputs, dim=0)
         return out
 
-    def encode(self, sequence, max_length=512, agg="head", keep_dim=False):
+    def encode_tokens(self, sequence, max_length=512, use_autocast=False, amp_dtype=None,
+                      require_grad: bool = False, return_on_cpu: bool = True):
         """
-        Encode a single sequence to its corresponding embedding.
+        Encode a single sequence to token-level embeddings.
 
         Args:
-            sequence (str): Input sequence to encode
-            max_length (int, optional): Maximum sequence length for encoding. Defaults to 512
-            agg (str, optional): Aggregation method. Options are 'head', 'mean', 'tail'. Defaults to 'head'
-            keep_dim (bool, optional): Whether to retain the batch dimension. Defaults to False
+            sequence (str): Input DNA/RNA sequence for token-level encoding
+            max_length (int, default=512): Maximum sequence length for tokenization
+            use_autocast (bool, default=False): Enable mixed precision training (CUDA only)
+            amp_dtype (torch.dtype, optional): Data type for automatic mixed precision
+            require_grad (bool, default=False): Preserve gradient computation graph for fine-tuning
+            return_on_cpu (bool, default=True): Transfer output to CPU memory
 
         Returns:
-            torch.Tensor: Embedding for the input sequence
-
-        Raises:
-            ValueError: If unsupported aggregation method is provided
+            torch.Tensor: Token embeddings with shape (max_length, hidden_size)
 
         Example:
-            >>> sequence = "ATCGGCTA"
-            >>> embedding = model.encode(sequence, agg='mean')
-            >>> print(f"Embedding shape: {embedding.shape}")
-            torch.Size([768])
+            >>> model = OmniModelForEmbedding("yangheng/OmniGenome-52M")
+            >>> sequence = "ATCGATCGATCG"
+            >>> token_embeddings = model.encode_tokens(sequence, max_length=200)
+            >>> print(f"Token embeddings shape: {token_embeddings.shape}")
+            torch.Size([200, 768])
         """
+        device = self.device
+        inputs = self.tokenizer(
+            sequence,
+            return_tensors="pt",
+            padding="max_length",
+            truncation=True,
+            max_length=max_length,
+        )
+        inputs = {k: v.to(device) for k, v in inputs.items()}
+
+        is_cuda = isinstance(device, torch.device) and device.type == 'cuda'
+        ctx = (torch.autocast(device_type='cuda', dtype=amp_dtype) if (use_autocast and is_cuda) else torch.enable_grad()) if require_grad else torch.no_grad()
+
+        with ctx:
+            hidden = self.model(**inputs).last_hidden_state  # (1, L, H)
+
+        if return_on_cpu:
+            hidden = hidden.cpu()
+
+        # Remove batch dimension for single sequence
+        return hidden.squeeze(0)  # (L, H)
+
+    def encode(self, sequence, max_length=512, agg="head", keep_dim=False,
+               require_grad: bool = False, return_on_cpu: bool = True,
+               use_autocast: bool = False, amp_dtype=None):
+        """编码单个序列 / Encode a single sequence.
+
+        参数 / Args:
+            sequence (str): 输入序列 / input sequence.
+            max_length (int): 截断/填充长度 / tokenizer max length.
+            agg (str): head|mean|tail 聚合策略 / aggregation strategy.
+            keep_dim (bool): 是否保留 batch 维 / keep batch dimension.
+            require_grad (bool): 是否保留梯度 / keep graph for finetune.
+            return_on_cpu (bool): 输出是否转 CPU / move result to CPU.
+            use_autocast (bool): 是否使用 autocast / enable autocast.
+            amp_dtype (torch.dtype|None): autocast dtype.
+
+        返回 / Returns:
+            torch.Tensor shape (H,) 或 (1,H) / pooled embedding.
+        """
+        device = self.device
         inputs = self.tokenizer(
             sequence,
             return_tensors="pt",
@@ -182,29 +221,26 @@ class OmniModelForEmbedding(torch.nn.Module):
             truncation=True,
             max_length=max_length,
         )
-        inputs = {key: value.to(self.device) for key, value in inputs.items()}
-
-        with torch.no_grad():
-            outputs = self.model(**inputs)
-
-        last_hidden = outputs.last_hidden_state.cpu()
-
-        if agg == "head":
-            emb = last_hidden[0, 0]
-        elif agg == "mean":
-            attention_mask = inputs["attention_mask"].cpu()
-            masked_embeddings = last_hidden * attention_mask.unsqueeze(-1)
-            lengths = attention_mask.sum(dim=1).unsqueeze(1)
-            emb = masked_embeddings.sum(dim=1) / lengths
-            emb = emb.squeeze(0)
-        elif agg == "tail":
-            attention_mask = inputs["attention_mask"]
-            lengths = attention_mask.sum(dim=1) - 1
-            emb = last_hidden[0, lengths[0].item()]
+        inputs = {k: v.to(device) for k, v in inputs.items()}
+        is_cuda = isinstance(device, torch.device) and device.type == 'cuda'
+        ctx = (torch.autocast(device_type='cuda', dtype=amp_dtype) if (use_autocast and is_cuda) else torch.enable_grad()) if require_grad else torch.no_grad()
+        with ctx:
+            hidden = self.model(**inputs).last_hidden_state  # (1,L,H)
+        hidden = hidden if not return_on_cpu else hidden.cpu()
+        if agg == 'head':
+            emb = hidden[:, 0, :]
+        elif agg == 'mean':
+            mask = inputs['attention_mask'] if not return_on_cpu else inputs['attention_mask'].cpu()
+            emb = (hidden * mask.unsqueeze(-1)).sum(1) / mask.sum(1, keepdim=True)
+        elif agg == 'tail':
+            mask = inputs['attention_mask']
+            l = int(mask.sum(1).item()) - 1
+            emb = hidden[:, l, :]
         else:
-            raise ValueError(f"Unsupported aggregation method: {agg}")
-
-        return emb.unsqueeze(0) if keep_dim else emb
+            raise ValueError(f"Unsupported agg: {agg}")
+        if not keep_dim:
+            emb = emb.squeeze(0)
+        return emb
 
     def save_embeddings(self, embeddings, output_path):
         """
@@ -268,12 +304,20 @@ class OmniModelForEmbedding(torch.nn.Module):
     @property
     def device(self):
         """
-        Get the current device ('cuda' or 'cpu').
+        Get the current device for the underlying model.
 
         Returns:
-            torch.device: The device where the model is loaded
+            torch.device: The device where the model currently resides.
+
+        Note:
+            This queries the model parameters directly so it stays correct
+            when external frameworks (e.g., Accelerate/DDP) move the module
+            across devices after initialization.
         """
-        return self._device
+        try:
+            return next(self.model.parameters()).device
+        except StopIteration:
+            return self._device
 
 
 # Example usage

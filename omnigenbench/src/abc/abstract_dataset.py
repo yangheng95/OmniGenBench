@@ -413,7 +413,7 @@ class OmniDataset(torch.utils.data.Dataset):
                 df = pd.read_csv(data_source)
                 for i in range(len(df)):
                     examples.append(df.iloc[i].to_dict())
-            elif data_source.endswith(".json"):
+            elif data_source.endswith(".json") or data_source.endswith(".jsonl"):
                 import json
 
                 try:

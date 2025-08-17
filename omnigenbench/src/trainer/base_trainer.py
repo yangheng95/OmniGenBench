@@ -15,6 +15,8 @@ trainer implementations should provide.
 """
 
 import os
+import warnings
+
 import numpy as np
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Union, Any
@@ -223,6 +225,8 @@ class BaseTrainer(ABC):
             if compute_metrics
             else []
         )
+        if not self.compute_metrics:
+            warnings.warn("No compute metrics provided. Metrics will not be calculated during training.")
         self.seed = seed
         self.autocast = autocast
 

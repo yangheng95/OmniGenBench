@@ -322,7 +322,7 @@ class AccelerateTrainer(BaseTrainer):
             self.test_loader,
         )
         ## Remove accelerator reference to avoid memory leaks ##
-        delattr(self, "accelerator")
+        # delattr(self, "accelerator")
         return self.metrics
 
     def evaluate(self) -> Dict[str, Any]:

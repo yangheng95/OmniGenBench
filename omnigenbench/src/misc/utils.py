@@ -259,12 +259,12 @@ def env_meta_info():
 
     This function gathers information about the current Python environment,
     including versions of key libraries like PyTorch and Transformers,
-    as well as OmniGenome version information.
+    as well as OmniGenBench version information.
 
     Returns:
         dict: A dictionary containing environment metadata including:
-              - library_name: Name of the OmniGenome library
-              - omnigenbench_version: Version of OmniGenome
+              - library_name: Name of the OmniGenBench library
+              - omnigenbench_version: Version of OmniGenBench
               - torch_version: PyTorch version with CUDA info
               - transformers_version: Transformers library version
 
@@ -376,24 +376,30 @@ def print_args(config, logger=None):
 
 def fprint(*objects, sep=" ", end="\n", file=sys.stdout, flush=False):
     """
-    Enhanced print function with automatic flushing.
-
-    This function provides a print-like interface with automatic flushing
-    to ensure output is displayed immediately. It's useful for real-time
-    logging and progress tracking.
+    Custom print function that adds a timestamp and the package version before the printed message.
 
     Args:
-        *objects: Objects to print
-        sep (str): Separator between objects (default: " ")
-        end (str): String appended after the last value (default: "\n")
-        file: File-like object to write to (default: sys.stdout)
-        flush (bool): Whether to flush the stream (default: False)
-
-    Example:
-        >>> fprint("Training started...", flush=True)
-        >>> fprint("Epoch 1/10", "Loss: 0.5", sep=" | ")
+        *objects: Any number of objects to be printed
+        sep (str, optional): Separator between objects. Defaults to " ".
+        end (str, optional): Ending character after all objects are printed. Defaults to "\n".
+        file (io.TextIOWrapper, optional): Text file to write printed output to. Defaults to sys.stdout.
+        flush (bool, optional): Whether to flush output buffer after printing. Defaults to False.
     """
-    print(*objects, sep=sep, end=end, file=file, flush=True)
+    from omnigenbench import __version__
+    from omnigenbench import __name__
+
+    print(
+        time.strftime(
+            "[%Y-%m-%d %H:%M:%S] [{} {}] ".format(__name__, __version__),
+            time.localtime(time.time()),
+        ),
+        *objects,
+        sep=sep,
+        end=end,
+        file=file,
+        flush=flush,
+    )
+
 
 
 def clean_temp_checkpoint(days_threshold=7):
@@ -460,22 +466,23 @@ def load_module_from_path(module_name, file_path):
 
 def check_bench_version(bench_version, omnigenbench_version):
     """
-    Check if benchmark version is compatible with OmniGenome version.
+    Check if benchmark version is compatible with OmniGenBench version.
 
-    This function compares the benchmark version with the OmniGenome version
+    This function compares the benchmark version with the OmniGenBench version
     to ensure compatibility and warns if there are potential issues.
 
     Args:
         bench_version (str): Version of the benchmark
-        omnigenbench_version (str): Version of OmniGenome
+        omnigenbench_version (str): Version of OmniGenBench
 
     Example:
         >>> check_bench_version("0.2.0", "0.3.0")
     """
+
     if bench_version != omnigenbench_version:
         warnings.warn(
             f"Benchmark version ({bench_version}) differs from "
-            f"OmniGenome version ({omnigenbench_version}). "
+            f"OmniGenBench version ({omnigenbench_version}). "
             f"This may cause compatibility issues."
         )
 

@@ -450,6 +450,7 @@ class OmniModelForMultiLabelSequenceClassification(OmniModelForSequenceClassific
         Example:
             >>> model = OmniModelForMultiLabelSequenceClassification("model_path", tokenizer)
         """
+        self.threshold = kwargs.pop('threshold', 0.5)
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.softmax = torch.nn.Sigmoid()
@@ -507,7 +508,7 @@ class OmniModelForMultiLabelSequenceClassification(OmniModelForSequenceClassific
 
         predictions = []
         for i in range(logits.shape[0]):
-            prediction = logits[i].ge(0.5).to(torch.int).cpu()
+            prediction = logits[i].cpu()
             predictions.append(prediction)
 
         outputs = {
@@ -546,7 +547,32 @@ class OmniModelForMultiLabelSequenceClassification(OmniModelForSequenceClassific
             >>> results = model.inference("ATCGATCG")
             >>> print(results['predictions'])  # tensor([1, 0, 1, 0])
         """
-        return self.predict(sequence_or_inputs, **kwargs)
+        raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
+
+        logits = raw_outputs["logits"]
+        last_hidden_state = raw_outputs["last_hidden_state"]
+
+        predictions = []
+        for i in range(logits.shape[0]):
+            prediction = logits[i].ge(self.threshold).to(torch.int).cpu()
+            predictions.append(prediction)
+
+        if not isinstance(sequence_or_inputs, list):
+            outputs = {
+                "predictions": predictions[0],
+                "logits": logits[0],
+                "confidence": torch.max(logits[0]),
+                "last_hidden_state": last_hidden_state[0],
+            }
+        else:
+            outputs = {
+                "predictions": predictions,
+                "logits": logits,
+                "confidence": torch.max(logits, dim=-1)[0],
+                "last_hidden_state": last_hidden_state,
+            }
+
+        return outputs
 
 
 class OmniModelForTokenClassificationWith2DStructure(OmniModelForTokenClassification):
@@ -601,15 +627,12 @@ class OmniModelForMultiLabelSequenceClassificationWith2DStructure(
     OmniModelForSequenceClassificationWith2DStructure
 ):
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
+        self.threshold = kwargs.pop('threshold', 0.5)
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.softmax = torch.nn.Sigmoid()
         self.loss_fn = torch.nn.BCELoss()
         self.model_info()
-
-    def loss_function(self, logits, labels):
-        loss = self.loss_fn(logits.view(-1), labels.view(-1).to(torch.float32))
-        return loss
 
     def predict(self, sequence_or_inputs, **kwargs):
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
@@ -619,7 +642,7 @@ class OmniModelForMultiLabelSequenceClassificationWith2DStructure(
 
         predictions = []
         for i in range(logits.shape[0]):
-            prediction = logits[i].ge(0.5).to(torch.int).cpu()
+            prediction = logits[i].cpu()
             predictions.append(prediction)
 
         outputs = {
@@ -635,4 +658,34 @@ class OmniModelForMultiLabelSequenceClassificationWith2DStructure(
         return outputs
 
     def inference(self, sequence_or_inputs, **kwargs):
-        return self.predict(sequence_or_inputs, **kwargs)
+        raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
+
+        logits = raw_outputs["logits"]
+        last_hidden_state = raw_outputs["last_hidden_state"]
+
+        predictions = []
+        for i in range(logits.shape[0]):
+            prediction = logits[i].ge(self.threshold).to(torch.int).cpu()
+            predictions.append(prediction)
+
+        if not isinstance(sequence_or_inputs, list):
+            outputs = {
+                "predictions": predictions[0],
+                "logits": logits[0],
+                "confidence": torch.max(logits[0]),
+                "last_hidden_state": last_hidden_state[0],
+            }
+        else:
+            outputs = {
+                "predictions": predictions,
+                "logits": logits,
+                "confidence": torch.max(logits, dim=-1)[0],
+                "last_hidden_state": last_hidden_state,
+            }
+
+        return outputs
+
+
+    def loss_function(self, logits, labels):
+        loss = self.loss_fn(logits.view(-1), labels.view(-1).to(torch.float32))
+        return loss
