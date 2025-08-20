@@ -83,14 +83,15 @@ class SQUIDExplainer(AbstractExplainer):
         batch_size: int = 32,
         **kwargs,
     ):
-        """Generates feature attributions for an input sequence using the SQUID method.
+        """
+        Generates feature attributions for an input sequence using the SQUID method.
 
         This method performs three main steps:
-        1. Generates a dataset of mutated sequences and their corresponding model
-           predictions (in-silico MAVE).
-        2. Trains an interpretable surrogate model on this dataset.
-        3. Extracts the learned parameters from the surrogate model, which represent
-           the feature attributions.
+            Generates a dataset of mutated sequences and their corresponding model
+            predictions (in-silico MAVE).
+            Trains an interpretable surrogate model on this dataset.
+            Extracts the learned parameters from the surrogate model, which represent
+            the feature attributions.
 
         Args:
             sequence (str): The input sequence to explain.
