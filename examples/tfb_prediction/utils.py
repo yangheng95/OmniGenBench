@@ -11,10 +11,11 @@ import zipfile
 from typing import Optional, List, Dict, Any
 
 import os
-
-import findfile
+import json
 import requests
 import torch
+import torch.nn as nn
+import findfile
 
 from transformers import AutoTokenizer, AutoModel
 
@@ -24,6 +25,7 @@ from omnigenbench import (
     AccelerateTrainer,
     ModelHub,
     OmniModelForMultiLabelSequenceClassification,
+    OmniModel,
 )
 
 
@@ -69,6 +71,7 @@ class DeepSEADataset(OmniDataset):
         **kwargs,
     ) -> None:
         super().__init__(data_source, tokenizer, max_length, **kwargs)
+        self.label_indices = None
         for key, value in kwargs.items():
             self.metadata[key] = value
 
@@ -173,7 +176,7 @@ def create_dataloaders(
     return train_loader, valid_loader, test_loader
 
 
-def run_fintuning(
+def run_finetuning(
     model: torch.nn.Module,
     train_loader,
     valid_loader,
@@ -235,14 +238,342 @@ def run_inference(
     return outputs
 
 
+class _MaskedGlobalMaxPool1d(nn.Module):
+    def forward(self, x: torch.Tensor, attention_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+        if attention_mask is None:
+            return x.max(dim=1).values
+        masked_x = x.masked_fill(attention_mask.unsqueeze(-1).eq(0), float("-inf"))
+        return masked_x.max(dim=1).values
+
+
+class OmniCNNBaseline(OmniModel):
+    """TextCNN-style baseline for DeepSEA-style multilabel classification.
+
+    Implements forward/predict/inference for trainer compatibility.
+    """
+
+    def __init__(self, tokenizer, *args, **kwargs):
+        embed_dim = kwargs.pop("embed_dim", 128)
+        num_filters = kwargs.pop("num_filters", 128)
+        kernel_sizes = kwargs.pop("kernel_sizes", (3, 5, 7))
+        dropout = kwargs.pop("dropout", 0.1)
+        num_labels = kwargs.pop("num_labels")
+
+        # Minimal config stub
+        class Cfg:
+            pass
+
+        cfg = Cfg()
+        cfg.hidden_size = embed_dim
+        cfg.num_labels = num_labels
+        cfg.label2id = {str(i): i for i in range(num_labels)}
+        cfg.id2label = {i: str(i) for i in range(num_labels)}
+        cfg.name_or_path = "CNNBaseline"
+        cfg.model_type = "cnn"
+        cfg.architectures = ["CNNBaseline"]
+        cfg.pad_token_id = getattr(tokenizer, "pad_token_id", -100)
+        # Persist hyperparameters for reload
+        cfg.embed_dim = embed_dim
+        cfg.num_filters = num_filters
+        cfg.kernel_sizes = list(kernel_sizes)
+        cfg.dropout = dropout
+
+        class _Stub(nn.Module):
+            def __init__(self, config):
+                super().__init__()
+                self.config = config
+                # buffer tracks device/dtype so OmniModel can query .device/.dtype
+                self.register_buffer("_dev_tracker", torch.empty(0))
+
+            @property
+            def device(self):
+                return self._dev_tracker.device
+
+            @property
+            def dtype(self):
+                return self._dev_tracker.dtype
+
+        super().__init__(_Stub(cfg), tokenizer, num_labels=num_labels, *args, **kwargs)
+
+        vocab_size = getattr(self.tokenizer, "vocab_size", None) or len(self.tokenizer.get_vocab())
+        self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=self.pad_token_id)
+        self.convs = nn.ModuleList([
+            nn.Sequential(nn.Conv1d(embed_dim, num_filters, k, padding=k // 2), nn.ReLU()) for k in kernel_sizes
+        ])
+        self.pool = _MaskedGlobalMaxPool1d()
+        self.classifier = nn.Linear(num_filters * len(kernel_sizes), num_labels)
+        self.sigmoid = nn.Sigmoid()
+        self.dropout = nn.Dropout(dropout)
+        self.loss_fn = nn.BCELoss()
+
+    # ---------------- Serialization -----------------
+    def _build_config_dict(self):
+        return {
+            "model_type": self.config.model_type,
+            "architectures": self.config.architectures,
+            "num_labels": self.config.num_labels,
+            "label2id": self.config.label2id,
+            "id2label": self.config.id2label,
+            "pad_token_id": self.config.pad_token_id,
+            "hidden_size": self.config.hidden_size,
+            "embed_dim": getattr(self.config, "embed_dim", None),
+            "num_filters": getattr(self.config, "num_filters", None),
+            "kernel_sizes": getattr(self.config, "kernel_sizes", None),
+            "dropout": getattr(self.config, "dropout", None),
+            "vocab_size": self.embedding.num_embeddings,
+            "model_cls": self.__class__.__name__,
+            "library_name": "OMNIGENBENCH",
+        }
+
+    def save_pretrained(self, save_directory: str, overwrite: bool = True):
+        os.makedirs(save_directory, exist_ok=True)
+        # Save config
+        with open(os.path.join(save_directory, "config.json"), "w", encoding="utf8") as f:
+            json.dump(self._build_config_dict(), f, ensure_ascii=False, indent=2)
+        # Save tokenizer
+        if hasattr(self.tokenizer, "save_pretrained"):
+            self.tokenizer.save_pretrained(save_directory)
+        else:
+            with open(os.path.join(save_directory, "tokenizer.bin"), "wb") as f:
+                torch.save(self.tokenizer, f)
+        # Save state dict
+        torch.save(self.state_dict(), os.path.join(save_directory, "pytorch_model.bin"))
+        # Metadata
+        metadata = getattr(self, "metadata", {})
+        metadata["model_cls"] = self.__class__.__name__
+        metadata["library_name"] = metadata.get("library_name", "OMNIGENBENCH")
+        with open(os.path.join(save_directory, "metadata.json"), "w", encoding="utf8") as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=2)
+
+    @classmethod
+    def from_pretrained(cls, save_directory: str, tokenizer=None, map_location=None, **kwargs):
+        # Load config
+        with open(os.path.join(save_directory, "config.json"), "r", encoding="utf8") as f:
+            cfg_dict = json.load(f)
+        if tokenizer is None:
+            # Try standard huggingface style first
+            if os.path.exists(os.path.join(save_directory, "tokenizer_config.json")) or os.path.exists(os.path.join(save_directory, "vocab.json")):
+                try:
+                    from transformers import AutoTokenizer
+                    tokenizer = AutoTokenizer.from_pretrained(save_directory)
+                except Exception:
+                    tokenizer = None
+            if tokenizer is None and os.path.exists(os.path.join(save_directory, "tokenizer.bin")):
+                with open(os.path.join(save_directory, "tokenizer.bin"), "rb") as f:
+                    tokenizer = torch.load(f, map_location=map_location)
+            if tokenizer is None:
+                raise ValueError("Tokenizer could not be loaded; please provide one.")
+        model = cls(
+            tokenizer,
+            embed_dim=cfg_dict.get("embed_dim", cfg_dict.get("hidden_size")),
+            num_filters=cfg_dict.get("num_filters", 128),
+            kernel_sizes=tuple(cfg_dict.get("kernel_sizes", (3, 5, 7))),
+            dropout=cfg_dict.get("dropout", 0.1),
+            num_labels=cfg_dict["num_labels"],
+            label2id=cfg_dict.get("label2id"),
+            **kwargs,
+        )
+        # Load weights
+        state_dict = torch.load(os.path.join(save_directory, "pytorch_model.bin"), map_location=map_location or "cpu")
+        model.load_state_dict(state_dict, strict=False)
+        # Load metadata if exists
+        meta_path = os.path.join(save_directory, "metadata.json")
+        if os.path.exists(meta_path):
+            with open(meta_path, "r", encoding="utf8") as f:
+                model.metadata = json.load(f)
+        return model
+
+    def forward(self, **inputs) -> Dict[str, Any]:
+        labels = inputs.pop("labels", None)
+        x = self.embedding(inputs["input_ids"])  # [B,L,E]
+        x = self.dropout(x)
+        feats = [m(x.transpose(1, 2)) for m in self.convs]  # list of [B,C,L]
+        feats = torch.cat(feats, dim=1).transpose(1, 2)  # [B,L,C*]
+        pooled = self.pool(feats, inputs.get("attention_mask"))  # [B,C*]
+        pooled = self.dropout(pooled)
+        logits = self.sigmoid(self.classifier(pooled))  # [B,num_labels]
+        return {"logits": logits, "last_hidden_state": pooled, "labels": labels}
+
+    def predict(self, sequence_or_inputs, **kwargs):
+        out = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
+        return {"predictions": out["logits"], "logits": out["logits"], "last_hidden_state": out["last_hidden_state"]}
+
+    def inference(self, sequence_or_inputs, threshold: float = 0.5, **kwargs):
+        out = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
+        logits = out["logits"]
+        preds = (logits >= threshold).to(torch.int)
+        if not isinstance(sequence_or_inputs, list):
+            return {"predictions": preds[0].cpu(), "logits": logits[0].cpu(), "confidence": torch.max(logits[0]).cpu(), "last_hidden_state": out["last_hidden_state"][0].cpu()}
+        return {"predictions": preds.cpu(), "logits": logits.cpu(), "confidence": torch.max(logits, dim=-1)[0].cpu(), "last_hidden_state": out["last_hidden_state"]}
+
+    def loss_function(self, logits, labels):
+        return self.loss_fn(logits.view(-1), labels.view(-1).to(torch.float32))
+
+
+class OmniRNNBaseline(OmniModel):
+    """BiLSTM baseline for DeepSEA-style multilabel classification."""
+
+    def __init__(self, tokenizer, *args, **kwargs):
+        embed_dim = kwargs.pop("embed_dim", 128)
+        hidden_dim = kwargs.pop("hidden_dim", 256)
+        num_layers = kwargs.pop("num_layers", 1)
+        bidirectional = kwargs.pop("bidirectional", True)
+        dropout = kwargs.pop("dropout", 0.1)
+        num_labels = kwargs.pop("num_labels")
+
+        class Cfg:
+            pass
+
+        cfg = Cfg()
+        cfg.hidden_size = hidden_dim * (2 if bidirectional else 1)
+        cfg.num_labels = num_labels
+        cfg.label2id = {str(i): i for i in range(num_labels)}
+        cfg.id2label = {i: str(i) for i in range(num_labels)}
+        cfg.name_or_path = "RNNBaseline"
+        cfg.model_type = "rnn"
+        cfg.architectures = ["RNNBaseline"]
+        cfg.pad_token_id = getattr(tokenizer, "pad_token_id", -100)
+        # Persist hyperparameters for reload
+        cfg.embed_dim = embed_dim
+        cfg.hidden_dim = hidden_dim
+        cfg.num_layers = num_layers
+        cfg.bidirectional = bidirectional
+        cfg.dropout = dropout
+
+        class _Stub(nn.Module):
+            def __init__(self, config):
+                super().__init__()
+                self.config = config
+                self.register_buffer("_dev_tracker", torch.empty(0))
+
+            @property
+            def device(self):
+                return self._dev_tracker.device
+
+            @property
+            def dtype(self):
+                return self._dev_tracker.dtype
+
+        super().__init__(_Stub(cfg), tokenizer, num_labels=num_labels, *args, **kwargs)
+
+        vocab_size = getattr(self.tokenizer, "vocab_size", None) or len(self.tokenizer.get_vocab())
+        self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=self.pad_token_id)
+        self.lstm = nn.LSTM(embed_dim, hidden_dim, num_layers=num_layers, batch_first=True, dropout=0.0 if num_layers == 1 else dropout, bidirectional=bidirectional)
+        self.classifier = nn.Linear(hidden_dim * (2 if bidirectional else 1), num_labels)
+        self.sigmoid = nn.Sigmoid()
+        self.dropout = nn.Dropout(dropout)
+        self.loss_fn = nn.BCELoss()
+
+    # ---------------- Serialization -----------------
+    def _build_config_dict(self):
+        return {
+            "model_type": self.config.model_type,
+            "architectures": self.config.architectures,
+            "num_labels": self.config.num_labels,
+            "label2id": self.config.label2id,
+            "id2label": self.config.id2label,
+            "pad_token_id": self.config.pad_token_id,
+            "hidden_size": self.config.hidden_size,
+            "embed_dim": getattr(self.config, "embed_dim", None),
+            "hidden_dim": getattr(self.config, "hidden_dim", None),
+            "num_layers": getattr(self.config, "num_layers", None),
+            "bidirectional": getattr(self.config, "bidirectional", None),
+            "dropout": getattr(self.config, "dropout", None),
+            "vocab_size": self.embedding.num_embeddings,
+            "model_cls": self.__class__.__name__,
+            "library_name": "OMNIGENBENCH",
+        }
+
+    def save_pretrained(self, save_directory: str, overwrite: bool = True):
+        os.makedirs(save_directory, exist_ok=True)
+        with open(os.path.join(save_directory, "config.json"), "w", encoding="utf8") as f:
+            json.dump(self._build_config_dict(), f, ensure_ascii=False, indent=2)
+        if hasattr(self.tokenizer, "save_pretrained"):
+            self.tokenizer.save_pretrained(save_directory)
+        else:
+            with open(os.path.join(save_directory, "tokenizer.bin"), "wb") as f:
+                torch.save(self.tokenizer, f)
+        torch.save(self.state_dict(), os.path.join(save_directory, "pytorch_model.bin"))
+        metadata = getattr(self, "metadata", {})
+        metadata["model_cls"] = self.__class__.__name__
+        metadata["library_name"] = metadata.get("library_name", "OMNIGENBENCH")
+        with open(os.path.join(save_directory, "metadata.json"), "w", encoding="utf8") as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=2)
+
+    @classmethod
+    def from_pretrained(cls, save_directory: str, tokenizer=None, map_location=None, **kwargs):
+        with open(os.path.join(save_directory, "config.json"), "r", encoding="utf8") as f:
+            cfg_dict = json.load(f)
+        if tokenizer is None:
+            if os.path.exists(os.path.join(save_directory, "tokenizer_config.json")) or os.path.exists(os.path.join(save_directory, "vocab.json")):
+                try:
+                    from transformers import AutoTokenizer
+                    tokenizer = AutoTokenizer.from_pretrained(save_directory)
+                except Exception:
+                    tokenizer = None
+            if tokenizer is None and os.path.exists(os.path.join(save_directory, "tokenizer.bin")):
+                with open(os.path.join(save_directory, "tokenizer.bin"), "rb") as f:
+                    tokenizer = torch.load(f, map_location=map_location)
+            if tokenizer is None:
+                raise ValueError("Tokenizer could not be loaded; please provide one.")
+        model = cls(
+            tokenizer,
+            embed_dim=cfg_dict.get("embed_dim", cfg_dict.get("hidden_size")),
+            hidden_dim=cfg_dict.get("hidden_dim", 256),
+            num_layers=cfg_dict.get("num_layers", 1),
+            bidirectional=cfg_dict.get("bidirectional", True),
+            dropout=cfg_dict.get("dropout", 0.1),
+            num_labels=cfg_dict["num_labels"],
+            label2id=cfg_dict.get("label2id"),
+            **kwargs,
+        )
+        state_dict = torch.load(os.path.join(save_directory, "pytorch_model.bin"), map_location=map_location or "cpu")
+        model.load_state_dict(state_dict, strict=False)
+        meta_path = os.path.join(save_directory, "metadata.json")
+        if os.path.exists(meta_path):
+            with open(meta_path, "r", encoding="utf8") as f:
+                model.metadata = json.load(f)
+        return model
+
+    def _mask_mean_pool(self, x: torch.Tensor, attention_mask: Optional[torch.Tensor]):
+        if attention_mask is None:
+            return x.mean(dim=1)
+        mask = attention_mask.unsqueeze(-1).to(x.dtype)
+        return (x * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1e-6)
+
+    def forward(self, **inputs) -> Dict[str, Any]:
+        labels = inputs.pop("labels", None)
+        x = self.embedding(inputs["input_ids"])  # [B,L,E]
+        x = self.dropout(x)
+        out, _ = self.lstm(x)
+        pooled = self._mask_mean_pool(out, inputs.get("attention_mask"))
+        pooled = self.dropout(pooled)
+        logits = self.sigmoid(self.classifier(pooled))
+        return {"logits": logits, "last_hidden_state": pooled, "labels": labels}
+
+    def predict(self, sequence_or_inputs, **kwargs):
+        out = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
+        return {"predictions": out["logits"], "logits": out["logits"], "last_hidden_state": out["last_hidden_state"]}
+
+    def inference(self, sequence_or_inputs, threshold: float = 0.5, **kwargs):
+        out = self._forward_from_raw_input(sequence_or_inputs, **kwargs)
+        logits = out["logits"]
+        preds = (logits >= threshold).to(torch.int)
+        if not isinstance(sequence_or_inputs, list):
+            return {"predictions": preds[0].cpu(), "logits": logits[0].cpu(), "confidence": torch.max(logits[0]).cpu(), "last_hidden_state": out["last_hidden_state"][0].cpu()}
+        return {"predictions": preds.cpu(), "logits": logits.cpu(), "confidence": torch.max(logits, dim=-1)[0].cpu(), "last_hidden_state": out["last_hidden_state"]}
+
+    def loss_function(self, logits, labels):
+        return self.loss_fn(logits.view(-1), labels.view(-1).to(torch.float32))
+
+
 __all__ = [
     "DeepSEADataset",
     "load_tokenizer_and_model",
     "build_datasets",
     "create_dataloaders",
-    "run_fintuning",
+    "run_finetuning",
     "run_inference",
+    "OmniCNNBaseline",
+    "OmniRNNBaseline",
 ]
-
-
-
