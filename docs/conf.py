@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath('../../'))
 
 project = ''
 copyright = '2024-2025'
-author = 'YANG, HENG'
+author = 'YANG, HENG; LI YUAN'
 
 # The full version, including alpha/beta/rc tags
 # release = '0.3.0alpha'

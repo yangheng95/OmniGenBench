@@ -836,7 +836,6 @@ OmniGenBench is built around four fundamental abstract classes. Understanding th
 
 
 .. card:: Abstract Metric (`OmniMetric`)
-   :icon: tachometer-alt
    :shadow: md
 
    The ``OmniMetric`` class standardizes evaluation, leveraging powerful libraries like `scikit-learn` while providing a consistent interface.
