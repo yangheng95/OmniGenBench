@@ -21,8 +21,6 @@ from ..base import BaseCommand
 
 class BenchCommand(BaseCommand):
     """
-    Command-line interface for running automated benchmarking of genomic foundation models.
-    
     This class provides a CLI interface for the AutoBench functionality, allowing users
     to easily run comprehensive evaluations of genomic models across multiple benchmarks.
     It supports various benchmarks, models, and training configurations.
@@ -34,21 +32,18 @@ class BenchCommand(BaseCommand):
     Example:
         >>> # Run basic benchmark
         >>> python -m omnigenbench.cli autobench --model "model_name" --benchmark "RGB"
-        
         >>> # Run with custom settings
-        >>> python -m omnigenbench.cli autobench \
-        ...     --model "model_name" \
-        ...     --benchmark "RGB" \
-        ...     --trainer "accelerate" \
-        ...     --bs_scale 2 \
+        >>> python -m omnigenbench.cli autobench 
+        ...     --model "model_name" 
+        ...     --benchmark "RGB" 
+        ...     --trainer "accelerate" 
+        ...     --bs_scale 2 
         ...     --overwrite True
     """
 
     @classmethod
     def register_command(cls, subparsers):
         """
-        Register the autobench command with the argument parser.
-
         This method sets up the command-line interface for the autobench functionality,
         including all necessary arguments and their descriptions.
 
@@ -121,10 +116,7 @@ class BenchCommand(BaseCommand):
     @staticmethod
     def execute(args: argparse.Namespace):
         """
-        Execute the autobench command with the provided arguments.
-
-        This method runs the automated benchmarking process using the AutoBench
-        class. It handles model and tokenizer loading, benchmark execution,
+        Execute the autobench command with the provided arguments. It handles model and tokenizer loading, benchmark execution,
         and result logging.
 
         Args:
@@ -186,8 +178,6 @@ class BenchCommand(BaseCommand):
 
 def register_command(subparsers):
     """
-    Register the autobench command with the CLI.
-
     This function is a convenience wrapper for registering the BenchCommand
     with the argument parser.
 

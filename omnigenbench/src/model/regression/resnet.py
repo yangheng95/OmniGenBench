@@ -89,8 +89,6 @@ def conv5x5(in_planes, out_planes, stride=1, groups=1, dilation=1):
 
 class BasicBlock(nn.Module):
     """
-    Basic ResNet block for genomic sequence processing.
-
     This block implements a basic residual connection with two convolutions
     and is optimized for processing genomic sequence data with layer normalization.
 
@@ -187,8 +185,6 @@ class BasicBlock(nn.Module):
 
 class Bottleneck(nn.Module):
     """
-    Bottleneck ResNet block for genomic sequence processing.
-
     This block implements a bottleneck residual connection with three convolutions
     (1x1, 3x3, 1x1) and is designed for deeper networks. It's adapted from
     the original ResNet V1.5 implementation.
@@ -287,8 +283,6 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
     """
-    ResNet architecture adapted for genomic sequence analysis.
-
     This ResNet implementation is specifically designed for processing genomic
     sequences and their structural representations. It uses layer normalization
     instead of batch normalization and is optimized for genomic data characteristics.
@@ -468,8 +462,6 @@ class ResNet(nn.Module):
 
 def resnet_b16(channels=128, bbn=16):
     """
-    Create a ResNet-B16 model for genomic sequence analysis.
-
     This function creates a ResNet model with 16 basic blocks, optimized
     for processing genomic sequences and their structural representations.
 

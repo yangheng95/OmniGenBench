@@ -20,13 +20,9 @@ from ...src.abc.abstract_tokenizer import OmniTokenizer
 
 class ModelHub:
     """
-    A hub for loading and managing pre-trained genomic models.
-
     This class provides a unified interface for loading pre-trained models
     from the OmniGenome hub or local paths. It handles model downloading,
-    tokenizer loading, and device placement automatically.
-
-    The ModelHub supports various model types and can automatically
+    tokenizer loading, and device placement automatically. It supports various model types and can automatically
     download models from the hub if they're not available locally.
 
     Attributes:
@@ -35,10 +31,8 @@ class ModelHub:
     Example:
         >>> from omnigenbench import ModelHub
         >>> hub = ModelHub()
-
         >>> # Load a model from the hub
         >>> model, tokenizer = ModelHub.load_model_and_tokenizer("model_name")
-
         >>> # Check available models
         >>> models = hub.available_models()
         >>> print(list(models.keys()))
@@ -65,8 +59,6 @@ class ModelHub:
         **kwargs,
     ):
         """
-        Load a model and its tokenizer from the hub or local path.
-
         This method loads both the model and tokenizer, places them on the
         specified device, and returns them as a tuple. It handles automatic
         device selection if none is specified.
@@ -107,8 +99,6 @@ class ModelHub:
         **kwargs,
     ):
         """
-        Load a model from the hub or local path.
-
         This method handles model loading from various sources including
         local paths and the OmniGenome hub. It automatically downloads
         models if they're not available locally.
@@ -180,8 +170,6 @@ class ModelHub:
         self, model_name_or_path=None, local_only=False, repo="", **kwargs
     ):
         """
-        Get information about available models in the hub.
-
         This method queries the OmniGenome hub to retrieve information about
         available models. It can filter models by name and supports both
         local and remote queries.
@@ -196,10 +184,10 @@ class ModelHub:
             dict: Dictionary containing information about available models
 
         Example:
+            >>> # Load all available models
             >>> hub = ModelHub()
             >>> models = hub.available_models()
             >>> print(f"Available models: {len(models)}")
-
             >>> # Filter models by name
             >>> dna_models = hub.available_models("DNA")
             >>> print(f"DNA models: {list(dna_models.keys())}")

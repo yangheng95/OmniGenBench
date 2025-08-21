@@ -34,14 +34,13 @@ from ... import __version__ as omnigenbench_version
 
 class AutoBench:
     """
-    AutoBench is a class for automatically benchmarking genomic foundation models.
-
     This class provides a comprehensive framework for evaluating genomic models
     across multiple benchmarks and tasks. It handles loading benchmarks, models,
     tokenizers, and running evaluations with proper metric tracking and result
     visualization.
 
     AutoBench supports various evaluation scenarios including:
+
     - Single model evaluation across multiple benchmarks
     - Multi-seed evaluation for robustness testing
     - Different trainer backends (native, accelerate, huggingface)
@@ -148,10 +147,6 @@ class AutoBench:
         """
         Prints and returns information about the current benchmark setup.
 
-        This method provides a comprehensive overview of the current
-        benchmark configuration, including benchmark details, model information,
-        and evaluation settings.
-
         Returns:
             str: A string containing benchmark information.
 
@@ -170,12 +165,9 @@ class AutoBench:
 
     def run(self, **kwargs):
         """
-        Runs the benchmarking process.
-
-        This method iterates through the tasks in the benchmark, loads the corresponding
+        Runs the benchmarking process. This method iterates through the tasks in the benchmark, loads the corresponding
         configurations, initializes the model, tokenizer, and datasets, and then
-        trains and evaluates the model. It supports multiple evaluation seeds and
-        various trainer backends.
+        trains and evaluates the model.
 
         Args:
             **kwargs: Additional keyword arguments that will override the default
@@ -184,7 +176,6 @@ class AutoBench:
         Example:
             >>> # Run benchmarking with default settings
             >>> bench.run()
-
             >>> # Run with custom parameters
             >>> bench.run(learning_rate=1e-4, batch_size=16)
         """

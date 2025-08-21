@@ -19,8 +19,7 @@ from ..abc.abstract_metric import OmniMetric
 
 def mcrmse(y_true, y_pred):
     """
-    Compute Mean Column Root Mean Square Error (MCRMSE).
-
+    Compute Mean Column Root Mean Square Error (MCRMSE). 
     MCRMSE is a multi-target regression metric that computes the RMSE for each target
     column and then takes the mean across all targets.
 
@@ -55,8 +54,6 @@ setattr(metrics, "mcrmse", mcrmse)
 
 class RegressionMetric(OmniMetric):
     """
-    A specialized metric class for regression tasks and evaluation.
-
     This class provides access to regression-specific metrics from scikit-learn
     and handles different input formats including HuggingFace trainer outputs.
     It dynamically wraps scikit-learn metrics and provides a unified interface

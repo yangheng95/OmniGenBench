@@ -8,9 +8,7 @@
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2025. All Rights Reserved.
 """
-Low-Rank Adaptation (LoRA) models for OmniGenome.
-
-This module provides LoRA implementation for efficient fine-tuning of large
+This module provides Low-Rank Adaptation (LoRA) implementation for efficient fine-tuning of large
 genomic language models. LoRA reduces the number of trainable parameters
 by adding low-rank adaptation layers to existing model weights.
 """
@@ -20,8 +18,6 @@ from ...src.misc.utils import fprint
 
 def find_linear_target_modules(model, keyword_filter=None, use_full_path=True):
     """
-    Find linear modules in a model that can be targeted for LoRA adaptation.
-
     This function searches through a model's modules to identify linear layers
     that can be adapted using LoRA. It supports filtering by keyword patterns
     to target specific types of layers.
@@ -59,8 +55,6 @@ def find_linear_target_modules(model, keyword_filter=None, use_full_path=True):
 
 def auto_lora_model(model, **kwargs):
     """
-    Automatically create a LoRA-adapted model.
-
     This function automatically identifies suitable target modules and creates
     a LoRA-adapted version of the input model. It handles configuration
     setup and parameter freezing for efficient fine-tuning.
@@ -121,8 +115,6 @@ def auto_lora_model(model, **kwargs):
 
 class OmniLoraModel(nn.Module):
     """
-    LoRA-adapted model for OmniGenome.
-
     This class provides a wrapper around LoRA-adapted models, enabling
     efficient fine-tuning of large genomic language models while maintaining
     compatibility with the OmniGenome framework.
@@ -173,9 +165,6 @@ class OmniLoraModel(nn.Module):
     def to(self, *args, **kwargs):
         """
         Move the model to a specific device and data type.
-
-        This method overrides the default to() method to ensure the LoRA model
-        and its components are properly moved to the target device and dtype.
 
         Args:
             *args: Device specification (e.g., 'cuda', 'cpu')

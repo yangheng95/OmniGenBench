@@ -1,81 +1,83 @@
-.. OmniGenBench documentation master file, created by sphinx-quickstart
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+############
+OmniGenBench
+############
 
-OmniGenBench Documentation
-==========================
 
-.. image:: ../asset/favicon.png
-   :width: 1000px
-   :align: left
-   :alt: OmniGenBench Logo
+OmniGenBench is an **All-in-One** solution for genomic foundation model finetuning, inference, deployment, and automated benchmarking.
+
+
+.. .. raw:: html
+
+..    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5em; margin-top: 1em;">
+..        <a href="installation.rst" class="nav-card"> <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">🚀 Installation</h4> <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Start your journey by setting up OmniGenBench on your system.</p> </a>
+..        <a href="usage.rst" class="nav-card"> <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">📖 Basic Usage</h4> <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Learn the fundamental workflows and how to run your first task.</p> </a>
+..        <a href="cli.rst" class="nav-card"> <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">🛠️ Command Usage (CLI)</h4> <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Master the command-line interface for powerful and flexible operations.</p> </a>
+..        <a href="design_principle.rst" class="nav-card"> <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">🏗️ Design Principles</h4> <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Understand the core architecture and design choices behind the library.</p> </a>
+..        <a href="api_reference.rst" class="nav-card"> <h4 style="margin-top: 0; color: #2c3e50; font-size: 1.2em;">📚 API Reference</h4> <p style="margin-bottom: 0; color: #555; line-height: 1.6;">Get detailed information about all public classes, functions, and methods.</p> </a>
+..    </div>
+
 
 .. raw:: html
 
-   <div style="text-align: center; margin: 2em 0; width: 1000px; align: left; display: flex; flex-direction: column;">
-   <p style="font-size: 1.2em; color: #666; max-width: 1000px; margin: 0 auto; line-height: 1.8;">
-   OmniGenBench offers an all-in-one solution for genomic foundation model finetuning, inference, deployment and automated benchmarking, designed for research and applications in genomics.
-   </p>
+   <div class="nav-grid">
+       <a href="installation.html" class="nav-card">
+           <h4 class="nav-card-title">🚀 Installation</h4>
+           <p class="nav-card-description">Start your journey by setting up OmniGenBench on your system.</p>
+       </a>
+       <a href="usage.html" class="nav-card">
+           <h4 class="nav-card-title">📖 Basic Usage</h4>
+           <p class="nav-card-description">Learn the fundamental workflows and how to run your first task.</p>
+       </a>
+       <a href="cli.html" class="nav-card">
+           <h4 class="nav-card-title">🛠️ Command Usage (CLI)</h4>
+           <p class="nav-card-description">Master the command-line interface for powerful and flexible operations.</p>
+       </a>
+       <a href="design_principle.html" class="nav-card">
+           <h4 class="nav-card-title">🏗️ Design Principles</h4>
+           <p class="nav-card-description">Understand the core architecture and design choices behind the library.</p>
+       </a>
+       <a href="api_reference.html" class="nav-card">
+           <h4 class="nav-card-title">📚 API Reference</h4>
+           <p class="nav-card-description">Get detailed information about all public classes, functions, and methods.</p>
+       </a>
    </div>
 
-.. raw:: html
 
-   <div style="max-width: 1000px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 2em; border-radius: 12px; margin: 2em 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-     <h3 style="margin-top: 0; color: #2c3e50;">✨ Key Features</h3>
-     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5em; margin-top: 1em;">
-
-       <div style="background: white; padding: 1.5em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-         <h4 style="margin-top: 0; color: #3498db;">🧬 Multi-Modal Support</h4>
-         <p style="margin-bottom: 0; color: #666;">Available for both RNA and DNA modalities with comprehensive downstream tasks and foundation models, including fine-tuning and evaluation.</p>
-       </div>
-
-       <div style="background: white; padding: 1.5em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-         <h4 style="margin-top: 0; color: #3498db;">⚡ Efficient Fine-tuning</h4>
-         <p style="margin-bottom: 0; color: #666;">Full LoRA integration for efficient foundation model fine-tuning with up to 90% reduced computational requirements. A 24GB Graphic Card is enough for all models.</p>
-       </div>
-
-       <div style="background: white; padding: 1.5em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-         <h4 style="margin-top: 0; color: #3498db;">🔍 Interpretability</h4>
-         <p style="margin-bottom: 0; color: #666;">Diverse explanation methods for better model interpretability, including attention visualization and motif discovery.</p>
-       </div>
-
-       <div style="background: white; padding: 1.5em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-         <h4 style="margin-top: 0; color: #3498db;">📊 Rich Benchmarks</h4>
-         <p style="margin-bottom: 0; color: #666;">As a foundation model benchmark tool, 5 curated benchmarks covering structure prediction, classification, and cross-species analysis.</p>
-       </div>
-
-
-     </div>
-   </div>
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Installation
+   :maxdepth: 1
+   :hidden:
+   :caption: Get Started
 
    installation
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Basic Usage
+   :maxdepth: 1
+   :hidden:
+   :caption: Core Usage Guide
 
    usage
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Command Usage
+   :maxdepth: 1
+   :hidden:
+   :caption: Command Usage Examples
 
    cli
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :hidden:
    :caption: Package Design Principles
 
    design_principle
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :hidden:
    :caption: API Reference
 
    api_reference
 
-For more details, refer to the navigation bar on the left.
+
+

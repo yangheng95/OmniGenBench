@@ -6,6 +6,7 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
+
 """
 Specialized dataset classes for OmniGenome framework.
 
@@ -14,6 +15,7 @@ inheriting from the abstract `OmniDataset`. These classes handle data preparatio
 for token classification, sequence classification, token regression, and sequence regression,
 integrating with tokenizers and managing metadata.
 """
+
 import json
 
 import numpy as np
@@ -21,43 +23,41 @@ import torch
 
 from ..abc.abstract_dataset import OmniDataset
 from ..misc.utils import fprint
-from ... import __name__, __version__
+from omnigenbench import __name__ as name
+from omnigenbench import __version__ as version
 
 
 class OmniDatasetForTokenClassification(OmniDataset):
     """
-    Dataset class specifically designed for token classification tasks in genomics.
+    Dataset class for token-level classification tasks in genomics.
 
-    This class extends `OmniDataset` to provide functionalities for preparing input sequences
-    and their corresponding token-level labels. It's designed for tasks where each token
-    in a sequence needs to be classified independently.
+    This class extends `OmniDataset` to support tokenizing genomic sequences
+    and aligning them with token-level labels for tasks like sequence tagging.
 
     Attributes:
-        metadata: Dictionary containing dataset metadata including library information
-        label2id: Mapping from label strings to integer IDs
+        metadata (dict): Dataset metadata including library name, version, and task type.
+        label2id (dict): Mapping from label strings to integer IDs used for training.
     """
 
     def __init__(self, data_source, tokenizer, max_length=None, **kwargs):
         """
-        Initialize the dataset for token classification.
+        Initializes the token classification dataset.
 
         Args:
-            data_source: Path to the data file or a list of paths.
-                        Supported formats depend on the `OmniDataset` implementation.
-            tokenizer: The tokenizer instance to use for converting sequences into
-                      tokenized inputs.
-            max_length: The maximum sequence length for tokenization. Sequences longer
-                       than this will be truncated. If None, a default or tokenizer's
-                       max length will be used.
-            **kwargs: Additional keyword arguments to be stored in the dataset's metadata.
+            data_source (str or list): Path(s) to the dataset file(s). Formats supported 
+                depend on the base `OmniDataset` class.
+            tokenizer (transformers.PreTrainedTokenizer): Tokenizer used to process input sequences.
+            max_length (int, optional): Maximum sequence length for tokenization. Sequences longer
+                than this will be truncated. If None, uses the tokenizer default.
+            **kwargs: Additional metadata key-value pairs stored in `self.metadata`.
         """
         super(OmniDatasetForTokenClassification, self).__init__(
             data_source, tokenizer, max_length, **kwargs
         )
         self.metadata.update(
             {
-                "library_name": __name__,
-                "omnigenbench_version": __version__,
+                "library_name": name,
+                "omnigenbench_version": version,
                 "task": "genome_token_classification",
             }
         )
@@ -168,8 +168,8 @@ class OmniDatasetForSequenceClassification(OmniDataset):
 
         self.metadata.update(
             {
-                "library_name": __name__,
-                "omnigenbench_version": __version__,
+                "library_name": name,
+                "omnigenbench_version": version,
                 "task": "genome_sequence_classification",
             }
         )
@@ -267,8 +267,8 @@ class OmniDatasetForTokenRegression(OmniDataset):
 
         self.metadata.update(
             {
-                "library_name": __name__,
-                "omnigenbench_version": __version__,
+                "library_name": name,
+                "omnigenbench_version": version,
                 "task": "genome_token_regression",
             }
         )
@@ -374,8 +374,8 @@ class OmniDatasetForSequenceRegression(OmniDataset):
 
         self.metadata.update(
             {
-                "library_name": __name__,
-                "omnigenbench_version": __version__,
+                "library_name": name,
+                "omnigenbench_version": version,
                 "task": "genome_sequence_regression",
             }
         )

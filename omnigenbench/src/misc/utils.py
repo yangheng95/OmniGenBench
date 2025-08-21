@@ -24,9 +24,7 @@ default_omnigenome_repo = (
 
 def seed_everything(seed=42):
     """
-    Sets random seeds for reproducibility across all random number generators.
-
-    This function sets seeds for Python's random module, NumPy, PyTorch (CPU and CUDA),
+    Sets random seeds for reproducibility across all random number generators. This function sets seeds for Python's random module, NumPy, PyTorch (CPU and CUDA),
     and sets the PYTHONHASHSEED environment variable to ensure reproducible results
     across different runs.
 
@@ -289,8 +287,6 @@ def env_meta_info():
 
 def naive_secondary_structure_repair(sequence, structure):
     """
-    Repair the secondary structure of a sequence.
-
     This function attempts to repair malformed RNA secondary structure
     representations by ensuring proper bracket matching. It handles
     common issues like unmatched brackets by converting them to dots.
@@ -327,8 +323,6 @@ def naive_secondary_structure_repair(sequence, structure):
 
 def save_args(config, save_path):
     """
-    Save arguments to a file.
-
     This function saves the arguments from a configuration object to a text file.
     It's useful for logging experiment parameters and configurations.
 
@@ -350,8 +344,6 @@ def save_args(config, save_path):
 
 def print_args(config, logger=None):
     """
-    Print the arguments to the console.
-
     This function prints the arguments from a configuration object to the console
     or a logger. It's useful for debugging and logging experiment parameters.
 
@@ -376,14 +368,20 @@ def print_args(config, logger=None):
 
 def fprint(*objects, sep=" ", end="\n", file=sys.stdout, flush=False):
     """
-    Custom print function that adds a timestamp and the package version before the printed message.
+    Enhanced print function with automatic flushing. It provides a print-like interface with automatic flushing
+    to ensure output is displayed immediately. It's useful for real-time
+    logging and progress tracking.
 
     Args:
-        *objects: Any number of objects to be printed
-        sep (str, optional): Separator between objects. Defaults to " ".
-        end (str, optional): Ending character after all objects are printed. Defaults to "\n".
-        file (io.TextIOWrapper, optional): Text file to write printed output to. Defaults to sys.stdout.
-        flush (bool, optional): Whether to flush output buffer after printing. Defaults to False.
+        - \*objects: Objects to print
+        - sep (str): Separator between objects (default: " ")
+        - end (str): String appended after the last value (default: ``"\\n"``)
+        - file: File-like object to write to (default: sys.stdout)
+        - flush (bool): Whether to flush the stream (default: False)
+
+    Example:
+        >>> fprint("Training started...", flush=True)
+        >>> fprint("Epoch 1/10", "Loss: 0.5", sep=" | ")
     """
     from omnigenbench import __version__
     from omnigenbench import __name__
@@ -439,8 +437,6 @@ def clean_temp_checkpoint(days_threshold=7):
 
 def load_module_from_path(module_name, file_path):
     """
-    Load a Python module from a file path.
-
     This function dynamically loads a Python module from a file path,
     useful for loading configuration files or custom modules.
 
