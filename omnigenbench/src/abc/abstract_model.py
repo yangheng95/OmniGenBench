@@ -144,7 +144,10 @@ class OmniModel(torch.nn.Module):
                         if "AutoModel" in architectures
                         else architectures[-1]
                     )
-                    model_cls = getattr(import_module(f"transformers"), model_cls_name)
+                    if "multimolecule" in config_or_model.__repr__().lower():
+                        model_cls = getattr(import_module(f"multimolecule"), model_cls_name)
+                    else:
+                        model_cls = getattr(import_module(f"transformers"), model_cls_name)
 
                     model = model_cls.from_pretrained(
                         config_or_model,
@@ -163,7 +166,10 @@ class OmniModel(torch.nn.Module):
                     if "AutoModel" in config.architectures
                     else config.architectures[-1]
                 )
-                model_cls = getattr(import_module(f"transformers"), model_cls_name)
+                if "multimolecule" in config_or_model.__repr__().lower():
+                    model_cls = getattr(import_module(f"multimolecule"), model_cls_name)
+                else:
+                    model_cls = getattr(import_module(f"transformers"), model_cls_name)
                 model = model_cls.from_pretrained(
                     config_or_model,
                     config=config,
@@ -574,9 +580,21 @@ class OmniModel(torch.nn.Module):
             json.dump(metadata, f)
         with open(f"{path}/tokenizer.bin", "wb") as f:
             dill.dump(self.tokenizer, f)
-        self.model.save_pretrained(
-            f"{path}", safe_serialization=False
-        )  # do not remove this line, used to save customized model scripts
+        # Try to save the underlying base model (e.g., HuggingFace models)
+        # Some lightweight baselines may not implement `save_pretrained` on the base model.
+        try:
+            self.model.save_pretrained(
+                f"{path}", safe_serialization=False
+            )  # do not remove this line, used to save customized model scripts
+        except AttributeError:
+            # Fallback: if the OmniModel subclass provides its own `save_pretrained`, use it
+            if hasattr(self, "save_pretrained"):
+                try:
+                    self.save_pretrained(path, overwrite=True)
+                except Exception:
+                    # As a last resort, continue and rely on the full state_dict save below
+                    pass
+            # Otherwise, continue; the complete state dict will be saved below
 
         # Save complete state dict including all components
         with open(f"{path}/pytorch_model.bin", "wb") as f:

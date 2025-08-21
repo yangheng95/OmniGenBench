@@ -387,13 +387,13 @@ class Trainer(BaseTrainer):
 
         torch.save(self.unwrap_model().state_dict(), self._model_state_dict_path)
 
-    def save_model(self, path: str, overwrite: bool = False, **kwargs) -> None:
+    def save_model(self, path_to_save: str, overwrite: bool = False, **kwargs) -> None:
         """
         Save the trained model.
 
         Args:
-            path (str): Path to save the model
+            path_to_save (str): Path to save the model
             overwrite (bool): Whether to overwrite existing files (default: False)
             **kwargs: Additional keyword arguments
         """
-        self.unwrap_model().save(path, overwrite, **kwargs)
+        self.unwrap_model().save(path_to_save, overwrite, **kwargs)

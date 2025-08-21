@@ -104,8 +104,11 @@ class OmniTokenizer:
                 AutoTokenizer.from_pretrained(model_name_or_path, **kwargs), **kwargs
             )
         else:
-            warnings.warn(f"No tokenizer wrapper found in {wrapper_path}. ")
-            tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
+            if 'multimolecule' in model_name_or_path:
+                from multimolecule import RnaTokenizer
+                tokenizer = RnaTokenizer.from_pretrained(model_name_or_path, **kwargs)
+            else:
+                tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
 
         return tokenizer
 

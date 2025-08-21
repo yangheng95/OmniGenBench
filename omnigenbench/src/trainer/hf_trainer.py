@@ -263,21 +263,21 @@ class HFTrainer(BaseTrainer):
         else:
             return {}
 
-    def save_model(self, path: str, overwrite: bool = False, **kwargs) -> None:
+    def save_model(self, path_to_save: str, overwrite: bool = False, **kwargs) -> None:
         """
         Save the trained model.
 
         Args:
-            path (str): Path to save the model
+            path_to_save (str): Path to save the model
             overwrite (bool): Whether to overwrite existing files (default: False)
             **kwargs: Additional keyword arguments
         """
         # Save using HuggingFace trainer
-        self.hf_trainer.save_model(path)
+        self.hf_trainer.save_model(path_to_save)
 
         # Also save using OmniGenome model's save method if available
         if hasattr(self.model, "save"):
-            self.model.save(path, overwrite, **kwargs)
+            self.model.save(path_to_save, overwrite, **kwargs)
 
     def get_model(self, **kwargs) -> torch.nn.Module:
         """

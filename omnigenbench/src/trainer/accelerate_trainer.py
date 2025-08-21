@@ -461,20 +461,20 @@ class AccelerateTrainer(BaseTrainer):
 
         return super()._is_metric_better(metrics, stage)
 
-    def save_model(self, path: str, overwrite: bool = False, **kwargs) -> None:
+    def save_model(self, path_to_save: str, overwrite: bool = False, **kwargs) -> None:
         """
         Save the trained model.
 
         Args:
-            path (str): Path to save the model
+            path_to_save (str): Path to save the model
             overwrite (bool): Whether to overwrite existing files (default: False)
             **kwargs: Additional keyword arguments for model saving
         """
         # Only main process saves the model
         if not hasattr(self, "accelerator"):
-            self.model.save(path, overwrite, **kwargs)
+            self.model.save(path_to_save, overwrite, **kwargs)
         elif self.accelerator.is_main_process:
-            self.accelerator.unwrap_model(self.model).save(path, overwrite, **kwargs)
+            self.accelerator.unwrap_model(self.model).save(path_to_save, overwrite, **kwargs)
 
     def _load_state_dict(self) -> None:
         """Load the best model state dictionary."""
