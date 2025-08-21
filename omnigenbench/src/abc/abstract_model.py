@@ -26,8 +26,6 @@ warnings.filterwarnings("once")
 
 def count_parameters(model):
     """
-    Counts the number of trainable parameters in a model.
-
     This function iterates through all parameters of a PyTorch model and counts
     only those that require gradients (i.e., trainable parameters).
 
@@ -47,24 +45,9 @@ def count_parameters(model):
 
 class OmniModel(torch.nn.Module):
     """
-    Abstract base class for all models in OmniGenome.
-
     This class provides a unified interface for all genomic models in the OmniGenome
     framework. It handles model initialization, forward passes, loss computation,
     prediction, inference, and model persistence.
-
-    The class is designed to work with various types of genomic data and tasks,
-    including sequence classification, token classification, regression, and more.
-
-    Attributes:
-        model (torch.nn.Module): The underlying PyTorch model.
-        config: The model configuration.
-        tokenizer: The tokenizer associated with the model.
-        metadata (dict): Metadata about the model including version info.
-        loss_fn: The loss function for training.
-        dropout (torch.nn.Dropout): Dropout layer for regularization.
-        activation (torch.nn.Tanh): Activation function.
-        pad_token_id (int): ID of the padding token.
     """
 
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
@@ -252,10 +235,7 @@ class OmniModel(torch.nn.Module):
 
     def last_hidden_state_forward(self, **inputs):
         """
-        Performs a forward pass to get the last hidden state from the base model.
-
-        This method handles the forward pass through the underlying model and
-        returns the last hidden state. It also handles compatibility with different
+        Performs a forward pass to get the last hidden state from the base model. It also handles compatibility with different
         model architectures by mapping input parameters appropriately.
 
         Args:
@@ -353,9 +333,7 @@ class OmniModel(torch.nn.Module):
 
     def loss_function(self, logits, labels):
         """
-        Calculates the loss. Must be implemented by subclasses.
-
-        This method should be implemented by concrete model classes to define
+        Calculates the loss. This method should be implemented by concrete model classes to define
         how the loss is calculated for their specific task (classification,
         regression, etc.).
 
@@ -379,10 +357,7 @@ class OmniModel(torch.nn.Module):
 
     def set_loss_fn(self, loss_function):
         """
-        Sets a custom loss function for the model.
-
-        This method allows setting a custom loss function that will be used
-        during training. The loss function should be compatible with the
+        Sets a custom loss function for the model. The loss function should be compatible with the
         model's output format.
 
         Args:
@@ -402,8 +377,6 @@ class OmniModel(torch.nn.Module):
 
     def predict(self, sequence_or_inputs, **kwargs):
         """
-        Performs prediction on raw inputs. Returns raw model outputs.
-
         This method takes raw sequences or tokenized inputs and returns
         the raw model outputs (logits, hidden states, etc.) without
         post-processing. It's useful for getting the model's direct
@@ -415,14 +388,11 @@ class OmniModel(torch.nn.Module):
             **kwargs: Additional arguments for tokenization and inference.
 
         Returns:
-            dict: A dictionary containing the raw model outputs, typically
-                  including 'logits', 'last_hidden_state', and other
-                  model-specific outputs.
+            dict: A dictionary containing the raw model outputs, typically including `logits`, `last_hidden_state`, and other model-specific outputs.
 
         Example:
             >>> # Predict on a single sequence
             >>> outputs = model.predict("ATCGATCG")
-
             >>> # Predict on multiple sequences
             >>> outputs = model.predict(["ATCGATCG", "GCTAGCTA"])
         """
@@ -432,8 +402,6 @@ class OmniModel(torch.nn.Module):
 
     def inference(self, sequence_or_inputs, **kwargs):
         """
-        Performs inference on raw inputs. Returns processed, human-readable predictions.
-
         This method takes raw sequences or tokenized inputs and returns
         processed predictions that are ready for human consumption. It
         typically includes post-processing steps like converting logits
@@ -445,15 +413,12 @@ class OmniModel(torch.nn.Module):
             **kwargs: Additional arguments for tokenization and inference.
 
         Returns:
-            dict: A dictionary containing the processed predictions, typically
-                  including 'predictions', 'confidence', and other
-                  human-readable outputs.
+            dict: A dictionary containing the processed predictions, typically including 'predictions', 'confidence', and other human-readable outputs.
 
         Example:
             >>> # Inference on a single sequence
             >>> results = model.inference("ATCGATCG")
             >>> print(results['predictions'])  # Class labels
-
             >>> # Inference on multiple sequences
             >>> results = model.inference(["ATCGATCG", "GCTAGCTA"])
         """
@@ -607,9 +572,11 @@ class OmniModel(torch.nn.Module):
         """
         Loads the model, tokenizer, and metadata from a directory.
 
-        :param path: The directory to load the model from.
-        :param kwargs: Additional arguments.
-        :return: The loaded model instance.
+        Args:
+            path: The directory to load the model from.
+            **kwargs: Additional arguments.
+        Returns: 
+            The loaded model instance.
         """
         with open(f"{path}/metadata.json", "r", encoding="utf8") as f:
             metadata = json.load(f)

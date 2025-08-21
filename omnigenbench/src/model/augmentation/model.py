@@ -23,8 +23,7 @@ import autocuda
 
 class OmniModelForAugmentation(torch.nn.Module):
     """
-    Data augmentation model for genomic sequences using masked language modeling.
-
+    Data augmentation model for genomic sequences using masked language modeling. 
     This model uses a pre-trained masked language model to generate augmented
     versions of genomic sequences by randomly masking tokens and predicting
     replacements. It's useful for expanding training datasets and improving

@@ -146,8 +146,6 @@ def create_parser() -> argparse.ArgumentParser:
 
 def run_train():
     """
-    Wrapper function to run the auto-train command.
-
     This function is the entry point for the 'autotrain' console script.
     """
     train_command()

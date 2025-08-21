@@ -1,7 +1,6 @@
+###########
 Abstract Classes
-================
-
-This page explains how OmniGenBench organizes its main concepts and how to use abstract classes to extend functionality.
+###########
 
 OmniGenBench provides a set of abstract base classes that define the core interfaces for datasets, models, metrics, and tokenizers. These abstract classes are designed to be subclassed, allowing users to implement custom logic for new data formats, model architectures, evaluation metrics, or sequence representations.
 
@@ -20,54 +19,53 @@ OmniGenBench provides a set of abstract base classes that define the core interf
 
 Refer to the API documentation below for details on each abstract class, including their methods and usage examples.
 
+---------
 OmniModel
 ---------
 
 .. automodule:: omnigenbench.src.abc.abstract_model
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
+-----------
 OmniDataset
 -----------
 
 .. automodule:: omnigenbench.src.abc.abstract_dataset
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
-
+-------------
 OmniTokenizer
 -------------
 
 .. automodule:: omnigenbench.src.abc.abstract_tokenizer
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
-
+-----------
 OmniMetrics
 -----------
 
 .. automodule:: omnigenbench.src.abc.abstract_metric
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
 
+--------
 OmniLoRA
 --------
 
 .. automodule:: omnigenbench.src.lora.lora_model
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :noindex:
+

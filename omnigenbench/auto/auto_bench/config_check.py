@@ -14,10 +14,8 @@ def config_check(args):
     """
     Performs a basic check on the configuration arguments.
 
-    This function can be expanded to include more complex validation logic
-    for the benchmark configuration.
-
-    :param args: A dictionary of configuration arguments.
+    Args: 
+        args: A dictionary of configuration arguments.
     :raises RuntimeError: If a configuration check fails.
     """
     try:

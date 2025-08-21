@@ -1,93 +1,99 @@
-Command Line Usage
-==================
-.. code-block:: text
+.. _cli:
 
-       **  +----------- **           ___                     _
-      @@                 @@         / _ \  _ __ ___   _ __  (_)
-     @@* #============== *@@       | | | || '_ ` _ \ | '_ \ | |
-     @@*                 *@@       | |_| || | | | | || | | || |
-     *@@  +------------ *@@         \___/ |_| |_| |_||_| |_||_|
-      *@*               @@*
-       *@@  #========= @@*
-        *@@*         *@@*
-          *@@  +---@@@*              ____
-            *@@*   **               / ___|  ___  _ __    ___   _ __ ___    ___
-              **@**                | |  _  / _ \| '_ \  / _ \ | '_ ` _ \  / _ \
-            *@@* *@@*              | |_| ||  __/| | | || (_) || | | | | ||  __/
-          *@@ ---+  @@*             \____| \___||_| |_| \___/ |_| |_| |_| \___|
-        *@@*         *@@*
-       *@@ =========#  @@*
-      *@@               @@*
-     *@@ -------------+  @@*        ____                      _
-     @@                   @@       | __ )   ___  _ __    ___ | |__
-     @@ ===============#  @@       |  _ \  / _ \| '_ \  / __|| '_ \
-      @@                 @@        | |_) ||  __/| | | || (__ | | | |
-       ** -----------+  **         |____/  \___||_| |_| \___||_| |_|
+#######################
+Command Line Interface
+#######################
 
-OmniGenBench provides a rich set of command-line tools for batch evaluation, training, and RNA design.
+.. rst-class:: lead
+
+   OmniGenBench comes with a powerful and intuitive command-line interface (CLI) that allows you to run complex workflows like benchmarking, training, and RNA design directly from your terminal, without writing any Python code.
+
+This page provides an overview of the most common commands. For a full list of all available commands and arguments, you can always run:
+
+.. code-block:: bash
+
+   omnigenbench --help
 
 
-
+**************************************
 Automatic Benchmarking Command
-------------------------------
+**************************************
 
-Example:
+The ``autobench`` command is your primary tool for evaluating a model's performance on a standard benchmark dataset. It automates everything from data loading to metric calculation.
+
+**Usage**
 
 .. code-block:: bash
 
-   $ omnigenbench autobench --model yangheng/OmniGenBench-186M --benchmark RGB
+   omnigenbench autobench --model <model_name_or_path> --benchmark <benchmark_name>
 
-Arguments:
+**Example**
 
---model, -m
-    Required. Model to evaluate
+Here's how to evaluate the ``yangheng/OmniGenome-186M`` model on the ``RGB`` benchmark:
 
---benchmark, -b
-    Benchmark dataset: RGB, PGB, BEACON, etc.
+.. code-block:: bash
 
---tokenizer, -t
-    Specify tokenizer
+   omnigenbench autobench --model yangheng/OmniGenome-186M --benchmark RGB
 
---trainer
-    Trainer backend: native, accelerate, hf_trainer
+**Arguments**
 
---overwrite
-    Overwrite existing results if present
+Here are the most common arguments for the ``autobench`` command:
 
---bs_scale
-    Batch size scaling factor
+*   ``--model``, ``-m`` **(Required)**
+    The identifier of the model to evaluate. This can be a local path or a model name from the Hugging Face Hub (e.g., `yangheng/OmniGenome-186M`).
 
+*   ``--benchmark``, ``-b`` **(Required)**
+    The name of the benchmark dataset to use (e.g., `RGB`, `PGB`, `BEACON`).
+
+*   ``--tokenizer``, ``-t`` *(Optional)*
+    Path or name of a specific tokenizer to use. If not provided, it's inferred from the model.
+
+*   ``--trainer`` *(Optional)*
+    The training backend to use. Defaults to `native`.
+    *Choices*: `native`, `accelerate`, `hf_trainer`.
+
+*   ``--overwrite`` *(Optional)*
+    A boolean flag. If set, it will overwrite any existing results for this run.
+
+*   ``--bs_scale`` *(Optional)*
+    Batch size scaling factor. Allows you to adjust the batch size without setting it directly. Defaults to `1`.
+
+*********************************
 RNA Structure Design Command
-----------------------------
+*********************************
 
-Example:
+The ``rna_design`` command provides a powerful tool for *in-silico* RNA design. Given a target secondary structure, it uses an evolutionary algorithm powered by a generative model to design RNA sequences that are likely to fold into that structure.
 
-.. code-block:: bash
-
-   $ omnigenbench rna_design --structure "(((...)))" --model yangheng/OmniGenome-186M
-
-Arguments:
-
---structure
-    Target RNA secondary structure (dot-bracket notation)
-
---model
-    Model to use for design
-
---mutation-ratio
-    Mutation rate for the genetic algorithm
-
---num-population
-    Population size
-
---num-generation
-    Number of evolutionary generations
-
---output-file
-    Path to save the output results
-
-For more commands and options:
+**Usage**
 
 .. code-block:: bash
 
-   $ omnigenbench --help
+   omnigenbench rna_design --structure "<dot_bracket_string>" --model <model_name_or_path>
+
+**Example**
+
+To design a sequence for a simple hairpin loop structure:
+
+.. code-block:: bash
+
+   omnigenbench rna_design --structure "((((...))))" --model yangheng/OmniGenome-186M --num-generation 50
+
+**Arguments**
+
+*   ``--structure`` **(Required)**
+    The target RNA secondary structure specified in dot-bracket notation.
+
+*   ``--model`` **(Required)**
+    The generative model to use for scoring and guiding the design process.
+
+*   ``--mutation-ratio`` *(Optional)*
+    The mutation rate for the genetic algorithm. A float between 0 and 1.
+
+*   ``--num-population`` *(Optional)*
+    The size of the population in each generation of the evolutionary algorithm.
+
+*   ``--num-generation`` *(Optional)*
+    The total number of generations to run the evolution for. More generations can lead to better results but will take longer.
+
+*   ``--output-file`` *(Optional)*
+    Path to a file where the final designed sequences will be saved.

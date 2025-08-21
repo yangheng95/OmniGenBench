@@ -12,14 +12,10 @@ from abc import ABC, abstractmethod
 
 class BaseCommand(ABC):
     """
-    Abstract base class for all CLI commands in OmniGenome.
-
     This class provides a common interface for all command-line interface
     commands in the OmniGenome framework. It defines the structure that
     all command classes must follow, including registration and common
-    argument handling.
-
-    Subclasses must implement the `register_command` method to define
+    argument handling. Subclasses must implement the `register_command` method to define
     their specific command-line interface and arguments.
 
     Example:
@@ -39,8 +35,6 @@ class BaseCommand(ABC):
     @abstractmethod
     def register_command(cls, subparsers):
         """
-        Register the command and its arguments with the main parser.
-
         This abstract method must be implemented by all subclasses to define
         their specific command-line interface, including arguments, help text,
         and default functions.
@@ -58,8 +52,6 @@ class BaseCommand(ABC):
     @classmethod
     def add_common_arguments(cls, parser):
         """
-        Add common arguments to a command's parser.
-
         This method adds standard arguments that are common across all
         OmniGenome CLI commands, such as logging level and output directory.
 

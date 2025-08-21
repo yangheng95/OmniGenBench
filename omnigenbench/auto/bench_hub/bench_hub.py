@@ -10,9 +10,7 @@
 
 class BenchHub:
     """
-    A hub for accessing and managing benchmarks.
-
-    This class is intended to provide a centralized way to list, download,
+    A hub for accessing and managing benchmarks. This class is intended to provide a centralized way to list, download,
     and inspect available benchmarks for OmniGenome.
     """
 

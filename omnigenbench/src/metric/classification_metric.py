@@ -18,8 +18,6 @@ from ..abc.abstract_metric import OmniMetric
 
 class ClassificationMetric(OmniMetric):
     """
-    Classification metric class for evaluating classification models.
-
     This class provides a comprehensive interface for classification metrics
     in the OmniGenome framework. It integrates with scikit-learn's classification
     metrics and provides additional functionality for handling genomic classification

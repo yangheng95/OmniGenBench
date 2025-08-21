@@ -1,336 +1,214 @@
-/* Custom CSS for OmniGenBench Documentation - ReadTheDocs Theme Compatible */
-
-/* Enhanced typography */
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
-    color: #333;
+/* 2. 限制 Logo 的高度，防止它过大而破坏布局 */
+.sidebar-brand__logo {
+    max-height: auto;      /* 这是一个比较合适的高度，你可以根据需要调整 */
+    width: 25px;           /* 让宽度自动缩放以保持比例 */
+    margin: 0;             /* 移除任何可能存在的边距 */
 }
 
-/* Improved headings */
-h1, h2, h3, h4, h5, h6 {
+
+.nav-grid {
+    display: flex; /* 启用 Flex 布局 */
+    flex-direction: column; /* 子项垂直排列 */
+    gap: 1rem; /* 设置卡片之间的垂直间距 */
+    margin-top: 1.5rem;
+    padding: 0;
+    list-style: none;
+}
+
+/* 卡片链接的基础样式 - 这部分几乎不变 */
+.nav-card {
+    /* 使用 Furo 的 CSS 变量来适应主题 */
+    background-color: var(--color-background-primary);
+    border: 1px solid var(--color-background-border);
+    color: var(--color-content-foreground);
+    
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    text-decoration: none !important;
+    display: block; /* 保持块级显示，占据全部宽度 */
+
+    /* 平滑过渡效果 */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
+    box-shadow: var(--color-shadow-primary-small);
+}
+
+/* 鼠标悬停时的特效 - 不变 */
+.nav-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--color-brand-primary);
+    box-shadow: var(--color-shadow-primary-large);
+}
+
+/* 卡片标题样式 - 不变 */
+.nav-card .nav-card-title {
+    font-size: 1.2em;
     font-weight: 600;
-    color: #2c3e50;
-    margin-top: 2em;
-    margin-bottom: 1em;
-}
-
-h1 {
-    font-size: 2.5em;
-    border-bottom: 3px solid #3498db;
-    padding-bottom: 0.3em;
-}
-
-h2 {
-    font-size: 2em;
-    border-bottom: 2px solid #ecf0f1;
-    padding-bottom: 0.2em;
-}
-
-/* Enhanced code blocks */
-.highlight {
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    margin: 1em 0;
-}
-
-.highlight pre {
-    border-radius: 8px;
-    padding: 1.5em;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-}
-
-/* Improved admonitions */
-.admonition {
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    margin: 2em 0;
-    transition: transform 0.2s ease-in-out;
-}
-
-.admonition:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-}
-
-/* Enhanced navigation */
-.wy-nav-side {
-    background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
-}
-
-.wy-nav-side a {
-    transition: color 0.2s ease;
-}
-
-.wy-nav-side a:hover {
-    color: #3498db !important;
-}
-
-/* Improved buttons and links */
-a {
-    color: #3498db;
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-a:hover {
-    color: #2980b9;
-    text-decoration: underline;
-}
-
-/* Custom styling for the quick links section */
-.quick-links {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 2em;
-    border-radius: 12px;
-    margin: 2em 0;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-}
-
-.quick-links h3 {
-    color: white;
+    color: var(--color-content-foreground-primary);
     margin-top: 0;
-    font-size: 1.5em;
+    margin-bottom: 0.5rem;
 }
 
-.quick-links a {
-    color: #f8f9fa;
-    text-decoration: none;
+/* 卡片描述文字样式 - 不变 */
+.nav-card .nav-card-description {
+    font-size: 0.95em;
+    line-height: 1.6;
+    margin-bottom: 0;
+}
+
+
+
+/* 1. 选中选项卡的容器 (sd-tab-set) */
+.sd-tab-set {
+    display: flex; /* 保持 flex 布局，但改变方向 */
+    flex-direction: column; /* ★ 核心改动：将主轴从横向变为纵向 */
+    gap: 1rem; /* 在垂直排列的卡片之间增加间距 */
+}
+
+/* 2. 针对每一个选项卡按钮 (sd-tab-item) 进行样式美化 */
+.sd-tab-item {
+    /* 覆盖 sphinx-design 的默认边框和内边距 */
+    border: 1px solid var(--color-background-border) !important;
+    border-radius: 0.5rem !important; /* 圆角 */
+    padding: 1.25rem 1.5rem !important; /* 增加内边距，让它看起来像个卡片 */
+    margin: 0 !important; /* 移除默认的外边距 */
+    width: 100%; /* 确保卡片占据整行宽度 */
+    text-align: left; /* 标题居左对齐 */
+    font-weight: 600; /* 让标题文字稍微加粗 */
+    
+    /* 添加平滑过渡效果，用于悬停和选中 */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+/* 3. 鼠标悬停在未选中的选项卡上时的效果 */
+.sd-tab-item:not([aria-selected="true"]):hover {
+    border-color: var(--color-brand-primary); /* 边框变为主题色 */
+    transform: translateY(-2px); /* 轻微向上浮动 */
+    box-shadow: var(--color-shadow-primary-large); /* 添加阴影 */
+}
+
+/* 4. “当前选中”的选项卡的样式 */
+.sd-tab-item[aria-selected="true"] {
+    /* 使用 Furo 主题的品牌色作为背景和边框，使其突出显示 */
+    background-color: var(--color-brand-primary) !important;
+    border-color: var(--color-brand-primary) !important;
+    color: var(--color-brand-content) !important; /* 使用适合在品牌色上显示的文字颜色 */
+    box-shadow: none; /* 选中的卡片不需要阴影 */
+}
+
+/* 5. 选项卡对应的内容面板 (sd-tab-content) 的样式 */
+.sd-tab-content {
+    /* 为内容区域也添加一个边框和圆角，与卡片设计匹配 */
+    border: 1px solid var(--color-background-border);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-top: 0 !important; /* 移除与上方选项卡的默认间距 */
+}
+
+
+/* ==========================================================================
+   Custom styles for Furo Code Blocks
+   ========================================================================== */
+
+/* --- 1. Main Code Block Container --- */
+div.highlight {
+    /* Add rounded corners */
+    border-radius: 8px; 
+    
+    /* Add a subtle shadow for depth */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+    
+    /* Add a border */
+    border: 1px solid var(--color-code-border);
+    
+    /* Add some space around the code block */
+    margin-bottom: 1.5em; 
+}
+
+/* --- 2. Code Area Background and Font --- */
+div.highlight pre {
+    /* Inner padding inside the code block */
+    padding: 1.2em; 
+    
+    /* Set a custom font for code, e.g., Fira Code, JetBrains Mono */
+    /* Make sure to import the font if it's not a system font */
+    font-family: "JetBrains Mono", "Fira Code", monospace; 
+    
+    /* Adjust font size */
+    font-size: 0.9em; 
+}
+
+/* --- 3. Light and Dark Mode Background Colors --- */
+/* For Light Mode */
+:root {
+    --color-code-background: #f8f9fa; /* A slightly off-white color */
+    --color-code-border: #e9ecef;
+}
+
+/* For Dark Mode */
+:root[data-theme="dark"] {
+    --color-code-background: #212529; /* A darker background for dark mode */
+    --color-code-border: #495057;
+}
+
+/* --- 4. Custom "Copy" Button --- */
+div.highlight .copybutton {
+    /* Style the button itself */
+    background-color: var(--color-brand-primary);
+    color: white;
+    border-radius: 4px;
+    border: none;
+    opacity: 0.8;
+    transition: opacity 0.2s ease-in-out;
+}
+
+div.highlight .copybutton:hover {
+    /* Make it more visible on hover */
+    opacity: 1;
+    background-color: var(--color-brand-content);
+}
+
+/* --- 5. Code Block Caption/Title Styling --- */
+.code-block-caption {
+    /* Make the title stand out */
     padding: 0.5em 1em;
-    border-radius: 6px;
-    background: rgba(255,255,255,0.1);
-    transition: all 0.3s ease;
-    display: inline-block;
-    margin: 0.5em 0.5em 0.5em 0;
-}
-
-.quick-links a:hover {
-    background: rgba(255,255,255,0.2);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-/* Enhanced table styling */
-table {
-    border-collapse: collapse;
-    width: 100%;
-    margin: 2em 0;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-th {
-    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-    color: white;
-    padding: 1em;
-    font-weight: 600;
-}
-
-td {
-    padding: 1em;
-    border-bottom: 1px solid #ecf0f1;
-}
-
-tr:hover {
-    background-color: #f8f9fa;
-}
-
-/* Improved image styling */
-img {
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    transition: transform 0.2s ease;
-}
-
-img:hover {
-    transform: scale(1.02);
-}
-
-/* Enhanced sidebar */
-.wy-side-nav-search {
-    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-}
-
-/* Responsive design improvements */
-@media (max-width: 768px) {
-    body {
-        font-size: 14px;
-    }
-    
-    h1 {
-        font-size: 2em;
-    }
-    
-    h2 {
-        font-size: 1.5em;
-    }
-    
-    .quick-links {
-        padding: 1.5em;
-    }
-}
-
-/* Smooth scrolling */
-html {
-    scroll-behavior: smooth;
-}
-
-/* Enhanced focus states for accessibility */
-a:focus,
-button:focus,
-input:focus,
-textarea:focus {
-    outline: 2px solid #3498db;
-    outline-offset: 2px;
-}
-
-/* Loading animation for images */
-img {
-    opacity: 0;
-    animation: fadeIn 0.5s ease-in forwards;
-}
-
-@keyframes fadeIn {
-    to {
-        opacity: 1;
-    }
-}
-
-/* Enhanced code syntax highlighting */
-.highlight .hll { background-color: #ffffcc }
-.highlight .c { color: #999988; font-style: italic }
-.highlight .err { color: #a61717; background-color: #e3d2d2 }
-.highlight .k { color: #000000; font-weight: bold }
-.highlight .o { color: #000000; font-weight: bold }
-.highlight .cm { color: #999988; font-style: italic }
-.highlight .cp { color: #999999; font-weight: bold; font-style: italic }
-.highlight .c1 { color: #999988; font-style: italic }
-.highlight .cs { color: #999999; font-weight: bold; font-style: italic }
-.highlight .gd { color: #000000; background-color: #ffdddd }
-.highlight .ge { color: #000000; font-style: italic }
-.highlight .gr { color: #aa0000 }
-.highlight .gh { color: #999999 }
-.highlight .gi { color: #000000; background-color: #ddffdd }
-.highlight .go { color: #888888 }
-.highlight .gp { color: #555555 }
-.highlight .gs { font-weight: bold }
-.highlight .gu { color: #aaaaaa }
-.highlight .gt { color: #aa0000 }
-.highlight .kc { color: #000000; font-weight: bold }
-.highlight .kd { color: #000000; font-weight: bold }
-.highlight .kn { color: #000000; font-weight: bold }
-.highlight .kp { color: #000000; font-weight: bold }
-.highlight .kr { color: #000000; font-weight: bold }
-.highlight .kt { color: #445588; font-weight: bold }
-.highlight .m { color: #009999 }
-.highlight .s { color: #d01040 }
-.highlight .na { color: #008080 }
-.highlight .nb { color: #0086B3 }
-.highlight .nc { color: #445588; font-weight: bold }
-.highlight .no { color: #008080 }
-.highlight .nd { color: #3c5d5d; font-weight: bold }
-.highlight .ni { color: #800080 }
-.highlight .ne { color: #990000; font-weight: bold }
-.highlight .nf { color: #990000; font-weight: bold }
-.highlight .nl { color: #990000; font-weight: bold }
-.highlight .nn { color: #555555 }
-.highlight .nt { color: #000080 }
-.highlight .nv { color: #008080 }
-.highlight .ow { color: #000000; font-weight: bold }
-.highlight .w { color: #bbbbbb }
-.highlight .mf { color: #009999 }
-.highlight .mh { color: #009999 }
-.highlight .mi { color: #009999 }
-.highlight .mo { color: #009999 }
-.highlight .sb { color: #d01040 }
-.highlight .sc { color: #d01040 }
-.highlight .sd { color: #d01040 }
-.highlight .s2 { color: #d01040 }
-.highlight .se { color: #d01040 }
-.highlight .sh { color: #d01040 }
-.highlight .si { color: #d01040 }
-.highlight .sx { color: #d01040 }
-.highlight .sr { color: #009926 }
-.highlight .s1 { color: #d01040 }
-.highlight .ss { color: #990073 }
-.highlight .bp { color: #999999 }
-.highlight .vc { color: #008080 }
-.highlight .vg { color: #008080 }
-.highlight .vi { color: #008080 }
-.highlight .il { color: #009999 }
-
-/* Version dropdown styling */
-.rst-versions {
-    background: #f8f9fa;
-    border-top: 1px solid #dee2e6;
-}
-
-.rst-versions .rst-current-version {
-    background: #3498db;
-    color: white;
-}
-
-.rst-versions .rst-other-versions {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.rst-versions .rst-other-versions a {
-    color: #3498db;
-    padding: 0.5em 1em;
-    display: block;
-    transition: background-color 0.2s ease;
-}
-
-.rst-versions .rst-other-versions a:hover {
-    background-color: #f8f9fa;
-    color: #2980b9;
-}
-
-/* Custom version info styling */
-.version-info {
-    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-    color: white;
-    padding: 1em;
-    margin: 1em 0;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    text-align: center;
-}
-
-.version-label {
+    font-family: sans-serif;
+    font-size: 0.9em;
     font-weight: bold;
-    margin-right: 0.5em;
+    color: var(--color-sidebar-brand-text);
+    background-color: var(--color-background-secondary);
+    
+    /* Match the top corners with the code block */
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    
+    /* Add a border to separate it from the code */
+    border-bottom: 1px solid var(--color-code-border);
 }
 
-.version-number {
-    background: rgba(255,255,255,0.2);
-    padding: 0.2em 0.5em;
-    border-radius: 4px;
-    font-weight: bold;
+
+/* --- 6. Scrollbar Styling (for Webkit browsers like Chrome, Safari, Edge) --- */
+div.highlight pre::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
 
-.version-links {
-    margin-top: 0.5em;
+div.highlight pre::-webkit-scrollbar-track {
+  background: var(--color-background-secondary);
 }
 
-.version-links a {
-    color: #f8f9fa;
-    text-decoration: none;
-    padding: 0.3em 0.8em;
-    margin: 0 0.3em;
-    background: rgba(255,255,255,0.1);
-    border-radius: 4px;
-    transition: all 0.3s ease;
-    display: inline-block;
+div.highlight pre::-webkit-scrollbar-thumb {
+  background-color: var(--color-brand-primary);
+  border-radius: 10px;
+  border: 2px solid var(--color-background-secondary);
 }
 
-.version-links a:hover {
-    background: rgba(255,255,255,0.2);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-} 
+
+
+
+/* 尝试使用ID选择器，它的权重更高 */
+#search-sidebar-wrapper .sidebar-search-input {
+    border-radius: 25px !important; /* 使用 !important 提升优先级 */
+    border: 1px solid #ccc; /* 给个明显的颜色便于观察 */
+}
+
+
