@@ -133,6 +133,7 @@ from .auto.config.auto_config import AutoBenchConfig
 from .src.explainability.epistasis.explainer import EpistasisExplainer
 from .src.explainability.sequence_logo.explainer import SequenceLogoExplainer
 from .src.explainability.visualization_2d.explainer import Visualization2DExplainer
+from .src.explainability.attention.explainer import AttentionExplainer
 
 OmniGenomeTokenizer = OmniTokenizer
 OmniGenomeKmersTokenizer = OmniKmersTokenizer
@@ -260,6 +261,7 @@ __all__ = [
     "EpistasisExplainer",
     "SequenceLogoExplainer",
     "Visualization2DExplainer",
+    "AttentionExplainer",
 ]
 
 
