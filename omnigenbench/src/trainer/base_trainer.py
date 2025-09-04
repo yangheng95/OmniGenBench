@@ -249,7 +249,6 @@ class BaseTrainer(ABC):
         self.trial_name = kwargs.get("trial_name", self.model.__class__.__name__)
 
         if not hasattr(self, "_model_state_dict_path"):
-
             # Create temporary directory if it doesn't exist
             temp_dir = tempfile.gettempdir()
             os.makedirs(temp_dir, exist_ok=True)

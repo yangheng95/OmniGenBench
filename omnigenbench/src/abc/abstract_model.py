@@ -463,7 +463,6 @@ class OmniModel(torch.nn.Module):
         inputs = inputs.pop("inputs", inputs)
         inputs["labels"] = labels
         if isinstance(inputs, dict):
-
             labels = inputs.get("labels", None)
             label = inputs.get("label", None)
             labels = labels if labels is not None else label

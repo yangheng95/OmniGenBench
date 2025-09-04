@@ -203,7 +203,6 @@ class AutoTrain:
 
         random_seeds = train_config["seeds"]
         for seed in random_seeds:
-
             batch_size = (
                 train_config["batch_size"] if "batch_size" in train_config else 8
             )

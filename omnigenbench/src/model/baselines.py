@@ -121,7 +121,8 @@ class OmniCNNBaseline(OmniModel):
         dropout = kwargs.pop("dropout", 0.1)
         num_labels = kwargs.pop("num_labels")
 
-        class Cfg: ...
+        class Cfg:
+            ...
 
         cfg = Cfg()
         cfg.hidden_size = num_filters * len(kernel_sizes)
@@ -197,7 +198,9 @@ class OmniCNNBaseline(OmniModel):
 
     def save_pretrained(self, save_directory: str, overwrite: bool = True):
         os.makedirs(save_directory, exist_ok=True)
-        with open(os.path.join(save_directory, "config.json"), "w", encoding="utf8") as f:
+        with open(
+            os.path.join(save_directory, "config.json"), "w", encoding="utf8"
+        ) as f:
             json.dump(self._build_config_dict(), f, ensure_ascii=False, indent=2)
         if hasattr(self.tokenizer, "save_pretrained"):
             self.tokenizer.save_pretrained(save_directory)
@@ -208,21 +211,32 @@ class OmniCNNBaseline(OmniModel):
         metadata = getattr(self, "metadata", {})
         metadata["model_cls"] = self.__class__.__name__
         metadata["library_name"] = metadata.get("library_name", "OMNIGENBENCH")
-        with open(os.path.join(save_directory, "metadata.json"), "w", encoding="utf8") as f:
+        with open(
+            os.path.join(save_directory, "metadata.json"), "w", encoding="utf8"
+        ) as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
 
     @classmethod
-    def from_pretrained(cls, save_directory: str, tokenizer=None, map_location=None, **kwargs):
-        with open(os.path.join(save_directory, "config.json"), "r", encoding="utf8") as f:
+    def from_pretrained(
+        cls, save_directory: str, tokenizer=None, map_location=None, **kwargs
+    ):
+        with open(
+            os.path.join(save_directory, "config.json"), "r", encoding="utf8"
+        ) as f:
             cfg_dict = json.load(f)
         if tokenizer is None:
-            if os.path.exists(os.path.join(save_directory, "tokenizer_config.json")) or os.path.exists(os.path.join(save_directory, "vocab.json")):
+            if os.path.exists(
+                os.path.join(save_directory, "tokenizer_config.json")
+            ) or os.path.exists(os.path.join(save_directory, "vocab.json")):
                 try:
                     from transformers import AutoTokenizer
+
                     tokenizer = AutoTokenizer.from_pretrained(save_directory)
                 except Exception:
                     tokenizer = None
-            if tokenizer is None and os.path.exists(os.path.join(save_directory, "tokenizer.bin")):
+            if tokenizer is None and os.path.exists(
+                os.path.join(save_directory, "tokenizer.bin")
+            ):
                 with open(os.path.join(save_directory, "tokenizer.bin"), "rb") as f:
                     tokenizer = torch.load(f, map_location=map_location)
             if tokenizer is None:
@@ -237,7 +251,10 @@ class OmniCNNBaseline(OmniModel):
             label2id=cfg_dict.get("label2id"),
             **kwargs,
         )
-        state_dict = torch.load(os.path.join(save_directory, "pytorch_model.bin"), map_location=map_location or "cpu")
+        state_dict = torch.load(
+            os.path.join(save_directory, "pytorch_model.bin"),
+            map_location=map_location or "cpu",
+        )
         model.load_state_dict(state_dict, strict=False)
         meta_path = os.path.join(save_directory, "metadata.json")
         if os.path.exists(meta_path):
@@ -377,7 +394,8 @@ class OmniRNNBaseline(OmniModel):
         dropout = kwargs.pop("dropout", 0.1)
         num_labels = kwargs.pop("num_labels")
 
-        class Cfg: ...
+        class Cfg:
+            ...
 
         cfg = Cfg()
         cfg.hidden_size = hidden_dim * (2 if bidirectional else 1)
@@ -456,7 +474,9 @@ class OmniRNNBaseline(OmniModel):
 
     def save_pretrained(self, save_directory: str, overwrite: bool = True):
         os.makedirs(save_directory, exist_ok=True)
-        with open(os.path.join(save_directory, "config.json"), "w", encoding="utf8") as f:
+        with open(
+            os.path.join(save_directory, "config.json"), "w", encoding="utf8"
+        ) as f:
             json.dump(self._build_config_dict(), f, ensure_ascii=False, indent=2)
         if hasattr(self.tokenizer, "save_pretrained"):
             self.tokenizer.save_pretrained(save_directory)
@@ -467,21 +487,32 @@ class OmniRNNBaseline(OmniModel):
         metadata = getattr(self, "metadata", {})
         metadata["model_cls"] = self.__class__.__name__
         metadata["library_name"] = metadata.get("library_name", "OMNIGENBENCH")
-        with open(os.path.join(save_directory, "metadata.json"), "w", encoding="utf8") as f:
+        with open(
+            os.path.join(save_directory, "metadata.json"), "w", encoding="utf8"
+        ) as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
 
     @classmethod
-    def from_pretrained(cls, save_directory: str, tokenizer=None, map_location=None, **kwargs):
-        with open(os.path.join(save_directory, "config.json"), "r", encoding="utf8") as f:
+    def from_pretrained(
+        cls, save_directory: str, tokenizer=None, map_location=None, **kwargs
+    ):
+        with open(
+            os.path.join(save_directory, "config.json"), "r", encoding="utf8"
+        ) as f:
             cfg_dict = json.load(f)
         if tokenizer is None:
-            if os.path.exists(os.path.join(save_directory, "tokenizer_config.json")) or os.path.exists(os.path.join(save_directory, "vocab.json")):
+            if os.path.exists(
+                os.path.join(save_directory, "tokenizer_config.json")
+            ) or os.path.exists(os.path.join(save_directory, "vocab.json")):
                 try:
                     from transformers import AutoTokenizer
+
                     tokenizer = AutoTokenizer.from_pretrained(save_directory)
                 except Exception:
                     tokenizer = None
-            if tokenizer is None and os.path.exists(os.path.join(save_directory, "tokenizer.bin")):
+            if tokenizer is None and os.path.exists(
+                os.path.join(save_directory, "tokenizer.bin")
+            ):
                 with open(os.path.join(save_directory, "tokenizer.bin"), "rb") as f:
                     tokenizer = torch.load(f, map_location=map_location)
             if tokenizer is None:
@@ -497,7 +528,10 @@ class OmniRNNBaseline(OmniModel):
             label2id=cfg_dict.get("label2id"),
             **kwargs,
         )
-        state_dict = torch.load(os.path.join(save_directory, "pytorch_model.bin"), map_location=map_location or "cpu")
+        state_dict = torch.load(
+            os.path.join(save_directory, "pytorch_model.bin"),
+            map_location=map_location or "cpu",
+        )
         model.load_state_dict(state_dict, strict=False)
         meta_path = os.path.join(save_directory, "metadata.json")
         if os.path.exists(meta_path):
@@ -601,7 +635,8 @@ class OmniBPNetBaseline(OmniModel):
         dil_kernel_size = kwargs.pop("dil_kernel_size", 3)
         dropout = kwargs.pop("dropout", 0.1)
 
-        class Cfg: ...
+        class Cfg:
+            ...
 
         cfg = Cfg()
         cfg.hidden_size = n_filters
@@ -651,7 +686,11 @@ class OmniBPNetBaseline(OmniModel):
         self.dilated_convs = nn.ModuleList(
             [
                 nn.Conv1d(
-                    n_filters, n_filters, dil_kernel_size, padding="same", dilation=2**i
+                    n_filters,
+                    n_filters,
+                    dil_kernel_size,
+                    padding="same",
+                    dilation=2**i,
                 )
                 for i in range(n_dilated_layers)
             ]
@@ -709,7 +748,9 @@ class OmniBPNetBaseline(OmniModel):
 
     def save_pretrained(self, save_directory: str, overwrite: bool = True):
         os.makedirs(save_directory, exist_ok=True)
-        with open(os.path.join(save_directory, "config.json"), "w", encoding="utf8") as f:
+        with open(
+            os.path.join(save_directory, "config.json"), "w", encoding="utf8"
+        ) as f:
             json.dump(self._build_config_dict(), f, ensure_ascii=False, indent=2)
         if hasattr(self.tokenizer, "save_pretrained"):
             self.tokenizer.save_pretrained(save_directory)
@@ -720,21 +761,32 @@ class OmniBPNetBaseline(OmniModel):
         metadata = getattr(self, "metadata", {})
         metadata["model_cls"] = self.__class__.__name__
         metadata["library_name"] = metadata.get("library_name", "OMNIGENBENCH")
-        with open(os.path.join(save_directory, "metadata.json"), "w", encoding="utf8") as f:
+        with open(
+            os.path.join(save_directory, "metadata.json"), "w", encoding="utf8"
+        ) as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
 
     @classmethod
-    def from_pretrained(cls, save_directory: str, tokenizer=None, map_location=None, **kwargs):
-        with open(os.path.join(save_directory, "config.json"), "r", encoding="utf8") as f:
+    def from_pretrained(
+        cls, save_directory: str, tokenizer=None, map_location=None, **kwargs
+    ):
+        with open(
+            os.path.join(save_directory, "config.json"), "r", encoding="utf8"
+        ) as f:
             cfg_dict = json.load(f)
         if tokenizer is None:
-            if os.path.exists(os.path.join(save_directory, "tokenizer_config.json")) or os.path.exists(os.path.join(save_directory, "vocab.json")):
+            if os.path.exists(
+                os.path.join(save_directory, "tokenizer_config.json")
+            ) or os.path.exists(os.path.join(save_directory, "vocab.json")):
                 try:
                     from transformers import AutoTokenizer
+
                     tokenizer = AutoTokenizer.from_pretrained(save_directory)
                 except Exception:
                     tokenizer = None
-            if tokenizer is None and os.path.exists(os.path.join(save_directory, "tokenizer.bin")):
+            if tokenizer is None and os.path.exists(
+                os.path.join(save_directory, "tokenizer.bin")
+            ):
                 with open(os.path.join(save_directory, "tokenizer.bin"), "rb") as f:
                     tokenizer = torch.load(f, map_location=map_location)
             if tokenizer is None:
@@ -750,7 +802,10 @@ class OmniBPNetBaseline(OmniModel):
             label2id=cfg_dict.get("label2id"),
             **kwargs,
         )
-        state_dict = torch.load(os.path.join(save_directory, "pytorch_model.bin"), map_location=map_location or "cpu")
+        state_dict = torch.load(
+            os.path.join(save_directory, "pytorch_model.bin"),
+            map_location=map_location or "cpu",
+        )
         model.load_state_dict(state_dict, strict=False)
         meta_path = os.path.join(save_directory, "metadata.json")
         if os.path.exists(meta_path):
@@ -831,7 +886,8 @@ class OmniBasenjiBaseline(OmniModel):
         convdc = kwargs.pop("convdc", 6)
         dropout = kwargs.pop("dropout", 0.1)
 
-        class Cfg: ...
+        class Cfg:
+            ...
 
         cfg = Cfg()
         cfg.hidden_size = 64
@@ -870,7 +926,11 @@ class OmniBasenjiBaseline(OmniModel):
             for tok in toks:
                 try:
                     tid = self.tokenizer.convert_tokens_to_ids(tok)
-                    if tid is not None and isinstance(tid, int) and 0 <= tid < weight.size(0):
+                    if (
+                        tid is not None
+                        and isinstance(tid, int)
+                        and 0 <= tid < weight.size(0)
+                    ):
                         weight[tid, i] = 1.0
                 except Exception:
                     pass
@@ -879,7 +939,9 @@ class OmniBasenjiBaseline(OmniModel):
         self.act = nn.GELU()
         self.conv_block_1 = nn.Sequential(
             self.act,
-            nn.Conv1d(4, conv1kc, kernel_size=conv1ks, padding=conv1ks // 2, bias=False),
+            nn.Conv1d(
+                4, conv1kc, kernel_size=conv1ks, padding=conv1ks // 2, bias=False
+            ),
             nn.BatchNorm1d(conv1kc, momentum=0.9, affine=True),
             nn.MaxPool1d(kernel_size=pool1ks, ceil_mode=True),
             nn.Dropout(p=0.2),
@@ -911,8 +973,8 @@ class OmniBasenjiBaseline(OmniModel):
                         conv3kc,
                         32,
                         kernel_size=3,
-                        padding=2 ** i,
-                        dilation=2 ** i,
+                        padding=2**i,
+                        dilation=2**i,
                         bias=False,
                     ),
                     nn.BatchNorm1d(32, momentum=0.9, affine=True),
@@ -980,7 +1042,9 @@ class OmniBasenjiBaseline(OmniModel):
 
     def save_pretrained(self, save_directory: str, overwrite: bool = True):
         os.makedirs(save_directory, exist_ok=True)
-        with open(os.path.join(save_directory, "config.json"), "w", encoding="utf8") as f:
+        with open(
+            os.path.join(save_directory, "config.json"), "w", encoding="utf8"
+        ) as f:
             json.dump(self._build_config_dict(), f, ensure_ascii=False, indent=2)
         if hasattr(self.tokenizer, "save_pretrained"):
             self.tokenizer.save_pretrained(save_directory)
@@ -991,21 +1055,32 @@ class OmniBasenjiBaseline(OmniModel):
         metadata = getattr(self, "metadata", {})
         metadata["model_cls"] = self.__class__.__name__
         metadata["library_name"] = metadata.get("library_name", "OMNIGENBENCH")
-        with open(os.path.join(save_directory, "metadata.json"), "w", encoding="utf8") as f:
+        with open(
+            os.path.join(save_directory, "metadata.json"), "w", encoding="utf8"
+        ) as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
 
     @classmethod
-    def from_pretrained(cls, save_directory: str, tokenizer=None, map_location=None, **kwargs):
-        with open(os.path.join(save_directory, "config.json"), "r", encoding="utf8") as f:
+    def from_pretrained(
+        cls, save_directory: str, tokenizer=None, map_location=None, **kwargs
+    ):
+        with open(
+            os.path.join(save_directory, "config.json"), "r", encoding="utf8"
+        ) as f:
             cfg_dict = json.load(f)
         if tokenizer is None:
-            if os.path.exists(os.path.join(save_directory, "tokenizer_config.json")) or os.path.exists(os.path.join(save_directory, "vocab.json")):
+            if os.path.exists(
+                os.path.join(save_directory, "tokenizer_config.json")
+            ) or os.path.exists(os.path.join(save_directory, "vocab.json")):
                 try:
                     from transformers import AutoTokenizer
+
                     tokenizer = AutoTokenizer.from_pretrained(save_directory)
                 except Exception:
                     tokenizer = None
-            if tokenizer is None and os.path.exists(os.path.join(save_directory, "tokenizer.bin")):
+            if tokenizer is None and os.path.exists(
+                os.path.join(save_directory, "tokenizer.bin")
+            ):
                 with open(os.path.join(save_directory, "tokenizer.bin"), "rb") as f:
                     tokenizer = torch.load(f, map_location=map_location)
             if tokenizer is None:
@@ -1021,7 +1096,10 @@ class OmniBasenjiBaseline(OmniModel):
             label2id=cfg_dict.get("label2id"),
             **kwargs,
         )
-        state_dict = torch.load(os.path.join(save_directory, "pytorch_model.bin"), map_location=map_location or "cpu")
+        state_dict = torch.load(
+            os.path.join(save_directory, "pytorch_model.bin"),
+            map_location=map_location or "cpu",
+        )
         model.load_state_dict(state_dict, strict=False)
         meta_path = os.path.join(save_directory, "metadata.json")
         if os.path.exists(meta_path):
@@ -1098,7 +1176,8 @@ class OmniDeepSTARRBaseline(OmniModel):
         dense_neurons1 = kwargs.pop("dense_neurons1", 256)
         dense_neurons2 = kwargs.pop("dense_neurons2", 256)
 
-        class Cfg: ...
+        class Cfg:
+            ...
 
         cfg = Cfg()
         cfg.hidden_size = num_filters4
@@ -1135,7 +1214,11 @@ class OmniDeepSTARRBaseline(OmniModel):
             for tok in toks:
                 try:
                     tid = self.tokenizer.convert_tokens_to_ids(tok)
-                    if tid is not None and isinstance(tid, int) and 0 <= tid < weight.size(0):
+                    if (
+                        tid is not None
+                        and isinstance(tid, int)
+                        and 0 <= tid < weight.size(0)
+                    ):
                         weight[tid, i] = 1.0
                 except Exception:
                     pass
@@ -1213,7 +1296,9 @@ class OmniDeepSTARRBaseline(OmniModel):
 
     def save_pretrained(self, save_directory: str, overwrite: bool = True):
         os.makedirs(save_directory, exist_ok=True)
-        with open(os.path.join(save_directory, "config.json"), "w", encoding="utf8") as f:
+        with open(
+            os.path.join(save_directory, "config.json"), "w", encoding="utf8"
+        ) as f:
             json.dump(self._build_config_dict(), f, ensure_ascii=False, indent=2)
         if hasattr(self.tokenizer, "save_pretrained"):
             self.tokenizer.save_pretrained(save_directory)
@@ -1224,21 +1309,32 @@ class OmniDeepSTARRBaseline(OmniModel):
         metadata = getattr(self, "metadata", {})
         metadata["model_cls"] = self.__class__.__name__
         metadata["library_name"] = metadata.get("library_name", "OMNIGENBENCH")
-        with open(os.path.join(save_directory, "metadata.json"), "w", encoding="utf8") as f:
+        with open(
+            os.path.join(save_directory, "metadata.json"), "w", encoding="utf8"
+        ) as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
 
     @classmethod
-    def from_pretrained(cls, save_directory: str, tokenizer=None, map_location=None, **kwargs):
-        with open(os.path.join(save_directory, "config.json"), "r", encoding="utf8") as f:
+    def from_pretrained(
+        cls, save_directory: str, tokenizer=None, map_location=None, **kwargs
+    ):
+        with open(
+            os.path.join(save_directory, "config.json"), "r", encoding="utf8"
+        ) as f:
             cfg_dict = json.load(f)
         if tokenizer is None:
-            if os.path.exists(os.path.join(save_directory, "tokenizer_config.json")) or os.path.exists(os.path.join(save_directory, "vocab.json")):
+            if os.path.exists(
+                os.path.join(save_directory, "tokenizer_config.json")
+            ) or os.path.exists(os.path.join(save_directory, "vocab.json")):
                 try:
                     from transformers import AutoTokenizer
+
                     tokenizer = AutoTokenizer.from_pretrained(save_directory)
                 except Exception:
                     tokenizer = None
-            if tokenizer is None and os.path.exists(os.path.join(save_directory, "tokenizer.bin")):
+            if tokenizer is None and os.path.exists(
+                os.path.join(save_directory, "tokenizer.bin")
+            ):
                 with open(os.path.join(save_directory, "tokenizer.bin"), "rb") as f:
                     tokenizer = torch.load(f, map_location=map_location)
             if tokenizer is None:
@@ -1254,7 +1350,10 @@ class OmniDeepSTARRBaseline(OmniModel):
             label2id=cfg_dict.get("label2id"),
             **kwargs,
         )
-        state_dict = torch.load(os.path.join(save_directory, "pytorch_model.bin"), map_location=map_location or "cpu")
+        state_dict = torch.load(
+            os.path.join(save_directory, "pytorch_model.bin"),
+            map_location=map_location or "cpu",
+        )
         model.load_state_dict(state_dict, strict=False)
         meta_path = os.path.join(save_directory, "metadata.json")
         if os.path.exists(meta_path):
@@ -1602,21 +1701,27 @@ class BasenjiBackbone(BackboneBase):
 
         self.conv_block_1 = nn.Sequential(
             self.act,
-            nn.Conv1d(4, conv1kc, kernel_size=conv1ks, padding=conv1ks // 2, bias=False),
+            nn.Conv1d(
+                4, conv1kc, kernel_size=conv1ks, padding=conv1ks // 2, bias=False
+            ),
             nn.BatchNorm1d(conv1kc, momentum=0.9, affine=True),
             nn.MaxPool1d(kernel_size=pool1ks, ceil_mode=True),
             nn.Dropout(p=0.2),
         )
         self.conv_block_2 = nn.Sequential(
             self.act,
-            nn.Conv1d(conv1kc, conv2kc, kernel_size=conv2ks, padding=conv2ks // 2, bias=False),
+            nn.Conv1d(
+                conv1kc, conv2kc, kernel_size=conv2ks, padding=conv2ks // 2, bias=False
+            ),
             nn.BatchNorm1d(conv2kc, momentum=0.9, affine=True),
             nn.MaxPool1d(kernel_size=pool2ks, ceil_mode=True),
             nn.Dropout(p=0.2),
         )
         self.conv_block_3 = nn.Sequential(
             self.act,
-            nn.Conv1d(conv2kc, conv3kc, kernel_size=conv3ks, padding=conv3ks // 2, bias=False),
+            nn.Conv1d(
+                conv2kc, conv3kc, kernel_size=conv3ks, padding=conv3ks // 2, bias=False
+            ),
             nn.BatchNorm1d(conv3kc, momentum=0.9, affine=True),
             nn.MaxPool1d(kernel_size=pool3ks, ceil_mode=True),
             nn.Dropout(p=0.2),
@@ -1625,7 +1730,14 @@ class BasenjiBackbone(BackboneBase):
             [
                 nn.Sequential(
                     self.act,
-                    nn.Conv1d(conv3kc, 32, kernel_size=3, padding=2 ** i, dilation=2 ** i, bias=False),
+                    nn.Conv1d(
+                        conv3kc,
+                        32,
+                        kernel_size=3,
+                        padding=2**i,
+                        dilation=2**i,
+                        bias=False,
+                    ),
                     nn.BatchNorm1d(32, momentum=0.9, affine=True),
                     self.act,
                     nn.Conv1d(32, 72, kernel_size=1, padding=0, bias=False),
@@ -1758,6 +1870,7 @@ class RegressionHead(HeadBase):
         )
         return {"logits": logits, "loss": loss}
 
+
 class TokenClassificationHead(HeadBase):
     """Per-token classification head over ``sequence_output`` using CrossEntropy."""
 
@@ -1780,6 +1893,7 @@ class TokenClassificationHead(HeadBase):
     def postprocess(self, logits):
         """Return probabilities via softmax."""
         return torch.argmax(torch.softmax(logits, dim=-1), dim=-1)
+
 
 class TokenRegressionHead(HeadBase):
     """Per-token regression head over ``sequence_output`` using MSELoss."""
@@ -1853,7 +1967,8 @@ class OmniGenericBaseline(OmniModel):
         label2id = kwargs.pop("label2id", {str(i): i for i in range(num_labels)})
         pad_token_id = int(getattr(tokenizer, "pad_token_id", -100) or -100)
 
-        class Cfg: ...
+        class Cfg:
+            ...
 
         cfg = Cfg()
         cfg.hidden_size = kwargs.get("hidden_size", 128)
@@ -1985,7 +2100,9 @@ class OmniGenericBaseline(OmniModel):
         - ``metadata.json``: Lightweight metadata (class and library).
         """
         os.makedirs(save_directory, exist_ok=True)
-        with open(os.path.join(save_directory, "config.json"), "w", encoding="utf8") as f:
+        with open(
+            os.path.join(save_directory, "config.json"), "w", encoding="utf8"
+        ) as f:
             json.dump(self._build_config_dict(), f, ensure_ascii=False, indent=2)
         if hasattr(self.tokenizer, "save_pretrained"):
             self.tokenizer.save_pretrained(save_directory)
@@ -1996,7 +2113,9 @@ class OmniGenericBaseline(OmniModel):
         metadata = getattr(self, "metadata", {})
         metadata["model_cls"] = self.__class__.__name__
         metadata["library_name"] = metadata.get("library_name", "OMNIGENBENCH")
-        with open(os.path.join(save_directory, "metadata.json"), "w", encoding="utf8") as f:
+        with open(
+            os.path.join(save_directory, "metadata.json"), "w", encoding="utf8"
+        ) as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
 
     @classmethod
@@ -2502,7 +2621,11 @@ class OmniBPNetBaseModel(nn.Module):
         self.dilated_convs = nn.ModuleList(
             [
                 nn.Conv1d(
-                    n_filters, n_filters, dil_kernel_size, padding="same", dilation=2**i
+                    n_filters,
+                    n_filters,
+                    dil_kernel_size,
+                    padding="same",
+                    dilation=2**i,
                 )
                 for i in range(n_dilated_layers)
             ]
@@ -2570,7 +2693,9 @@ class OmniBPNetBaseModel(nn.Module):
 
     def save_pretrained(self, save_directory: str, overwrite: bool = True):
         os.makedirs(save_directory, exist_ok=True)
-        with open(os.path.join(save_directory, "config.json"), "w", encoding="utf8") as f:
+        with open(
+            os.path.join(save_directory, "config.json"), "w", encoding="utf8"
+        ) as f:
             json.dump(self._build_config_dict(), f, ensure_ascii=False, indent=2)
         if hasattr(self.tokenizer, "save_pretrained"):
             self.tokenizer.save_pretrained(save_directory)
@@ -2581,21 +2706,32 @@ class OmniBPNetBaseModel(nn.Module):
         metadata = getattr(self, "metadata", {})
         metadata["model_cls"] = self.__class__.__name__
         metadata["library_name"] = metadata.get("library_name", "OMNIGENBENCH")
-        with open(os.path.join(save_directory, "metadata.json"), "w", encoding="utf8") as f:
+        with open(
+            os.path.join(save_directory, "metadata.json"), "w", encoding="utf8"
+        ) as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
 
     @classmethod
-    def from_pretrained(cls, save_directory: str, tokenizer=None, map_location=None, **kwargs):
-        with open(os.path.join(save_directory, "config.json"), "r", encoding="utf8") as f:
+    def from_pretrained(
+        cls, save_directory: str, tokenizer=None, map_location=None, **kwargs
+    ):
+        with open(
+            os.path.join(save_directory, "config.json"), "r", encoding="utf8"
+        ) as f:
             cfg_dict = json.load(f)
         if tokenizer is None:
-            if os.path.exists(os.path.join(save_directory, "tokenizer_config.json")) or os.path.exists(os.path.join(save_directory, "vocab.json")):
+            if os.path.exists(
+                os.path.join(save_directory, "tokenizer_config.json")
+            ) or os.path.exists(os.path.join(save_directory, "vocab.json")):
                 try:
                     from transformers import AutoTokenizer
+
                     tokenizer = AutoTokenizer.from_pretrained(save_directory)
                 except Exception:
                     tokenizer = None
-            if tokenizer is None and os.path.exists(os.path.join(save_directory, "tokenizer.bin")):
+            if tokenizer is None and os.path.exists(
+                os.path.join(save_directory, "tokenizer.bin")
+            ):
                 with open(os.path.join(save_directory, "tokenizer.bin"), "rb") as f:
                     tokenizer = torch.load(f, map_location=map_location)
             if tokenizer is None:
@@ -2611,7 +2747,10 @@ class OmniBPNetBaseModel(nn.Module):
             label2id=cfg_dict.get("label2id"),
             **kwargs,
         )
-        state_dict = torch.load(os.path.join(save_directory, "pytorch_model.bin"), map_location=map_location or "cpu")
+        state_dict = torch.load(
+            os.path.join(save_directory, "pytorch_model.bin"),
+            map_location=map_location or "cpu",
+        )
         model.load_state_dict(state_dict, strict=False)
         meta_path = os.path.join(save_directory, "metadata.json")
         if os.path.exists(meta_path):

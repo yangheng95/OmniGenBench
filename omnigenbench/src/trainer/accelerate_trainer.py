@@ -480,7 +480,9 @@ class AccelerateTrainer(BaseTrainer):
 
     def _load_state_dict(self) -> None:
         """Load the best model state dictionary."""
-        if (hasattr(self, "_model_state_dict_path") and os.path.exists(self._model_state_dict_path)):
+        if hasattr(self, "_model_state_dict_path") and os.path.exists(
+            self._model_state_dict_path
+        ):
             if self.accelerator.is_main_process:
                 weights = torch.load(self._model_state_dict_path, map_location="cpu")
                 self.accelerator.unwrap_model(self.model).load_state_dict(weights)
@@ -505,4 +507,3 @@ class AccelerateTrainer(BaseTrainer):
             and self.accelerator.is_main_process
         ):
             os.remove(self._model_state_dict_path)
-

@@ -448,11 +448,17 @@ class OmniModelForEmbedding(torch.nn.Module):
 
         with ctx:
             outputs = self.model(**inputs, output_attentions=True)
-            attentions = outputs.attentions  # Tuple of (batch_size, num_heads, seq_len, seq_len)
+            attentions = (
+                outputs.attentions
+            )  # Tuple of (batch_size, num_heads, seq_len, seq_len)
 
         # Convert tuple to tensor and stack all layers
-        attentions_tensor = torch.stack(attentions, dim=1)  # (batch_size, num_layers, num_heads, seq_len, seq_len)
-        attentions_tensor = attentions_tensor.squeeze(0)  # Remove batch dimension: (num_layers, num_heads, seq_len, seq_len)
+        attentions_tensor = torch.stack(
+            attentions, dim=1
+        )  # (batch_size, num_layers, num_heads, seq_len, seq_len)
+        attentions_tensor = attentions_tensor.squeeze(
+            0
+        )  # Remove batch dimension: (num_layers, num_heads, seq_len, seq_len)
 
         # Filter specific layers if requested
         if layer_indices is not None:
@@ -466,12 +472,14 @@ class OmniModelForEmbedding(torch.nn.Module):
             attentions_tensor = attentions_tensor.cpu()
 
         # Get tokens for interpretation
-        tokens = self.tokenizer.convert_ids_to_tokens(inputs['input_ids'].squeeze(0))
+        tokens = self.tokenizer.convert_ids_to_tokens(inputs["input_ids"].squeeze(0))
 
         result = {
-            'attentions': attentions_tensor,
-            'tokens': tokens,
-            'attention_mask': inputs['attention_mask'].cpu() if return_on_cpu else inputs['attention_mask']
+            "attentions": attentions_tensor,
+            "tokens": tokens,
+            "attention_mask": inputs["attention_mask"].cpu()
+            if return_on_cpu
+            else inputs["attention_mask"],
         }
 
         return result
@@ -544,15 +552,23 @@ class OmniModelForEmbedding(torch.nn.Module):
 
             with ctx:
                 outputs = self.model(**inputs, output_attentions=True)
-                attentions = outputs.attentions  # Tuple of (batch_size, num_heads, seq_len, seq_len)
+                attentions = (
+                    outputs.attentions
+                )  # Tuple of (batch_size, num_heads, seq_len, seq_len)
 
             # Convert tuple to tensor and stack all layers
-            attentions_tensor = torch.stack(attentions, dim=2)  # (batch_size, num_heads, num_layers, seq_len, seq_len)
-            attentions_tensor = attentions_tensor.permute(0, 2, 1, 3, 4)  # (batch_size, num_layers, num_heads, seq_len, seq_len)
+            attentions_tensor = torch.stack(
+                attentions, dim=2
+            )  # (batch_size, num_heads, num_layers, seq_len, seq_len)
+            attentions_tensor = attentions_tensor.permute(
+                0, 2, 1, 3, 4
+            )  # (batch_size, num_layers, num_heads, seq_len, seq_len)
 
             # Process each sequence in the batch
             for batch_idx in range(attentions_tensor.size(0)):
-                seq_attentions = attentions_tensor[batch_idx]  # (num_layers, num_heads, seq_len, seq_len)
+                seq_attentions = attentions_tensor[
+                    batch_idx
+                ]  # (num_layers, num_heads, seq_len, seq_len)
 
                 # Filter specific layers if requested
                 if layer_indices is not None:
@@ -566,16 +582,18 @@ class OmniModelForEmbedding(torch.nn.Module):
                     seq_attentions = seq_attentions.cpu()
 
                 # Get tokens for interpretation
-                tokens = self.tokenizer.convert_ids_to_tokens(inputs['input_ids'][batch_idx])
+                tokens = self.tokenizer.convert_ids_to_tokens(
+                    inputs["input_ids"][batch_idx]
+                )
 
                 result = {
-                    'attentions': seq_attentions,
-                    'tokens': tokens,
-                    'attention_mask': (
-                        inputs['attention_mask'][batch_idx].cpu()
+                    "attentions": seq_attentions,
+                    "tokens": tokens,
+                    "attention_mask": (
+                        inputs["attention_mask"][batch_idx].cpu()
                         if return_on_cpu
-                        else inputs['attention_mask'][batch_idx]
-                    )
+                        else inputs["attention_mask"][batch_idx]
+                    ),
                 }
                 all_results.append(result)
 
@@ -586,7 +604,7 @@ class OmniModelForEmbedding(torch.nn.Module):
         attention_scores,
         attention_mask=None,
         layer_aggregation="mean",
-        head_aggregation="mean"
+        head_aggregation="mean",
     ):
         """Compute comprehensive statistics from attention scores.
 
@@ -621,7 +639,9 @@ class OmniModelForEmbedding(torch.nn.Module):
         if attention_mask is not None:
             # Create a mask for valid positions (excluding padding)
             mask = attention_mask.unsqueeze(0).unsqueeze(0)  # (1, 1, seq_len)
-            mask = mask * attention_mask.unsqueeze(0).unsqueeze(-1)  # (1, 1, seq_len, seq_len)
+            mask = mask * attention_mask.unsqueeze(0).unsqueeze(
+                -1
+            )  # (1, 1, seq_len, seq_len)
 
             # Apply mask to attention scores
             attention_scores = attention_scores * mask
@@ -652,11 +672,17 @@ class OmniModelForEmbedding(torch.nn.Module):
 
         # Compute various statistics
         statistics = {
-            'attention_matrix': layer_aggregated,
-            'attention_entropy': -torch.sum(layer_aggregated * torch.log(layer_aggregated + 1e-9), dim=-1),
-            'max_attention_per_position': layer_aggregated.max(dim=-1)[0],
-            'attention_concentration': (layer_aggregated ** 2).sum(dim=-1),  # How concentrated attention is
-            'self_attention_scores': torch.diag(layer_aggregated),  # Diagonal values (self-attention)
+            "attention_matrix": layer_aggregated,
+            "attention_entropy": -torch.sum(
+                layer_aggregated * torch.log(layer_aggregated + 1e-9), dim=-1
+            ),
+            "max_attention_per_position": layer_aggregated.max(dim=-1)[0],
+            "attention_concentration": (layer_aggregated**2).sum(
+                dim=-1
+            ),  # How concentrated attention is
+            "self_attention_scores": torch.diag(
+                layer_aggregated
+            ),  # Diagonal values (self-attention)
         }
 
         return statistics
@@ -667,7 +693,7 @@ class OmniModelForEmbedding(torch.nn.Module):
         layer_idx=0,
         head_idx=0,
         save_path=None,
-        figsize=(12, 10)
+        figsize=(12, 10),
     ):
         """Visualize attention patterns as an interactive heatmap.
 
@@ -703,12 +729,14 @@ class OmniModelForEmbedding(torch.nn.Module):
             import matplotlib.pyplot as plt
             import numpy as np
         except ImportError:
-            fprint("matplotlib is required for visualization. Install with: pip install matplotlib")
+            fprint(
+                "matplotlib is required for visualization. Install with: pip install matplotlib"
+            )
             return None
 
-        attention_matrix = attention_result['attentions'][layer_idx, head_idx].numpy()
-        tokens = attention_result['tokens']
-        attention_mask = attention_result['attention_mask'].numpy()
+        attention_matrix = attention_result["attentions"][layer_idx, head_idx].numpy()
+        tokens = attention_result["tokens"]
+        attention_mask = attention_result["attention_mask"].numpy()
 
         # Find the actual sequence length (excluding padding)
         seq_len = int(attention_mask.sum())
@@ -718,26 +746,26 @@ class OmniModelForEmbedding(torch.nn.Module):
         tokens = tokens[:seq_len]
 
         fig, ax = plt.subplots(figsize=figsize)
-        im = ax.imshow(attention_matrix, cmap='Blues', aspect='auto')
+        im = ax.imshow(attention_matrix, cmap="Blues", aspect="auto")
 
         # Set ticks and labels
         ax.set_xticks(range(len(tokens)))
         ax.set_yticks(range(len(tokens)))
-        ax.set_xticklabels(tokens, rotation=45, ha='right')
+        ax.set_xticklabels(tokens, rotation=45, ha="right")
         ax.set_yticklabels(tokens)
 
         # Add colorbar
-        plt.colorbar(im, ax=ax, label='Attention Weight')
+        plt.colorbar(im, ax=ax, label="Attention Weight")
 
         # Set title and labels
-        ax.set_title(f'Attention Pattern - Layer {layer_idx}, Head {head_idx}')
-        ax.set_xlabel('Key Positions')
-        ax.set_ylabel('Query Positions')
+        ax.set_title(f"Attention Pattern - Layer {layer_idx}, Head {head_idx}")
+        ax.set_xlabel("Key Positions")
+        ax.set_ylabel("Query Positions")
 
         plt.tight_layout()
 
         if save_path:
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            plt.savefig(save_path, dpi=300, bbox_inches="tight")
             fprint(f"Attention visualization saved to {save_path}")
 
         return fig

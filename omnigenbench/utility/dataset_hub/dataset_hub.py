@@ -76,7 +76,6 @@ def load_benchmark_datasets(
     )
     datasets = {}
     for _, bench in enumerate(bench_metadata.bench_list):
-
         bench_config_path = findfile.find_file(
             benchmark, f"{benchmark}.{bench}.config".split(".")
         )

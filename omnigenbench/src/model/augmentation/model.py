@@ -117,7 +117,9 @@ class OmniModelForAugmentation(torch.nn.Module):
         seq_list = self.tokenizer.tokenize(seq)
         if not seq_list:
             return seq
-        mask_cnt = max(1, int(len(seq_list) * self.noise_ratio)) if self.noise_ratio > 0 else 0
+        mask_cnt = (
+            max(1, int(len(seq_list) * self.noise_ratio)) if self.noise_ratio > 0 else 0
+        )
         for _ in range(mask_cnt):
             random_idx = random.randint(0, len(seq_list) - 1)
             seq_list[random_idx] = self.tokenizer.mask_token
@@ -147,19 +149,25 @@ class OmniModelForAugmentation(torch.nn.Module):
         with torch.no_grad():
             if self.use_amp:
                 # autocast speeds up FP16/BF16 on GPU while preserving accuracy for decoding
-                autocast_ctx = torch.cuda.amp.autocast(dtype=torch.float16 if torch.cuda.is_available() else None)
+                autocast_ctx = torch.cuda.amp.autocast(
+                    dtype=torch.float16 if torch.cuda.is_available() else None
+                )
             else:
                 # dummy context manager
                 class _Noop:
                     def __enter__(self):
                         return None
+
                     def __exit__(self, exc_type, exc, tb):
                         return False
+
                 autocast_ctx = _Noop()
 
             with autocast_ctx:
                 outputs = self.model(**tokenized_inputs.to(self.device))
-                logits = outputs["logits"] if isinstance(outputs, dict) else outputs.logits
+                logits = (
+                    outputs["logits"] if isinstance(outputs, dict) else outputs.logits
+                )
                 predicted_tokens = logits.argmax(dim=-1).detach().cpu()
 
         input_ids = tokenized_inputs["input_ids"].cpu()

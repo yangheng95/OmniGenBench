@@ -249,7 +249,6 @@ class AutoBench:
             random_seeds = bench_config["seeds"]
 
             for seed in random_seeds:
-
                 batch_size = (
                     bench_config["batch_size"] if "batch_size" in bench_config else 8
                 ) * bs_scale
