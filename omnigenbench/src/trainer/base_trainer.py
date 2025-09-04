@@ -16,7 +16,7 @@ trainer implementations should provide.
 
 import os
 import warnings
-
+import tempfile
 import numpy as np
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Union, Any
@@ -230,6 +230,7 @@ class BaseTrainer(ABC):
                 "No compute metrics provided. Metrics will not be calculated during training."
             )
         self.seed = seed
+        seed_everything(seed)
         self.autocast = autocast
 
         # Initialize data loaders
@@ -246,6 +247,17 @@ class BaseTrainer(ABC):
         self.predictions = {}
         self._optimization_direction = None
         self.trial_name = kwargs.get("trial_name", self.model.__class__.__name__)
+
+        if not hasattr(self, "_model_state_dict_path"):
+
+            # Create temporary directory if it doesn't exist
+            temp_dir = tempfile.gettempdir()
+            os.makedirs(temp_dir, exist_ok=True)
+
+            # Use mkstemp for better cross-platform compatibility
+            fd, temp_path = tempfile.mkstemp(suffix=".pt", dir=temp_dir)
+            os.close(fd)  # Close file descriptor immediately
+            self._model_state_dict_path = temp_path
 
     def _setup_data_loaders(
         self,
@@ -683,13 +695,6 @@ class BaseTrainer(ABC):
         """
         Save model state dictionary to temporary file.
         """
-        if not hasattr(self, "_model_state_dict_path"):
-            import tempfile
-
-            tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pt")
-            self._model_state_dict_path = tmp_file.name
-            tmp_file.close()
-
         try:
             if os.path.exists(self._model_state_dict_path):
                 os.remove(self._model_state_dict_path)

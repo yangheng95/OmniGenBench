@@ -24,20 +24,20 @@ class BenchCommand(BaseCommand):
     This class provides a CLI interface for the AutoBench functionality, allowing users
     to easily run comprehensive evaluations of genomic models across multiple benchmarks.
     It supports various benchmarks, models, and training configurations.
-    
+
     Attributes:
         benchmarks (list): List of available benchmarks (RGB, PGB, GUE, GB, BEACON)
         trainers (list): List of available trainers (native, accelerate, hf_trainer)
-        
+
     Example:
         >>> # Run basic benchmark
         >>> python -m omnigenbench.cli autobench --model "model_name" --benchmark "RGB"
         >>> # Run with custom settings
-        >>> python -m omnigenbench.cli autobench 
-        ...     --model "model_name" 
-        ...     --benchmark "RGB" 
-        ...     --trainer "accelerate" 
-        ...     --bs_scale 2 
+        >>> python -m omnigenbench.cli autobench
+        ...     --model "model_name"
+        ...     --benchmark "RGB"
+        ...     --trainer "accelerate"
+        ...     --bs_scale 2
         ...     --overwrite True
     """
 

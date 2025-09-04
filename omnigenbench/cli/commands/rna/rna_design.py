@@ -20,26 +20,26 @@ class RNADesignCommand(BaseCommand):
     This class provides a CLI interface for designing RNA sequences that fold into
     specific secondary structures. It uses genetic algorithms with customizable
     parameters to optimize sequence design for target structures.
-    
+
     The design process involves:
 
     1. Loading a pre-trained RNA design model
     2. Running genetic algorithm optimization
     3. Generating sequences that match the target structure
     4. Saving results to file (optional)
-    
+
     Attributes:
         model_path (str): Path to the pre-trained RNA design model
         structure (str): Target RNA secondary structure in dot-bracket notation
         mutation_ratio (float): Genetic algorithm mutation rate
         num_population (int): Population size for genetic algorithm
         num_generation (int): Number of generations for evolution
-        
+
     Example:
         >>> # Basic RNA design
         >>> python -m omnigenbench.cli design --structure "(((...)))"
         >>> # Design with custom parameters
-        >>> python -m omnigenbench.cli design 
+        >>> python -m omnigenbench.cli design
         ...     --structure "(((...)))"
         ...     --model-path "yangheng/OmniGenome-186M"
         ...     --mutation-ratio 0.3

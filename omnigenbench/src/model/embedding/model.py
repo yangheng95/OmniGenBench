@@ -60,25 +60,30 @@ class OmniModelForEmbedding(torch.nn.Module):
         use_autocast: bool = False,
         amp_dtype=None,
     ):
-        """批量编码序列为 pooled 向量。
+        """Batch encode sequences into aggregated (pooled) embeddings.
 
-        Batch encode sequences into aggregated (pooled) embeddings.
+        Args:
+            sequences (List[str]): Input DNA or RNA sequences for encoding.
+            batch_size (int, default=8): Number of sequences to process per batch.
+            max_length (int, default=512): Maximum sequence length for tokenization.
+            agg (str, default="head"): Aggregation method for pooling. Options: "head", "mean", "tail".
+            require_grad (bool, default=False): Whether to preserve gradients for fine-tuning.
+            return_on_cpu (bool, default=True): Whether to move results to CPU memory.
+            use_autocast (bool, default=False): Whether to enable mixed precision (CUDA only).
+            amp_dtype (torch.dtype, optional): Data type for automatic mixed precision.
 
-        参数 / Args:
-            sequences (List[str]): 输入序列 / input DNA (or RNA) sequences.
-            batch_size (int): 批大小 / processing batch size.
-            max_length (int): tokenizer 截断/填充长度 / truncate/pad length.
-            agg (str): 聚合方式 head|mean|tail / aggregation method.
-            require_grad (bool): 是否需要梯度; True 时允许反向传播 / keep graph for finetuning.
-            return_on_cpu (bool): 若 True 输出放到 CPU, 否则保持在模型设备 / move result to CPU for memory relief.
-            use_autocast (bool): 使用混合精度 / enable autocast (CUDA only).
-            amp_dtype (torch.dtype|None): autocast 精度类型 / dtype for autocast.
+        Returns:
+            torch.Tensor: Pooled embeddings with shape (num_sequences, hidden_size).
 
-        返回 / Returns:
-            torch.Tensor 形状 (N, H) / shape (num_sequences, hidden_size)
+        Note:
+            This method maintains backward compatibility with existing code.
+            When require_grad=True, gradients flow through the model for end-to-end training.
 
-        兼容性 / Compatibility:
-            旧调用无需修改; 新参数有默认值。
+        Example:
+            >>> sequences = ["ATCGGCTA", "GGCTAGCTA"]
+            >>> embeddings = model.batch_encode(sequences, batch_size=4, agg="mean")
+            >>> print(embeddings.shape)
+            torch.Size([2, 768])
         """
         embeds = []
         device = self.device
@@ -261,20 +266,26 @@ class OmniModelForEmbedding(torch.nn.Module):
         use_autocast: bool = False,
         amp_dtype=None,
     ):
-        """编码单个序列 / Encode a single sequence.
+        """Encode a single sequence into pooled embeddings.
 
-        参数 / Args:
-            sequence (str): 输入序列 / input sequence.
-            max_length (int): 截断/填充长度 / tokenizer max length.
-            agg (str): head|mean|tail 聚合策略 / aggregation strategy.
-            keep_dim (bool): 是否保留 batch 维 / keep batch dimension.
-            require_grad (bool): 是否保留梯度 / keep graph for finetune.
-            return_on_cpu (bool): 输出是否转 CPU / move result to CPU.
-            use_autocast (bool): 是否使用 autocast / enable autocast.
-            amp_dtype (torch.dtype|None): autocast dtype.
+        Args:
+            sequence (str): Input DNA or RNA sequence for encoding.
+            max_length (int, default=512): Maximum sequence length for tokenization.
+            agg (str, default="head"): Aggregation strategy for pooling. Options: "head", "mean", "tail".
+            keep_dim (bool, default=False): Whether to preserve batch dimension in output.
+            require_grad (bool, default=False): Whether to preserve gradients for fine-tuning.
+            return_on_cpu (bool, default=True): Whether to move results to CPU memory.
+            use_autocast (bool, default=False): Whether to enable mixed precision.
+            amp_dtype (torch.dtype, optional): Data type for automatic mixed precision.
 
-        返回 / Returns:
-            torch.Tensor shape (H,) 或 (1,H) / pooled embedding.
+        Returns:
+            torch.Tensor: Pooled embedding with shape (hidden_size,) or (1, hidden_size) if keep_dim=True.
+
+        Example:
+            >>> sequence = "ATCGATCGATCG"
+            >>> embedding = model.encode(sequence, agg="mean", max_length=200)
+            >>> print(embedding.shape)
+            torch.Size([768])
         """
         device = self.device
         inputs = self.tokenizer(
@@ -348,8 +359,8 @@ class OmniModelForEmbedding(torch.nn.Module):
             >>> print(f"Loaded embeddings shape: {embeddings.shape}")
             torch.Size([100, 768])
         """
-        embeddings = torch.load(embedding_path)
-        fprint(f"Loaded embeddings from {embedding_path}")
+        embeddings = torch.load(embedding_path, map_location=self.device)
+        fprint(f"Embeddings loaded from {embedding_path}")
         return embeddings
 
     def compute_similarity(self, embedding1, embedding2, dim=0):
@@ -376,23 +387,371 @@ class OmniModelForEmbedding(torch.nn.Module):
         )
         return similarity
 
-    @property
-    def device(self):
-        """
-        Get the current device for the underlying model.
+    def extract_attention_scores(
+        self,
+        sequence,
+        max_length=512,
+        layer_indices=None,
+        head_indices=None,
+        return_on_cpu=True,
+        use_autocast=False,
+        amp_dtype=None,
+    ):
+        """Extract attention scores from a single genomic sequence.
+
+        This method extracts attention weights from transformer layers, providing insights
+        into which positions the model focuses on during sequence processing.
+
+        Args:
+            sequence (str): Input DNA or RNA sequence for attention extraction.
+            max_length (int, default=512): Maximum sequence length for tokenization.
+            layer_indices (List[int], optional): Specific transformer layer indices to extract.
+                If None, extracts attention from all layers.
+            head_indices (List[int], optional): Specific attention head indices to extract.
+                If None, extracts attention from all heads.
+            return_on_cpu (bool, default=True): Whether to transfer output to CPU memory.
+            use_autocast (bool, default=False): Whether to enable mixed precision.
+            amp_dtype (torch.dtype, optional): Data type for automatic mixed precision.
 
         Returns:
-            torch.device: The device where the model currently resides.
+            Dict[str, torch.Tensor]: Dictionary containing:
+                - 'attentions': Attention weights tensor with shape (num_layers, num_heads, seq_len, seq_len)
+                - 'tokens': List of tokenized input tokens
+                - 'attention_mask': Attention mask tensor indicating valid positions
+
+        Example:
+            >>> sequence = "ATCGATCGATCG"
+            >>> result = model.extract_attention_scores(sequence, max_length=200)
+            >>> print(f"Attention shape: {result['attentions'].shape}")
+            >>> print(f"First 10 tokens: {result['tokens'][:10]}")
 
         Note:
-            This queries the model parameters directly so it stays correct
-            when external frameworks (e.g., Accelerate/DDP) move the module
-            across devices after initialization.
+            The attention tensor follows the standard transformer format where higher values
+            indicate stronger attention between token pairs.
+        """
+        device = self.device
+        inputs = self.tokenizer(
+            sequence,
+            return_tensors="pt",
+            padding="max_length",
+            truncation=True,
+            max_length=max_length,
+        )
+        inputs = {k: v.to(device) for k, v in inputs.items()}
+
+        is_cuda = isinstance(device, torch.device) and device.type == "cuda"
+        ctx = (
+            torch.autocast(device_type="cuda", dtype=amp_dtype)
+            if (use_autocast and is_cuda)
+            else torch.no_grad()
+        )
+
+        with ctx:
+            outputs = self.model(**inputs, output_attentions=True)
+            attentions = outputs.attentions  # Tuple of (batch_size, num_heads, seq_len, seq_len)
+
+        # Convert tuple to tensor and stack all layers
+        attentions_tensor = torch.stack(attentions, dim=1)  # (batch_size, num_layers, num_heads, seq_len, seq_len)
+        attentions_tensor = attentions_tensor.squeeze(0)  # Remove batch dimension: (num_layers, num_heads, seq_len, seq_len)
+
+        # Filter specific layers if requested
+        if layer_indices is not None:
+            attentions_tensor = attentions_tensor[layer_indices]
+
+        # Filter specific heads if requested
+        if head_indices is not None:
+            attentions_tensor = attentions_tensor[:, head_indices]
+
+        if return_on_cpu:
+            attentions_tensor = attentions_tensor.cpu()
+
+        # Get tokens for interpretation
+        tokens = self.tokenizer.convert_ids_to_tokens(inputs['input_ids'].squeeze(0))
+
+        result = {
+            'attentions': attentions_tensor,
+            'tokens': tokens,
+            'attention_mask': inputs['attention_mask'].cpu() if return_on_cpu else inputs['attention_mask']
+        }
+
+        return result
+
+    def batch_extract_attention_scores(
+        self,
+        sequences,
+        batch_size=4,
+        max_length=512,
+        layer_indices=None,
+        head_indices=None,
+        return_on_cpu=True,
+        use_autocast=False,
+        amp_dtype=None,
+    ):
+        """Extract attention scores from multiple genomic sequences in batches.
+
+        This method provides efficient batch processing for attention extraction from
+        multiple sequences, useful for comparative analysis of attention patterns.
+
+        Args:
+            sequences (List[str]): List of input DNA or RNA sequences for attention extraction.
+            batch_size (int, default=4): Number of sequences to process per batch.
+                Smaller batch sizes reduce memory usage.
+            max_length (int, default=512): Maximum sequence length for tokenization.
+            layer_indices (List[int], optional): Specific transformer layer indices to extract.
+                If None, extracts attention from all layers.
+            head_indices (List[int], optional): Specific attention head indices to extract.
+                If None, extracts attention from all heads.
+            return_on_cpu (bool, default=True): Whether to transfer outputs to CPU memory.
+            use_autocast (bool, default=False): Whether to enable mixed precision.
+            amp_dtype (torch.dtype, optional): Data type for automatic mixed precision.
+
+        Returns:
+            List[Dict[str, torch.Tensor]]: List of dictionaries, each containing:
+                - 'attentions': Attention weights tensor for each sequence
+                - 'tokens': List of tokenized input tokens for each sequence
+                - 'attention_mask': Attention mask tensor for each sequence
+
+        Example:
+            >>> sequences = ["ATCGATCGATCG", "GGCCTTAACCGG", "TTTTAAAACCCC"]
+            >>> results = model.batch_extract_attention_scores(sequences, batch_size=2)
+            >>> print(f"Number of results: {len(results)}")
+            >>> print(f"First result attention shape: {results[0]['attentions'].shape}")
+
+        Note:
+            Batch processing improves efficiency when analyzing multiple sequences.
+            Consider reducing batch_size if encountering memory issues.
+        """
+        all_results = []
+        device = self.device
+        is_cuda = isinstance(device, torch.device) and device.type == "cuda"
+
+        for i in range(0, len(sequences), batch_size):
+            batch_sequences = sequences[i : i + batch_size]
+            inputs = self.tokenizer(
+                batch_sequences,
+                return_tensors="pt",
+                padding="max_length",
+                truncation=True,
+                max_length=max_length,
+            )
+            inputs = {key: value.to(device) for key, value in inputs.items()}
+
+            ctx = (
+                torch.autocast(device_type="cuda", dtype=amp_dtype)
+                if (use_autocast and is_cuda)
+                else torch.no_grad()
+            )
+
+            with ctx:
+                outputs = self.model(**inputs, output_attentions=True)
+                attentions = outputs.attentions  # Tuple of (batch_size, num_heads, seq_len, seq_len)
+
+            # Convert tuple to tensor and stack all layers
+            attentions_tensor = torch.stack(attentions, dim=2)  # (batch_size, num_heads, num_layers, seq_len, seq_len)
+            attentions_tensor = attentions_tensor.permute(0, 2, 1, 3, 4)  # (batch_size, num_layers, num_heads, seq_len, seq_len)
+
+            # Process each sequence in the batch
+            for batch_idx in range(attentions_tensor.size(0)):
+                seq_attentions = attentions_tensor[batch_idx]  # (num_layers, num_heads, seq_len, seq_len)
+
+                # Filter specific layers if requested
+                if layer_indices is not None:
+                    seq_attentions = seq_attentions[layer_indices]
+
+                # Filter specific heads if requested
+                if head_indices is not None:
+                    seq_attentions = seq_attentions[:, head_indices]
+
+                if return_on_cpu:
+                    seq_attentions = seq_attentions.cpu()
+
+                # Get tokens for interpretation
+                tokens = self.tokenizer.convert_ids_to_tokens(inputs['input_ids'][batch_idx])
+
+                result = {
+                    'attentions': seq_attentions,
+                    'tokens': tokens,
+                    'attention_mask': (
+                        inputs['attention_mask'][batch_idx].cpu()
+                        if return_on_cpu
+                        else inputs['attention_mask'][batch_idx]
+                    )
+                }
+                all_results.append(result)
+
+        return all_results
+
+    def get_attention_statistics(
+        self,
+        attention_scores,
+        attention_mask=None,
+        layer_aggregation="mean",
+        head_aggregation="mean"
+    ):
+        """Compute comprehensive statistics from attention scores.
+
+        This method analyzes attention patterns by computing various statistical measures
+        that help understand the model's focus and attention distribution.
+
+        Args:
+            attention_scores (torch.Tensor): Attention tensor with shape (num_layers, num_heads, seq_len, seq_len).
+            attention_mask (torch.Tensor, optional): Attention mask to exclude padding tokens from statistics.
+            layer_aggregation (str, default="mean"): Method to aggregate across transformer layers.
+                Options: "mean", "max", "sum", "first", "last".
+            head_aggregation (str, default="mean"): Method to aggregate across attention heads.
+                Options: "mean", "max", "sum".
+
+        Returns:
+            Dict[str, torch.Tensor]: Dictionary containing attention statistics:
+                - 'attention_matrix': Aggregated attention matrix
+                - 'attention_entropy': Entropy measure of attention distribution
+                - 'max_attention_per_position': Maximum attention value for each position
+                - 'attention_concentration': Measure of attention concentration (L2 norm)
+                - 'self_attention_scores': Self-attention scores (diagonal values)
+
+        Example:
+            >>> result = model.extract_attention_scores(sequence)
+            >>> stats = model.get_attention_statistics(result['attentions'], result['attention_mask'])
+            >>> print(f"Average attention entropy: {stats['attention_entropy'].mean():.4f}")
+
+        Note:
+            Higher entropy indicates more distributed attention, while lower entropy
+            suggests more focused attention patterns.
+        """
+        if attention_mask is not None:
+            # Create a mask for valid positions (excluding padding)
+            mask = attention_mask.unsqueeze(0).unsqueeze(0)  # (1, 1, seq_len)
+            mask = mask * attention_mask.unsqueeze(0).unsqueeze(-1)  # (1, 1, seq_len, seq_len)
+
+            # Apply mask to attention scores
+            attention_scores = attention_scores * mask
+
+        # Aggregate across heads
+        if head_aggregation == "mean":
+            head_aggregated = attention_scores.mean(dim=1)
+        elif head_aggregation == "max":
+            head_aggregated = attention_scores.max(dim=1)[0]
+        elif head_aggregation == "sum":
+            head_aggregated = attention_scores.sum(dim=1)
+        else:
+            raise ValueError(f"Unsupported head_aggregation: {head_aggregation}")
+
+        # Aggregate across layers
+        if layer_aggregation == "mean":
+            layer_aggregated = head_aggregated.mean(dim=0)
+        elif layer_aggregation == "max":
+            layer_aggregated = head_aggregated.max(dim=0)[0]
+        elif layer_aggregation == "sum":
+            layer_aggregated = head_aggregated.sum(dim=0)
+        elif layer_aggregation == "first":
+            layer_aggregated = head_aggregated[0]
+        elif layer_aggregation == "last":
+            layer_aggregated = head_aggregated[-1]
+        else:
+            raise ValueError(f"Unsupported layer_aggregation: {layer_aggregation}")
+
+        # Compute various statistics
+        statistics = {
+            'attention_matrix': layer_aggregated,
+            'attention_entropy': -torch.sum(layer_aggregated * torch.log(layer_aggregated + 1e-9), dim=-1),
+            'max_attention_per_position': layer_aggregated.max(dim=-1)[0],
+            'attention_concentration': (layer_aggregated ** 2).sum(dim=-1),  # How concentrated attention is
+            'self_attention_scores': torch.diag(layer_aggregated),  # Diagonal values (self-attention)
+        }
+
+        return statistics
+
+    def visualize_attention_pattern(
+        self,
+        attention_result,
+        layer_idx=0,
+        head_idx=0,
+        save_path=None,
+        figsize=(12, 10)
+    ):
+        """Visualize attention patterns as an interactive heatmap.
+
+        This method creates a visual representation of attention weights, helping to understand
+        which sequence positions the model focuses on during processing.
+
+        Args:
+            attention_result (Dict): Result dictionary from extract_attention_scores() or
+                batch_extract_attention_scores() containing attention data.
+            layer_idx (int, default=0): Index of the transformer layer to visualize.
+            head_idx (int, default=0): Index of the attention head to visualize.
+            save_path (str, optional): File path to save the visualization image.
+                If None, the plot is not saved to disk.
+            figsize (tuple, default=(12, 10)): Figure size as (width, height) in inches.
+
+        Returns:
+            matplotlib.figure.Figure: The generated matplotlib figure object, or None if
+                matplotlib is not available.
+
+        Example:
+            >>> sequence = "ATCGATCGATCG"
+            >>> result = model.extract_attention_scores(sequence)
+            >>> fig = model.visualize_attention_pattern(
+            ...     result, layer_idx=0, head_idx=0, save_path="attention_plot.png"
+            ... )
+            >>> # fig.show()  # Display the plot
+
+        Note:
+            Requires matplotlib for visualization. Install with: pip install matplotlib
+            The heatmap uses a blue color scheme where darker colors indicate stronger attention.
         """
         try:
-            return next(self.model.parameters()).device
-        except StopIteration:
-            return self._device
+            import matplotlib.pyplot as plt
+            import numpy as np
+        except ImportError:
+            fprint("matplotlib is required for visualization. Install with: pip install matplotlib")
+            return None
+
+        attention_matrix = attention_result['attentions'][layer_idx, head_idx].numpy()
+        tokens = attention_result['tokens']
+        attention_mask = attention_result['attention_mask'].numpy()
+
+        # Find the actual sequence length (excluding padding)
+        seq_len = int(attention_mask.sum())
+
+        # Truncate to actual sequence length
+        attention_matrix = attention_matrix[:seq_len, :seq_len]
+        tokens = tokens[:seq_len]
+
+        fig, ax = plt.subplots(figsize=figsize)
+        im = ax.imshow(attention_matrix, cmap='Blues', aspect='auto')
+
+        # Set ticks and labels
+        ax.set_xticks(range(len(tokens)))
+        ax.set_yticks(range(len(tokens)))
+        ax.set_xticklabels(tokens, rotation=45, ha='right')
+        ax.set_yticklabels(tokens)
+
+        # Add colorbar
+        plt.colorbar(im, ax=ax, label='Attention Weight')
+
+        # Set title and labels
+        ax.set_title(f'Attention Pattern - Layer {layer_idx}, Head {head_idx}')
+        ax.set_xlabel('Key Positions')
+        ax.set_ylabel('Query Positions')
+
+        plt.tight_layout()
+
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            fprint(f"Attention visualization saved to {save_path}")
+
+        return fig
+
+    @property
+    def device(self):
+        """Get the device where the model is located."""
+        return self._device
+
+    def to(self, device):
+        """Move model to specified device."""
+        self._device = device
+        self.model.to(device)
+        return self
 
 
 # Example usage

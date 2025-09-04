@@ -93,8 +93,9 @@ class OmniTokenizer:
                 AutoTokenizer.from_pretrained(model_name_or_path, **kwargs), **kwargs
             )
         else:
-            if 'multimolecule' in model_name_or_path:
+            if "multimolecule" in model_name_or_path:
                 from multimolecule import RnaTokenizer
+
                 tokenizer = RnaTokenizer.from_pretrained(model_name_or_path, **kwargs)
             else:
                 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)

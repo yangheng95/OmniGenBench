@@ -388,7 +388,9 @@ def fprint(*objects, sep=" ", end="\n", file=sys.stdout, flush=False):
 
     print(
         time.strftime(
-            "[%Y-%m-%d %H:%M:%S] [{} {}] ".format(__name__, __version__),
+            "[%Y-%m-%d %H:%M:%S.{:03d}] [{} {}] ".format(
+                int((time.time() % 1) * 1000), __name__, __version__
+            ),
             time.localtime(time.time()),
         ),
         *objects,

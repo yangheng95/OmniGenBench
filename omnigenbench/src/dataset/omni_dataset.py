@@ -44,7 +44,7 @@ class OmniDatasetForTokenClassification(OmniDataset):
         Initializes the token classification dataset.
 
         Args:
-            data_source (str or list): Path(s) to the dataset file(s). Formats supported 
+            data_source (str or list): Path(s) to the dataset file(s). Formats supported
                 depend on the base `OmniDataset` class.
             tokenizer (transformers.PreTrainedTokenizer): Tokenizer used to process input sequences.
             max_length (int, optional): Maximum sequence length for tokenization. Sequences longer

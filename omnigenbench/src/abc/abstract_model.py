@@ -128,9 +128,13 @@ class OmniModel(torch.nn.Module):
                         else architectures[-1]
                     )
                     if "multimolecule" in config_or_model.__repr__().lower():
-                        model_cls = getattr(import_module(f"multimolecule"), model_cls_name)
+                        model_cls = getattr(
+                            import_module(f"multimolecule"), model_cls_name
+                        )
                     else:
-                        model_cls = getattr(import_module(f"transformers"), model_cls_name)
+                        model_cls = getattr(
+                            import_module(f"transformers"), model_cls_name
+                        )
 
                     model = model_cls.from_pretrained(
                         config_or_model,
@@ -575,7 +579,7 @@ class OmniModel(torch.nn.Module):
         Args:
             path: The directory to load the model from.
             **kwargs: Additional arguments.
-        Returns: 
+        Returns:
             The loaded model instance.
         """
         with open(f"{path}/metadata.json", "r", encoding="utf8") as f:

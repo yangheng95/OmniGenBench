@@ -26,6 +26,7 @@ Refer to the documentation below for details on each module, including available
     :maxdepth: 2
     
     downstream_models.rst
+    baselines.rst
     downstream_datasets.rst
     metrics
     tokenizers

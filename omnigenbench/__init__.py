@@ -26,7 +26,7 @@ Key API Entries:
 """
 
 __name__ = "omnigenbench"
-__version__ = "0.3.10alpha"
+__version__ = "0.3.11alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "Apache-2.0"
@@ -89,6 +89,15 @@ from .src.model import (
     OmniModelForRNADesign,
     OmniModelForEmbedding,
     OmniModelForAugmentation,
+)
+
+from .src.model.baselines import (
+    OmniCNNBaseline,
+    OmniRNNBaseline,
+    OmniBPNetBaseline,
+    OmniBasenjiBaseline,
+    OmniDeepSTARRBaseline,
+    OmniGenericBaseline,
 )
 
 # Import LoRA model
@@ -226,6 +235,18 @@ __all__ = [
     "OmniModelForRNADesign",
     "OmniModelForEmbedding",
     "OmniModelForAugmentation",
+    "OmniPooling",
+    "download_benchmark",
+    "download_model",
+    "download_pipeline",
+    "query_models_info",
+    "hub_utils",
+    "OmniCNNBaseline",
+    "OmniRNNBaseline",
+    "OmniBPNetBaseline",
+    "OmniBasenjiBaseline",
+    "OmniDeepSTARRBaseline",
+    "OmniGenericBaseline",
     # OmniGenome* aliases for backward compatibility
     "OmniGenomeTokenizer",
     "OmniGenomeKmersTokenizer",

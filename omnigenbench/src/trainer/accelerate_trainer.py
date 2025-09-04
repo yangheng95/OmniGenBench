@@ -474,24 +474,19 @@ class AccelerateTrainer(BaseTrainer):
         if not hasattr(self, "accelerator"):
             self.model.save(path_to_save, overwrite, **kwargs)
         elif self.accelerator.is_main_process:
-            self.accelerator.unwrap_model(self.model).save(path_to_save, overwrite, **kwargs)
+            self.accelerator.unwrap_model(self.model).save(
+                path_to_save, overwrite, **kwargs
+            )
 
     def _load_state_dict(self) -> None:
         """Load the best model state dictionary."""
-        if hasattr(self, "_model_state_dict_path") and os.path.exists(
-            self._model_state_dict_path
-        ):
-            weights = torch.load(self._model_state_dict_path, map_location="cpu")
-            self.accelerator.unwrap_model(self.model).load_state_dict(weights)
+        if (hasattr(self, "_model_state_dict_path") and os.path.exists(self._model_state_dict_path)):
+            if self.accelerator.is_main_process:
+                weights = torch.load(self._model_state_dict_path, map_location="cpu")
+                self.accelerator.unwrap_model(self.model).load_state_dict(weights)
 
     def _save_state_dict(self) -> None:
         """Save the current model state dictionary."""
-        if not hasattr(self, "_model_state_dict_path"):
-            from hashlib import sha256
-
-            time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()
-            self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
 
         if os.path.exists(self._model_state_dict_path):
             os.remove(self._model_state_dict_path)
@@ -505,15 +500,9 @@ class AccelerateTrainer(BaseTrainer):
 
     def _remove_state_dict(self) -> None:
         """Remove the temporary model state dictionary file."""
-        if not hasattr(self, "_model_state_dict_path"):
-            from hashlib import sha256
-
-            time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-            hash_digest = sha256(self.__repr__().encode("utf-8")).hexdigest()
-            self._model_state_dict_path = f"tmp_ckpt_{time_str}_{hash_digest}.pt"
-
         if (
             os.path.exists(self._model_state_dict_path)
             and self.accelerator.is_main_process
         ):
             os.remove(self._model_state_dict_path)
+

@@ -71,7 +71,7 @@ def create_parser() -> argparse.ArgumentParser:
     """
     Creates the argument parser for the benchmark CLI.
 
-    Returns: 
+    Returns:
         An `argparse.ArgumentParser` instance.
     """
     parser = argparse.ArgumentParser(

@@ -23,7 +23,7 @@ import autocuda
 
 class OmniModelForAugmentation(torch.nn.Module):
     """
-    Data augmentation model for genomic sequences using masked language modeling. 
+    Data augmentation model for genomic sequences using masked language modeling.
     This model uses a pre-trained masked language model to generate augmented
     versions of genomic sequences by randomly masking tokens and predicting
     replacements. It's useful for expanding training datasets and improving
@@ -44,6 +44,8 @@ class OmniModelForAugmentation(torch.nn.Module):
         noise_ratio=0.15,
         max_length=1026,
         instance_num=1,
+        batch_size=32,
+        use_amp=None,
         *args,
         **kwargs
     ):
@@ -55,6 +57,8 @@ class OmniModelForAugmentation(torch.nn.Module):
             noise_ratio (float): The proportion of tokens to mask in each sequence for augmentation (default: 0.15)
             max_length (int): The maximum sequence length for tokenization (default: 1026)
             instance_num (int): Number of augmented instances to generate per sequence (default: 1)
+            batch_size (int): Batch size used when running the MLM forward pass (default: 32)
+            use_amp (bool|None): Whether to use automatic mixed precision for speed on GPU (default: auto-detect)
             *args: Additional positional arguments
             **kwargs: Additional keyword arguments
         """
@@ -72,11 +76,17 @@ class OmniModelForAugmentation(torch.nn.Module):
         )
         self.device = autocuda.auto_cuda()
         self.model.to(self.device)
+        self.model.eval()
 
         # Hyperparameters for augmentation
         self.noise_ratio = noise_ratio
         self.max_length = max_length
         self.k = instance_num
+        self.batch_size = int(batch_size) if batch_size is not None else 32
+        if use_amp is None:
+            self.use_amp = torch.cuda.is_available()
+        else:
+            self.use_amp = bool(use_amp)
 
     def load_sequences_from_file(self, input_file):
         """
@@ -105,10 +115,64 @@ class OmniModelForAugmentation(torch.nn.Module):
             str: Sequence with randomly masked tokens
         """
         seq_list = self.tokenizer.tokenize(seq)
-        for _ in range(int(len(seq_list) * self.noise_ratio)):
+        if not seq_list:
+            return seq
+        mask_cnt = max(1, int(len(seq_list) * self.noise_ratio)) if self.noise_ratio > 0 else 0
+        for _ in range(mask_cnt):
             random_idx = random.randint(0, len(seq_list) - 1)
             seq_list[random_idx] = self.tokenizer.mask_token
         return "".join(seq_list)
+
+    def _augment_batch(self, seq_list):
+        """
+        Augment a batch of masked sequences using a single forward pass.
+
+        Args:
+            seq_list (List[str]): List of masked sequences
+
+        Returns:
+            List[str]: Augmented sequences
+        """
+        if not seq_list:
+            return []
+
+        tokenized_inputs = self.tokenizer(
+            seq_list,
+            padding=True,
+            truncation=True,
+            max_length=self.max_length,
+            return_tensors="pt",
+        )
+
+        with torch.no_grad():
+            if self.use_amp:
+                # autocast speeds up FP16/BF16 on GPU while preserving accuracy for decoding
+                autocast_ctx = torch.cuda.amp.autocast(dtype=torch.float16 if torch.cuda.is_available() else None)
+            else:
+                # dummy context manager
+                class _Noop:
+                    def __enter__(self):
+                        return None
+                    def __exit__(self, exc_type, exc, tb):
+                        return False
+                autocast_ctx = _Noop()
+
+            with autocast_ctx:
+                outputs = self.model(**tokenized_inputs.to(self.device))
+                logits = outputs["logits"] if isinstance(outputs, dict) else outputs.logits
+                predicted_tokens = logits.argmax(dim=-1).detach().cpu()
+
+        input_ids = tokenized_inputs["input_ids"].cpu()
+        mask_id = self.tokenizer.mask_token_id
+        # Replace [MASK] positions with top-1 predictions
+        mask_positions = input_ids == mask_id
+        input_ids[mask_positions] = predicted_tokens[mask_positions]
+
+        # Decode back to strings
+        augmented_sequences = self.tokenizer.batch_decode(
+            input_ids, skip_special_tokens=True
+        )
+        return augmented_sequences
 
     def augment_sequence(self, seq):
         """
@@ -120,26 +184,8 @@ class OmniModelForAugmentation(torch.nn.Module):
         Returns:
             str: Augmented sequence with predicted tokens replacing masked tokens
         """
-        tokenized_inputs = self.tokenizer(
-            seq,
-            padding="do_not_pad",
-            truncation=True,
-            max_length=self.max_length,
-            return_tensors="pt",
-        )
-
-        with torch.no_grad():
-            predictions = self.model(**tokenized_inputs.to(self.device))["logits"]
-            predicted_tokens = predictions.argmax(dim=-1).cpu()
-
-        # Replace masked tokens with predicted tokens
-        input_ids = tokenized_inputs["input_ids"][0].cpu()
-        input_ids[input_ids == self.tokenizer.mask_token_id] = predicted_tokens[0][
-            input_ids == self.tokenizer.mask_token_id
-        ]
-
-        augmented_sequence = self.tokenizer.decode(input_ids, skip_special_tokens=True)
-        return augmented_sequence
+        # Keep single-sample path for API compatibility, implemented via batch for efficiency
+        return self._augment_batch([seq])[0]
 
     def augment(self, seq, k=None):
         """
@@ -152,11 +198,13 @@ class OmniModelForAugmentation(torch.nn.Module):
         Returns:
             list: List of augmented sequences
         """
+        k = self.k if k is None else int(k)
+        # Prepare K noised variants, then process in mini-batches
+        noised_variants = [self.apply_noise_to_sequence(seq) for _ in range(k)]
         augmented_sequences = []
-        for _ in range(self.k if k is None else k):
-            noised_seq = self.apply_noise_to_sequence(seq)
-            augmented_seq = self.augment_sequence(noised_seq)
-            augmented_sequences.append(augmented_seq)
+        for i in range(0, len(noised_variants), self.batch_size):
+            batch = noised_variants[i : i + self.batch_size]
+            augmented_sequences.extend(self._augment_batch(batch))
         return augmented_sequences
 
     def augment_sequences(self, sequences):
@@ -170,9 +218,25 @@ class OmniModelForAugmentation(torch.nn.Module):
             list: List of all augmented sequences
         """
         all_augmented_sequences = []
-        for seq in tqdm.tqdm(sequences, desc="Augmenting Sequences"):
-            augmented_instances = self.augment(seq)
-            all_augmented_sequences.extend(augmented_instances)
+        total = len(sequences) * max(1, self.k)
+        pbar = tqdm.tqdm(total=total, desc="Augmenting Sequences", unit="inst")
+
+        buffer = []
+        # We accumulate masked sequences across inputs until batch_size, then run one forward pass
+        for seq in sequences:
+            # generate k masked copies for this sequence
+            for _ in range(self.k):
+                buffer.append(self.apply_noise_to_sequence(seq))
+                # flush when buffer reaches batch size
+                if len(buffer) >= self.batch_size:
+                    all_augmented_sequences.extend(self._augment_batch(buffer))
+                    pbar.update(len(buffer))
+                    buffer = []
+        # flush the tail
+        if buffer:
+            all_augmented_sequences.extend(self._augment_batch(buffer))
+            pbar.update(len(buffer))
+        pbar.close()
         return all_augmented_sequences
 
     def save_augmented_sequences(self, augmented_sequences, output_file):
@@ -210,6 +274,7 @@ if __name__ == "__main__":
         noise_ratio=0.2,  # Example noise ratio
         max_length=1026,  # Maximum token length
         instance_num=3,  # Number of augmented instances per sequence
+        batch_size=64,
     )
     aug = model.augment_sequence("ATCTTGCATTGAAG")
     input_file = "toy_datasets/test.json"

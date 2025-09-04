@@ -17,3 +17,12 @@ from .seq2seq.model import *
 from .rna_design.model import *
 from .embedding.model import *
 from .augmentation.model import *
+from .baselines import (
+    OmniCNNBaseline,
+    OmniRNNBaseline,
+    OmniBPNetBaseline,
+    OmniBasenjiBaseline,
+    OmniDeepSTARRBaseline,
+    OmniGenericBaseline,
+    create_baseline,
+)

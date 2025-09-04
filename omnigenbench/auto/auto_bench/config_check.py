@@ -14,7 +14,7 @@ def config_check(args):
     """
     Performs a basic check on the configuration arguments.
 
-    Args: 
+    Args:
         args: A dictionary of configuration arguments.
     :raises RuntimeError: If a configuration check fails.
     """

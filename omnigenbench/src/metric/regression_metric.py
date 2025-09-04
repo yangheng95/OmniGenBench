@@ -19,7 +19,7 @@ from ..abc.abstract_metric import OmniMetric
 
 def mcrmse(y_true, y_pred):
     """
-    Compute Mean Column Root Mean Square Error (MCRMSE). 
+    Compute Mean Column Root Mean Square Error (MCRMSE).
     MCRMSE is a multi-target regression metric that computes the RMSE for each target
     column and then takes the mean across all targets.
 

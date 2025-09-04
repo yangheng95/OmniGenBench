@@ -17,7 +17,6 @@ import os
 import tempfile
 import autocuda
 import numpy as np
-from torch.utils.data import DataLoader
 from tqdm import tqdm
 from typing import Dict, Any, Optional, Union
 
@@ -25,7 +24,7 @@ import torch
 from torch.cuda.amp import GradScaler
 
 from .base_trainer import BaseTrainer
-from ..misc.utils import env_meta_info, fprint, seed_everything
+from ..misc.utils import fprint
 
 
 class Trainer(BaseTrainer):
@@ -372,11 +371,6 @@ class Trainer(BaseTrainer):
         """
         Save model state dictionary to temporary file.
         """
-        if not hasattr(self, "_model_state_dict_path"):
-            tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pt")
-            self._model_state_dict_path = tmp_file.name
-            tmp_file.close()
-
         try:
             if os.path.exists(self._model_state_dict_path):
                 os.remove(self._model_state_dict_path)

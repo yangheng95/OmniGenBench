@@ -326,7 +326,7 @@ class Pipeline:
                 - return_hidden_states: Whether to return hidden states
                 - temperature: Temperature for sampling (if applicable)
 
-        Returns: 
+        Returns:
             dict: Complete inference results including:
                 - predictions: Final predictions
                 - confidence: Confidence scores
