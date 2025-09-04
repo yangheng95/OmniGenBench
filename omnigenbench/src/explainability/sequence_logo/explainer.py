@@ -7,6 +7,8 @@
 
 from ...abc.abstract_explainer import AbstractExplainer
 from ..shared_methods.squid_explainer import SQUIDExplainer
+from ..shared_methods.ism_explainer import ISMExplainer
+from ..shared_methods.lime_explainer import LIMEExplainer
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
@@ -14,7 +16,9 @@ import logomaker
 from ...misc.utils import fprint
 
 EXPLAINER_REGISTRY = {
+    "ism": ISMExplainer,
     "squid": SQUIDExplainer,
+    "lime": LIMEExplainer,
 }
 
 
