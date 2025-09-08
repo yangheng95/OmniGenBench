@@ -91,7 +91,7 @@ seeds = [0, 1, 2, 3, 4]
 bench = AutoBench(benchmark=benchmark, model_name_or_path=gfm, overwrite=False)
 bench.run(autocast=False, batch_size=bench_size, seeds=seeds)
 ```
-You can find an example of AutoBench via Python API [here](examples/autobench/AutoBench_Tutorial.ipynb).
+You can find an example of AutoBench via Python API [here](examples/autobench_gfm_evaluation).
 
 ## Supported Models
 
