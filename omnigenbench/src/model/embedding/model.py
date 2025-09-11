@@ -477,9 +477,11 @@ class OmniModelForEmbedding(torch.nn.Module):
         result = {
             "attentions": attentions_tensor,
             "tokens": tokens,
-            "attention_mask": inputs["attention_mask"].cpu()
-            if return_on_cpu
-            else inputs["attention_mask"],
+            "attention_mask": (
+                inputs["attention_mask"].cpu()
+                if return_on_cpu
+                else inputs["attention_mask"]
+            ),
         }
 
         return result

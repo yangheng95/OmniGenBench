@@ -5,7 +5,7 @@ termcolor
 gitpython
 torch>=2.6.0
 pandas
-viennarna
+ViennaRNA
 scikit-learn
 accelerate
 transformers>=4.46.0
@@ -16,3 +16,5 @@ plotly
 logomaker
 matplotlib
 gradio>=4.0.0
+biopython
+scipy

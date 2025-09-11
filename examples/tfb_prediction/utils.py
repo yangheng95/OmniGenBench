@@ -247,7 +247,7 @@ def run_finetuning(
     patience: int,
     device: torch.device,
     save_dir: str = "tfb_model",
-    seed: Optional[int] = None,
+    seed: Optional[int] = 2024,
 ):
     """
     Train the model with AccelerateTrainer and save to `save_dir`.

@@ -121,8 +121,7 @@ class OmniCNNBaseline(OmniModel):
         dropout = kwargs.pop("dropout", 0.1)
         num_labels = kwargs.pop("num_labels")
 
-        class Cfg:
-            ...
+        class Cfg: ...
 
         cfg = Cfg()
         cfg.hidden_size = num_filters * len(kernel_sizes)
@@ -394,8 +393,7 @@ class OmniRNNBaseline(OmniModel):
         dropout = kwargs.pop("dropout", 0.1)
         num_labels = kwargs.pop("num_labels")
 
-        class Cfg:
-            ...
+        class Cfg: ...
 
         cfg = Cfg()
         cfg.hidden_size = hidden_dim * (2 if bidirectional else 1)
@@ -635,8 +633,7 @@ class OmniBPNetBaseline(OmniModel):
         dil_kernel_size = kwargs.pop("dil_kernel_size", 3)
         dropout = kwargs.pop("dropout", 0.1)
 
-        class Cfg:
-            ...
+        class Cfg: ...
 
         cfg = Cfg()
         cfg.hidden_size = n_filters
@@ -886,8 +883,7 @@ class OmniBasenjiBaseline(OmniModel):
         convdc = kwargs.pop("convdc", 6)
         dropout = kwargs.pop("dropout", 0.1)
 
-        class Cfg:
-            ...
+        class Cfg: ...
 
         cfg = Cfg()
         cfg.hidden_size = 64
@@ -1016,8 +1012,10 @@ class OmniBasenjiBaseline(OmniModel):
             x = torch.relu(layer(x))
             x = x + residual
         x = self.conv_block_4(x)
-        x = self.global_avg_pool(x).squeeze(-1)  # [B,64]
-        logits = self.sigmoid(self.classifier(x))
+        seq_out = x.transpose(1, 2)
+        pooled = self.global_avg_pool(x).squeeze(-1)
+        pooled = self.dropout(pooled)
+        logits = self.sigmoid(self.classifier(pooled))
         return {"logits": logits, "last_hidden_state": x, "labels": labels}
 
     def _build_config_dict(self):
@@ -1122,9 +1120,11 @@ class OmniBasenjiBaseline(OmniModel):
             residual = x
             x = torch.relu(layer(x))
             x = x + residual
-        x = self.global_avg_pool(x).squeeze(-1)
-        x = self.dropout_layer(x)
-        logits = self.sigmoid(self.classifier(x))
+        x = self.conv_block_4(x)
+        seq_out = x.transpose(1, 2)
+        pooled = self.global_avg_pool(x).squeeze(-1)
+        pooled = self.dropout(pooled)
+        logits = self.sigmoid(self.classifier(pooled))
         return {"logits": logits, "last_hidden_state": x, "labels": labels}
 
     def predict(self, sequence_or_inputs, **kwargs):
@@ -1176,8 +1176,7 @@ class OmniDeepSTARRBaseline(OmniModel):
         dense_neurons1 = kwargs.pop("dense_neurons1", 256)
         dense_neurons2 = kwargs.pop("dense_neurons2", 256)
 
-        class Cfg:
-            ...
+        class Cfg: ...
 
         cfg = Cfg()
         cfg.hidden_size = num_filters4
@@ -1376,9 +1375,11 @@ class OmniDeepSTARRBaseline(OmniModel):
             residual = x
             x = torch.relu(layer(x))
             x = x + residual
-        x = self.global_avg_pool(x).squeeze(-1)
-        x = self.dropout_layer(x)
-        logits = self.sigmoid(self.classifier(x))
+        x = self.conv_block_4(x)
+        seq_out = x.transpose(1, 2)
+        pooled = self.global_avg_pool(x).squeeze(-1)
+        pooled = self.dropout(pooled)
+        logits = self.sigmoid(self.classifier(pooled))
         return {"logits": logits, "last_hidden_state": x, "labels": labels}
 
     def predict(self, sequence_or_inputs, **kwargs):
@@ -1780,12 +1781,72 @@ class BasenjiBackbone(BackboneBase):
         return {"sequence_output": seq_out, "hidden_state": pooled}
 
 
+class DeepSEABackbone(BackboneBase):
+    """DeepSEA-style 1D CNN backbone adapted for tokenizer inputs.
+
+    Architecture (adapted):
+    - Token ids -> A/C/G/T one-hot (B,4,L)
+    - Conv1(4->320, k=8) + ReLU + MaxPool(4)
+    - Conv2(320->480, k=8) + ReLU + MaxPool(4)
+    - Conv3(480->960, k=8) + ReLU
+    - GlobalAvgPool over length -> Dropout -> Linear proj to cfg.hidden_size
+
+    Note: We use global average pooling and a projection layer to support variable-length inputs and align with framework heads.
+    """
+
+    def __init__(self, cfg: BaselineConfig):
+        super().__init__()
+        self.register_buffer(
+            "_one_hot_weight", torch.zeros(cfg.vocab_size, 4), persistent=False
+        )
+        self.conv_block_1 = nn.Sequential(
+            nn.Conv1d(4, 320, kernel_size=8, padding=8 // 2),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=4, stride=4),
+        )
+        self.conv_block_2 = nn.Sequential(
+            nn.Conv1d(320, 480, kernel_size=8, padding=8 // 2),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=4, stride=4),
+        )
+        self.conv_block_3 = nn.Sequential(
+            nn.Conv1d(480, 960, kernel_size=8, padding=8 // 2),
+            nn.ReLU(),
+        )
+        self.global_avg_pool = nn.AdaptiveAvgPool1d(1)
+        self.dropout = nn.Dropout(cfg.dropout)
+        self.proj = nn.Linear(960, cfg.hidden_size)
+        self.out_dim = cfg.hidden_size
+
+    def set_one_hot(self, weight: torch.Tensor):
+        if (
+            isinstance(weight, torch.Tensor)
+            and weight.shape == self._one_hot_weight.shape
+        ):
+            self._one_hot_weight = weight
+
+    def _tokens_to_one_hot(self, ids: torch.Tensor) -> torch.Tensor:
+        return torch.nn.functional.embedding(ids, self._one_hot_weight).permute(0, 2, 1)
+
+    def forward(self, input_ids, attention_mask=None):
+        x = self._tokens_to_one_hot(input_ids)
+        x = self.conv_block_1(x)
+        x = self.conv_block_2(x)
+        x = self.conv_block_3(x)
+        seq_out = x.transpose(1, 2)
+        pooled = self.global_avg_pool(x).squeeze(-1)
+        pooled = self.dropout(pooled)
+        pooled = self.proj(pooled)
+        return {"sequence_output": seq_out, "hidden_state": pooled}
+
+
 BACKBONE_REGISTRY = {
     "cnn": CNNBackbone,
     "rnn": RNNBackbone,
     "bpnet": BPNetBackbone,
     "deepstarr": DeepSTARRBackbone,
     "basenji": BasenjiBackbone,
+    "deepsea": DeepSEABackbone,
 }
 
 
@@ -1965,10 +2026,11 @@ class OmniGenericBaseline(OmniModel):
             )
         num_labels = kwargs.pop("num_labels")
         label2id = kwargs.pop("label2id", {str(i): i for i in range(num_labels)})
-        pad_token_id = int(getattr(tokenizer, "pad_token_id", -100) or -100)
+        # --- robust pad token handling: don't treat 0 as falsy, validate range later
+        _pad_attr = getattr(tokenizer, "pad_token_id", None)
+        pad_token_id = int(_pad_attr) if _pad_attr is not None else None
 
-        class Cfg:
-            ...
+        class Cfg: ...
 
         cfg = Cfg()
         cfg.hidden_size = kwargs.get("hidden_size", 128)
@@ -1978,7 +2040,7 @@ class OmniGenericBaseline(OmniModel):
         cfg.name_or_path = f"GenericBaseline-{backbone_type}-{task_name}"
         cfg.model_type = "baseline"
         cfg.architectures = ["OmniGenericBaseline"]
-        cfg.pad_token_id = pad_token_id
+        # cfg.pad_token_id will be set after we compute vocab_size and validate
 
         class _Stub(nn.Module):
             def __init__(self, config):
@@ -2005,6 +2067,25 @@ class OmniGenericBaseline(OmniModel):
         vocab_size = getattr(self.tokenizer, "vocab_size", None) or len(
             self.tokenizer.get_vocab()
         )
+        # Finalize a safe pad_token_id: prefer tokenizer value; otherwise search common pad tokens; else default to 0
+        if (
+            pad_token_id is None
+            or pad_token_id < -vocab_size
+            or pad_token_id >= vocab_size
+        ):
+            resolved = None
+            try:
+                for tok in ("<pad>", "[PAD]", "PAD", "pad"):
+                    tid = self.tokenizer.convert_tokens_to_ids(tok)
+                    if isinstance(tid, int) and 0 <= tid < vocab_size:
+                        resolved = tid
+                        break
+            except Exception:
+                resolved = None
+            if resolved is None:
+                resolved = 0  # conservative default
+            pad_token_id = int(resolved)
+        # store on config now that it's validated
         self.baseline_cfg = BaselineConfig(
             backbone_type=backbone_type,
             task_name=task_name,
@@ -2057,6 +2138,10 @@ class OmniGenericBaseline(OmniModel):
             )
         head_cls = HEAD_REGISTRY[task_name]
         self.head = head_cls(self.baseline_cfg)
+
+    @property
+    def device(self):
+        return next(self.parameters()).device
 
     def _build_config_dict(self):
         """Return a serializable dictionary for ``save_pretrained``.
@@ -2241,9 +2326,11 @@ class OmniGenericBaseline(OmniModel):
                 "predictions": preds[0].cpu(),
                 "logits": logits[0].cpu(),
                 "probabilities": probs[0].cpu(),
-                "last_hidden_state": out.get("last_hidden_state")[0].cpu()
-                if out.get("last_hidden_state") is not None
-                else None,
+                "last_hidden_state": (
+                    out.get("last_hidden_state")[0].cpu()
+                    if out.get("last_hidden_state") is not None
+                    else None
+                ),
             }
         return {
             "predictions": preds.cpu(),

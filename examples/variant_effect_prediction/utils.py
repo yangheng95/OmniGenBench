@@ -244,6 +244,7 @@ def run_vep_analysis(
     fasta_file: Optional[str],
     context_size: int,
     batch_size: int,
+    max_examples: int,
     device: torch.device,
     max_variants: Optional[int] = None,
 ) -> pd.DataFrame:
@@ -328,6 +329,8 @@ def run_vep_analysis(
         mut_pos = int(item['mutation_position'])
         seq_alt = apply_variant(seq_ref, item['ref'], item['alt'], mut_pos)
 
+        if len(seq_ref_list) > max_examples:
+            break
         seq_ref_list.append(seq_ref)
         seq_alt_list.append(seq_alt)
         mut_pos_list.append(mut_pos)

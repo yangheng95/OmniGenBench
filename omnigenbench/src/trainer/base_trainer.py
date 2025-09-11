@@ -279,24 +279,28 @@ class BaseTrainer(ABC):
         # Check if pre-built loaders are provided
         if kwargs.get("train_loader"):
             self.train_loader = kwargs.get("train_loader")
+        else:
+            if train_dataset is None:
+                raise ValueError(
+                    "train_dataset must be provided if train_loader is not."
+                )
+            self.train_loader = DataLoader(
+                train_dataset, batch_size=batch_size, shuffle=True
+            )
         if kwargs.get("eval_loader") or kwargs.get("valid_loader"):
             self.eval_loader = kwargs.get("eval_loader", None) or kwargs.get(
                 "valid_loader", None
             )
-        if kwargs.get("test_loader"):
-            self.test_loader = kwargs.get("test_loader", None)
         else:
             # Create data loaders from datasets
-            self.train_loader = (
-                DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-                if train_dataset is not None
-                else None
-            )
             self.eval_loader = (
                 DataLoader(eval_dataset, batch_size=batch_size, shuffle=False)
                 if eval_dataset is not None
                 else None
             )
+        if kwargs.get("test_loader"):
+            self.test_loader = kwargs.get("test_loader", None)
+        else:
             self.test_loader = (
                 DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
                 if test_dataset is not None
