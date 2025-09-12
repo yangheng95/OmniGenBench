@@ -77,7 +77,7 @@ class Model(OmniModelForTokenRegression):
             self.config.hidden_size, self.config.num_labels
         )
         self.loss_fn = torch.nn.MSELoss()
-        self.model_info()
+        # self.model_info()
 
     def forward(self, **inputs):
         labels = inputs.pop("labels", None)

@@ -341,7 +341,7 @@ def run_design(structure):
 if __name__ == "__main__":
     # load benchmark
     structures, sequences = [], []
-    with open("rna_design/eterna100_vienna2.txt", "r", encoding="utf8") as f:
+    with open("eterna100_vienna2.txt", "r", encoding="utf8") as f:
         for line in f.readlines()[1:]:
             cols = line.strip().split("\t")
             if len(cols) > 5 and len(cols[5]) < 200:
@@ -357,9 +357,10 @@ if __name__ == "__main__":
             struct_in = gr.Textbox(label="Target Structure", lines=1)
             status_out = gr.Textbox(label="Status")
 
-        # HTML components instead of image components
-        true_struct_html = gr.HTML(label="True Structure")
-        predicted_struct_html = gr.HTML(label="Predicted Structure")
+        with gr.Row():
+            # HTML components instead of image components
+            true_struct_html = gr.HTML(label="True Structure")
+            predicted_struct_html = gr.HTML(label="Predicted Structure")
 
         sample_btn = gr.Button("Sample a RNA Design Puzzle")
         sample_btn.click(
