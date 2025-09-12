@@ -91,7 +91,7 @@ seeds = [0, 1, 2, 3, 4]
 bench = AutoBench(benchmark=benchmark, model_name_or_path=gfm, overwrite=False)
 bench.run(autocast=False, batch_size=bench_size, seeds=seeds)
 ```
-You can find an example of AutoBench via Python API [here](examples/autobench/AutoBench_Tutorial.ipynb).
+You can find an example of AutoBench via Python API [here](examples/autobench_gfm_evaluation/benchmarking_with_lora.ipynb).
 
 ## Supported Models
 
@@ -133,9 +133,9 @@ RNA design is a fundamental problem in synthetic biology,
 where the goal is to design RNA sequences that fold into a target structure.
 In this demo, we show how to use OmniGenoBench to design RNA sequences 
 that fold into a target structure using a pre-trained model.
-The tutorials of RNA Design Demo can be found in [RNA_Design_Tutorial.ipynb](examples/rna_design/RNA_Design_Tutorial.ipynb).
+The tutorials of RNA Design Demo can be found in [RNA_Design_Tutorial.ipynb](examples/rna_sequence_design/RNA_Design_Tutorial.ipynb).
 
-You can find a visual example of RNA Design [here](asset/RNA_Design.gif).
+You can find a visual example of RNA Design [here](asset/RNADesign-Demo.gif).
 
 ### RNA Secondary Structure Prediction
 
@@ -145,10 +145,10 @@ In this demo, we show how to use OmniGenoBench to predict the secondary structur
 The tutorials of RNA Secondary Structure Prediction can be found in
 [Secondary_Structure_Prediction_Tutorial.ipynb](examples/rna_secondary_structure_prediction/Secondary_Structure_Prediction_Tutorial.ipynb).
 
-You can find a visual example of RNA Secondary Structure Prediction [here](asset/RNA_Structure_Prediction.gif).
+You can find a visual example of RNA Secondary Structure Prediction [here](asset/RNASSP-Demo.gif).
 
 ### More Tutorials
-Please find more usage tutorials in [examples/tutorials](examples/tutorials).
+Please find more usage tutorials in [examples](examples).
 
 ## Citation
 ```bibtex

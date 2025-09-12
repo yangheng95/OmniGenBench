@@ -46,7 +46,7 @@ class OmniModelForTokenClassification(OmniModel):
             self.config.hidden_size, self.config.num_labels
         )
         self.loss_fn = torch.nn.CrossEntropyLoss()
-        self.model_info()
+        # self.model_info()
 
     def forward(self, **inputs):
         """
@@ -246,7 +246,7 @@ class OmniModelForSequenceClassification(OmniModel):
             self.config.hidden_size, self.config.num_labels
         )
         self.loss_fn = torch.nn.CrossEntropyLoss()
-        self.model_info()
+        # self.model_info()
 
     def forward(self, **inputs):
         """
@@ -431,7 +431,7 @@ class OmniModelForMultiLabelSequenceClassification(OmniModelForSequenceClassific
         self.metadata["model_name"] = self.__class__.__name__
         self.softmax = torch.nn.Sigmoid()
         self.loss_fn = torch.nn.BCELoss()
-        self.model_info()
+        # self.model_info()
 
     def loss_function(self, logits, labels):
         """
@@ -549,7 +549,7 @@ class OmniModelForTokenClassificationWith2DStructure(OmniModelForTokenClassifica
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.pooler = OmniPooling(self.config)
-        self.model_info()
+        # self.model_info()
 
     def forward(self, **inputs):
         labels = inputs.pop("labels", None)
@@ -573,7 +573,7 @@ class OmniModelForSequenceClassificationWith2DStructure(
         super().__init__(config_or_model, tokenizer, *args, **kwargs)
         self.metadata["model_name"] = self.__class__.__name__
         self.pooler = OmniPooling(self.config)
-        self.model_info()
+        # self.model_info()
 
     def forward(self, **inputs):
         labels = inputs.pop("labels", None)
@@ -601,7 +601,7 @@ class OmniModelForMultiLabelSequenceClassificationWith2DStructure(
         self.metadata["model_name"] = self.__class__.__name__
         self.softmax = torch.nn.Sigmoid()
         self.loss_fn = torch.nn.BCELoss()
-        self.model_info()
+        # self.model_info()
 
     def predict(self, sequence_or_inputs, **kwargs):
         raw_outputs = self._forward_from_raw_input(sequence_or_inputs, **kwargs)

@@ -50,7 +50,7 @@ class OmniModelForTokenRegression(OmniModel):
             self.config.hidden_size, self.config.num_labels
         )
         self.loss_fn = torch.nn.MSELoss()
-        self.model_info()
+        # self.model_info()
 
     def forward(self, **inputs):
         """
@@ -200,7 +200,7 @@ class OmniModelForSequenceRegression(OmniModel):
             self.config.hidden_size, self.config.num_labels
         )
         self.loss_fn = torch.nn.MSELoss()
-        self.model_info()
+        # self.model_info()
 
     def forward(self, **inputs):
         """
@@ -342,7 +342,7 @@ class OmniModelForStructuralImputation(OmniModelForSequenceRegression):
         self.metadata["model_name"] = self.__class__.__name__
         self.loss_fn = torch.nn.MSELoss()
         self.embedding = torch.nn.Embedding(1, self.config.hidden_size)
-        self.model_info()
+        # self.model_info()
 
     def forward(self, **inputs):
         """
@@ -482,7 +482,7 @@ class OmniModelForMatrixRegression(OmniModel):
         self.resnet = resnet_b16(channels=128, bbn=16)
         self.classifier = torch.nn.Linear(1, self.config.num_labels)
         self.loss_fn = torch.nn.MSELoss()
-        self.model_info()
+        # self.model_info()
 
     def forward(self, **inputs):
         """
@@ -632,7 +632,7 @@ class OmniModelForMatrixClassification(OmniModel):
         # Change to BCEWithLogitsLoss for binary classification
         self.loss_fn = torch.nn.BCEWithLogitsLoss()
         self.cnn = resnet_b16(channels=self.config.hidden_size, bbn=16)
-        self.model_info()
+        # self.model_info()
 
     def forward(self, **inputs):
         """
