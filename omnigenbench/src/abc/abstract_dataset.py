@@ -138,6 +138,11 @@ class OmniDataset(torch.utils.data.Dataset):
 
         if self.label2id is not None:
             self.id2label = {v: k for k, v in self.label2id.items()}
+        else:
+            fprint("No label2id provided, something wrong may happen. "
+                   "label2id indicates the mapping from label to indices. "
+                   "e.g., {'positive': 1, 'negative': 0} for binary classification.")
+
 
         if max_length is not None:
             fprint(

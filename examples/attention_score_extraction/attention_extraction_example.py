@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Attention Score Extraction Example
-注意力分数提取示例
 
 This example demonstrates how to use the attention extraction functionality
 added to the OmniModelForEmbedding class.
-
-本示例演示如何使用添加到OmniModelForEmbedding类的注意力提取功能。
 """
 
 import torch
