@@ -241,7 +241,7 @@ def download_model(
     """
     cache_dir = (cache_dir if cache_dir else "__OMNIGENOME_DATA__") + "/models/"
     if not os.path.exists(cache_dir):
-        os.makedirs(cache_dir)
+        os.makedirs(cache_dir, exist_ok=True)
     ckpt_config = findfile.find_files(cache_dir, ["config.json"])
     if ckpt_config:
         return os.path.dirname(ckpt_config[0])
@@ -333,7 +333,7 @@ def download_pipeline(
     """
     cache_dir = (cache_dir if cache_dir else "__OMNIGENOME_DATA__") + "/pipelines/"
     if not os.path.exists(cache_dir):
-        os.makedirs(cache_dir)
+        os.makedirs(cache_dir, exist_ok=True)
     ckpt_config = findfile.find_files(cache_dir, ["config.json"])
     if ckpt_config:
         return os.path.dirname(ckpt_config[0])
@@ -423,7 +423,7 @@ def download_benchmark(
         )
     cache_dir = (cache_dir if cache_dir else "__OMNIGENOME_DATA__") + "/benchmarks/"
     if not os.path.exists(cache_dir):
-        os.makedirs(cache_dir)
+        os.makedirs(cache_dir, exist_ok=True)
     bench_config = findfile.find_file(
         cache_dir, [benchmark_name_or_path, "metadata.py"]
     )
