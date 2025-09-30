@@ -6,8 +6,12 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
+import os
 import random
 import warnings
+import zipfile
+import findfile
+import requests
 from collections import Counter
 
 import numpy as np
@@ -51,14 +55,14 @@ def covert_input_to_tensor(data):
     return data
 
 
-class OmniGenomeDict(dict):
+class OmniDict(dict):
     """
     This class extends the standard Python dictionary to provide a convenient
     method for moving all tensor values to a specific device (CPU/GPU).
     """
 
     def __init__(self, *args, **kwargs):
-        super(OmniGenomeDict, self).__init__(*args, **kwargs)
+        super(OmniDict, self).__init__(*args, **kwargs)
 
     def to(self, device):
         """
@@ -68,10 +72,10 @@ class OmniGenomeDict(dict):
             device (str or torch.device): The target device (e.g., 'cuda:0' or 'cpu').
 
         Returns:
-            OmniGenomeDict: The dictionary itself, with tensors moved to the new device.
+            OmniDict: The dictionary itself, with tensors moved to the new device.
 
         Example:
-            >>> data = OmniGenomeDict({'input_ids': torch.tensor([1, 2, 3])})
+            >>> data = OmniDict({'input_ids': torch.tensor([1, 2, 3])})
             >>> data.to('cuda:0')  # Moves tensors to GPU
         """
         for key, value in self.items():
@@ -116,6 +120,8 @@ class OmniDataset(torch.utils.data.Dataset):
                   information. Defaults to False.
                 - drop_long_seq (bool): Whether to drop sequences longer than
                   max_length. Defaults to False.
+                - dataset_url (str): URL to download dataset if not found locally.
+                - cache_dir (str): Directory to cache downloaded datasets.
 
         Example:
             >>> # Initialize with a single data file
@@ -124,6 +130,10 @@ class OmniDataset(torch.utils.data.Dataset):
             >>> # Initialize with label mapping
             >>> dataset = OmniDataset("data.json", tokenizer,
             ...                       label2id={"A": 0, "B": 1})
+            
+            >>> # Initialize with automatic dataset download
+            >>> dataset = OmniDataset("data.csv", tokenizer, 
+            ...                       dataset_url="https://example.com/data.zip")
         """
         super(OmniDataset, self).__init__()
         self.metadata = env_meta_info()
@@ -138,6 +148,11 @@ class OmniDataset(torch.utils.data.Dataset):
 
         if self.label2id is not None:
             self.id2label = {v: k for k, v in self.label2id.items()}
+        else:
+            fprint("No label2id provided, something wrong may happen. "
+                   "label2id indicates the mapping from label to indices. "
+                   "e.g., {'positive': 1, 'negative': 0} for binary classification.")
+
 
         if max_length is not None:
             fprint(
@@ -161,6 +176,7 @@ class OmniDataset(torch.utils.data.Dataset):
         self.data = []
 
         if data_source is not None:
+            # Check if dataset needs to be downloaded
             fprint(f"Loading data from {data_source}...")
             self.load_data_source(data_source, **kwargs)
             self._preprocessing()
@@ -193,6 +209,84 @@ class OmniDataset(torch.utils.data.Dataset):
 
             self._postprocessing()
             self._pad_and_truncate()
+    
+    def get_dataloader(self, batch_size=16, shuffle=None, num_workers=0, pin_memory=None, **kwargs):
+        """
+        Creates a PyTorch DataLoader for this dataset.
+        
+        Args:
+            batch_size (int): Batch size for the DataLoader.
+            shuffle (bool): Whether to shuffle the data. If None, uses self.shuffle.
+            num_workers (int): Number of worker processes for data loading.
+            pin_memory (bool): Whether to pin memory. If None, auto-detects based on CUDA availability.
+            **kwargs: Additional arguments passed to DataLoader.
+            
+        Returns:
+            torch.utils.data.DataLoader: A DataLoader for this dataset.
+        """
+        if shuffle is None:
+            shuffle = self.shuffle
+            
+        if pin_memory is None:
+            pin_memory = torch.cuda.is_available()
+        
+        from torch.utils.data import DataLoader
+        
+        return DataLoader(
+            self,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=num_workers,
+            pin_memory=pin_memory,
+            **kwargs
+        )
+
+    @classmethod
+    def from_huggingface(cls, dataset_name, tokenizer, splits=None, max_length=None, cache_dir=None, **kwargs):
+        """
+        Create OmniDataset instances from a HuggingFace dataset.
+        
+        Args:
+            dataset_name (str): Name of the HuggingFace dataset or base URL.
+            tokenizer: The tokenizer to use for processing sequences.
+            splits (list, optional): List of splits to create. Defaults to ['train', 'valid', 'test'].
+            max_length (int, optional): Maximum sequence length.
+            cache_dir (str, optional): Directory to cache the dataset.
+            **kwargs: Additional arguments passed to the dataset constructor.
+            
+        Returns:
+            dict: Dictionary containing datasets for each split.
+            
+        Example:
+            >>> from omnigenbench import OmniTokenizer,OmniDatasetForSequenceClassification
+            >>> tokenizer = OmniTokenizer.from_pretrained("yangheng/OmniGenome-52M")
+            >>> datasets = OmniDatasetForSequenceClassification.from_huggingface(
+            ...     "translation_efficiency_prediction",
+            ...     tokenizer=tokenizer
+            ... )
+            >>> train_loader = datasets['train'].get_dataloader(batch_size=16)
+        """
+        if splits is None:
+            splits = ['train', 'valid', 'test']
+
+        cls._download_dataset_from_huggingface(dataset_name, cache_dir)
+
+        # Create datasets for each split
+        datasets = {}
+        for split in splits:
+            if not cache_dir: # Use current directory if no cache_dir provided
+                cache_dir = os.getcwd()
+            data_source = findfile.find_file(cache_dir, [split], exclude_key=['.ipynb', '.py', 'md', 'txt'])
+
+            datasets[split] = cls(
+                data_source=data_source,
+                tokenizer=tokenizer,
+                max_length=max_length,
+                **kwargs
+            )
+        
+        return datasets
+
 
     def print_label_distribution(self):
         """
@@ -533,6 +627,43 @@ class OmniDataset(torch.utils.data.Dataset):
             "The prepare_input() function should be implemented for your dataset."
         )
 
+    @staticmethod
+    def _download_dataset_from_huggingface(dataset_name, local_dir=None):
+        """
+        Downloads and extracts datasets from OmniGenBench Hub on powered by HuggingFace.
+        """
+        if local_dir is None:
+            local_dir = os.path.join(os.getcwd(), f"__OMNIGENOME_DATA__/datasets/{dataset_name}")
+        else:
+            local_dir = os.path.abspath(local_dir)
+
+        url_to_download = f"https://huggingface.co/datasets/yangheng/OmniGenBench_Hub/resolve/main/{dataset_name}.zip"
+        zip_path = os.path.join(local_dir, f"{dataset_name}.zip")
+
+        if not os.path.exists(local_dir):
+
+            if not os.path.exists(local_dir):
+                os.makedirs(local_dir, exist_ok=True)
+
+            fprint(f"Downloading dataset from {url_to_download}...")
+            response = requests.get(url_to_download, stream=True)
+            response.raise_for_status()
+
+            with open(zip_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            fprint(f"Downloaded {zip_path}")
+
+        # Unzip the dataset
+        if os.path.exists(zip_path):
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(local_dir)
+            os.remove(zip_path)
+        else:
+            fprint(f"Dataset already downloaded and extracted at {local_dir}."
+                   f"If you want to re-download, please delete the existing directory.")
+
+
     def _preprocessing(self):
         """
         Performs preprocessing on the loaded examples.
@@ -599,10 +730,10 @@ class OmniDataset(torch.utils.data.Dataset):
             idx (int): The index of the sample.
 
         Returns:
-            OmniGenomeDict: An `OmniGenomeDict` containing the data sample.
+            OmniDict: An `OmniDict` containing the data sample.
         """
         # convert the data item to a omnigenbench dict
-        return OmniGenomeDict(self.data[idx])
+        return OmniDict(self.data[idx])
 
     def sample(self, n=1):
         """
@@ -684,4 +815,5 @@ class OmniDataset(torch.utils.data.Dataset):
             iterator: An iterator over the dataset.
         """
         for data_item in self.data:
-            yield OmniGenomeDict(data_item)
+            yield OmniDict(data_item)
+

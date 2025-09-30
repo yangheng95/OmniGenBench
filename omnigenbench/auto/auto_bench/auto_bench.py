@@ -27,7 +27,7 @@ from ...src.misc.utils import (
 )
 from ...src.trainer.trainer import Trainer
 from ...src.trainer.accelerate_trainer import AccelerateTrainer
-from ...utility.hub_utils import download_benchmark
+from ...src.utility.dataset_hub.dataset_hub import download_benchmark
 from ...auto.config.auto_config import AutoConfig
 from ... import __version__ as omnigenbench_version
 
@@ -281,9 +281,10 @@ class AutoBench:
 
                 fprint(f"\n{model}")
 
-                if kwargs.get("lora_config", None) is not None:
+                if kwargs.get("lora_config", {}) or kwargs.get("lora", True):
                     fprint(
-                        "Applying LoRA to the model with config:", kwargs["lora_config"]
+                        "Applying LoRA to the model with config:",
+                        kwargs.get("lora_config", {}) or 'Default Config'
                     )
                     model = OmniLoraModel(model, **kwargs.get("lora_config", {}))
 

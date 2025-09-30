@@ -134,7 +134,12 @@ def create_parser() -> argparse.ArgumentParser:
         choices=["fp16", "fp32", "bf16", "fp8", "no"],
         help="Automatic mixed precision training mode.",
     )
-
+    parser.add_argument(
+        '--lora',
+        default=False,
+        type=bool,
+        help="Use LoRA fine-tuning if this flag is set.",
+    )
     return parser
 
 

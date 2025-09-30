@@ -115,23 +115,23 @@ try:
     from omnigenbench.src.trainer.accelerate_trainer import AccelerateTrainer
 
     # Import hub utilities
-    from omnigenbench.utility.hub_utils import (
+    from omnigenbench.src.utility.hub_utils import (
         download_benchmark,
         download_model,
         download_pipeline,
         query_models_info,
     )
-    from omnigenbench.utility import hub_utils
+    from omnigenbench.src.utility import hub_utils
 
     # Import hub classes
-    from omnigenbench.utility.model_hub.model_hub import ModelHub
-    from omnigenbench.utility.dataset_hub.dataset_hub import load_benchmark_datasets
-    from omnigenbench.utility.pipeline_hub.pipeline import Pipeline
-    from omnigenbench.utility.pipeline_hub.pipeline_hub import PipelineHub
+    from omnigenbench.src.utility.model_hub.model_hub import ModelHub
+    from omnigenbench.src.utility.dataset_hub import load_benchmark_datasets
+    from omnigenbench.src.utility.pipeline_hub import Pipeline
+    from omnigenbench.src.utility.pipeline_hub.pipeline_hub import PipelineHub
 
     # Import module utilities
     from omnigenbench.src.model.module_utils import OmniPooling
-    from omnigenbench.utility.ensemble import VoteEnsemblePredictor
+    from omnigenbench.src.utility import VoteEnsemblePredictor
 
     # For backward compatibility version 0.2.7alpha and earlier
     from omnigenbench.auto.config.auto_config import AutoBenchConfig

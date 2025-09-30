@@ -10,7 +10,6 @@
 import json
 import argparse
 from pathlib import Path
-from typing import Optional
 from omnigenbench import OmniModelForRNADesign
 from ..base import BaseCommand
 

@@ -26,7 +26,7 @@ Key API Entries:
 """
 
 __name__ = "omnigenbench"
-__version__ = "0.3.13alpha"
+__version__ = "0.3.15alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "Apache-2.0"
@@ -54,6 +54,7 @@ from .src.dataset.omni_dataset import (
     OmniDatasetForSequenceRegression,
     OmniDatasetForTokenClassification,
     OmniDatasetForTokenRegression,
+    OmniDatasetForMultiLabelClassification,
 )
 
 
@@ -116,23 +117,24 @@ from .src.trainer.trainer import Trainer
 from .src.trainer.accelerate_trainer import AccelerateTrainer
 
 # Import hub utilities
-from .utility.hub_utils import (
+from .src.utility.hub_utils import (
     download_benchmark,
     download_model,
     download_pipeline,
     query_models_info,
 )
-from .utility import hub_utils
+
+from .src.utility import hub_utils
 
 # Import hub classes
-from .utility.model_hub.model_hub import ModelHub
-from .utility.dataset_hub.dataset_hub import load_benchmark_datasets
-from .utility.pipeline_hub.pipeline import Pipeline
-from .utility.pipeline_hub.pipeline_hub import PipelineHub
+from .src.utility.model_hub.model_hub import ModelHub
+from .src.utility.dataset_hub.dataset_hub import load_benchmark_datasets
+from .src.utility.pipeline_hub.pipeline import Pipeline
+from .src.utility.pipeline_hub.pipeline_hub import PipelineHub
 
 # Import module utilities
 from .src.model.module_utils import OmniPooling
-from .utility.ensemble import VoteEnsemblePredictor
+from .src.utility.ensemble import VoteEnsemblePredictor
 
 # --------------------------------------------------------------------------------
 # For backward compatibility version 0.2.7alpha and earlier

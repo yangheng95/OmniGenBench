@@ -777,10 +777,38 @@ class OmniModelForEmbedding(torch.nn.Module):
         """Get the device where the model is located."""
         return self._device
 
-    def to(self, device):
-        """Move model to specified device."""
-        self._device = device
-        self.model.to(device)
+    def to(self, *args, **kwargs):
+        """Move model to specified device and/or change dtype."""
+        # Call the parent to() method first
+        super().to(*args, **kwargs)
+        self.model.to(*args, **kwargs)
+
+        # Update internal device tracking if a device is specified
+        for arg in args:
+            if isinstance(arg, torch.device):
+                self._device = arg
+                break
+            elif isinstance(arg, str) and ('cuda' in arg or 'cpu' in arg):
+                self._device = torch.device(arg)
+                break
+
+        # Check if device is specified in kwargs
+        if 'device' in kwargs:
+            device = kwargs['device']
+            if isinstance(device, torch.device):
+                self._device = device
+            else:
+                self._device = torch.device(device)
+
+        # If no explicit device was provided, sync with the actual model device
+        if not any(isinstance(arg, (torch.device, str)) and ('cuda' in str(arg) or 'cpu' in str(arg)) for arg in args) and 'device' not in kwargs:
+            # Get the actual device from model parameters
+            try:
+                model_device = next(self.model.parameters()).device
+                self._device = model_device
+            except StopIteration:
+                pass  # No parameters in model
+
         return self
 
 

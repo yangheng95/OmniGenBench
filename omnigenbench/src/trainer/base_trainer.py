@@ -176,6 +176,7 @@ class BaseTrainer(ABC):
         eval_dataset: Optional[Dataset] = None,
         test_dataset: Optional[Dataset] = None,
         epochs: int = 3,
+        learning_rate: float = 2e-5,
         batch_size: int = 8,
         patience: int = -1,
         max_grad_norm: float = 1.0,
@@ -213,6 +214,11 @@ class BaseTrainer(ABC):
         self.max_grad_norm = max_grad_norm
         self.gradient_accumulation_steps = gradient_accumulation_steps
         self.optimizer = optimizer
+        if not optimizer:
+            warnings.warn(
+                f"No optimizer provided. Defaulting to Adam optimizer with {learning_rate}."
+            )
+            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         # Set loss function if provided
         if loss_fn is not None and hasattr(self.model, "set_loss_fn"):
             self.model.set_loss_fn(loss_fn)
