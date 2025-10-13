@@ -125,7 +125,7 @@ def auto_lora_model(model, **kwargs):
     # Freeze base model parameters more aggressively
     with torch.no_grad():
         for name, p in lora_model.named_parameters():
-            if 'lora_' not in name and 'modules_to_save' not in name:
+            if "lora_" not in name and "modules_to_save" not in name:
                 # This is a base model parameter, freeze it completely
                 p.requires_grad = False
                 p.requires_grad_(False)
@@ -136,10 +136,14 @@ def auto_lora_model(model, **kwargs):
                 p.grad = None
 
     # Enable gradient checkpointing for the base model to save activation memory
-    if hasattr(lora_model, 'base_model') and hasattr(lora_model.base_model, 'gradient_checkpointing_enable'):
+    if hasattr(lora_model, "base_model") and hasattr(
+        lora_model.base_model, "gradient_checkpointing_enable"
+    ):
         try:
             lora_model.base_model.gradient_checkpointing_enable()
-            fprint("Gradient checkpointing enabled for base model to save activation memory")
+            fprint(
+                "Gradient checkpointing enabled for base model to save activation memory"
+            )
         except Exception as e:
             fprint(f"Could not enable gradient checkpointing: {e}")
 
@@ -148,11 +152,11 @@ def auto_lora_model(model, **kwargs):
         f"trainable params: {trainable_params:,d} || all params: {all_param:,d}"
         f" || trainable%: {100 * trainable_params / all_param:.4f}"
     )
-    
+
     # Clear any cached gradients
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
-    
+
     return lora_model
 
 
@@ -166,6 +170,7 @@ class OmniLoraModel(nn.Module):
         Initialize the LoRA-adapted model.
         """
         import torch
+
         super(OmniLoraModel, self).__init__()
 
         lora_config = kwargs.pop("lora_config", {})
@@ -173,7 +178,7 @@ class OmniLoraModel(nn.Module):
 
         # Store original model reference for efficient memory management
         self._original_model = model
-        
+
         # Track whether we've logged memory-related flags already
         self._flags_logged = False
 
@@ -183,10 +188,10 @@ class OmniLoraModel(nn.Module):
         self._orig_output_attentions = None
 
         fprint(
-            "To reduce GPU memory occupation, "+
-            "avoid including non-trainable parameters in optimizers, e.g., "+
-            "optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), ...), "+
-            "AVOID: optimizer = torch.optim.AdamW(model.parameters(), ...)"
+            "To reduce GPU memory occupation, "
+            + "avoid including non-trainable parameters in optimizers, e.g., "
+            + "optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), ...), "
+            + "AVOID: optimizer = torch.optim.AdamW(model.parameters(), ...)"
         )
 
         self.config = model.config
@@ -196,7 +201,9 @@ class OmniLoraModel(nn.Module):
             if hasattr(self.lora_model, "gradient_checkpointing_enable"):
                 self.lora_model.gradient_checkpointing_enable()
                 fprint("Gradient checkpointing enabled")
-            elif hasattr(self.lora_model, "base_model") and hasattr(self.lora_model.base_model, "gradient_checkpointing_enable"):
+            elif hasattr(self.lora_model, "base_model") and hasattr(
+                self.lora_model.base_model, "gradient_checkpointing_enable"
+            ):
                 self.lora_model.base_model.gradient_checkpointing_enable()
                 fprint("Gradient checkpointing enabled (base_model)")
         except Exception:

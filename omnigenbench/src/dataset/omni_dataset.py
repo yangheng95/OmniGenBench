@@ -39,12 +39,12 @@ class OmniDatasetForTokenClassification(OmniDataset):
         label2id (dict): Mapping from label strings to integer IDs used for training.
     """
 
-    def __init__(self, data_source, tokenizer, max_length=None, **kwargs):
+    def __init__(self, dataset_name_or_path, tokenizer, max_length=None, **kwargs):
         """
         Initializes the token classification dataset.
 
         Args:
-            data_source (str or list): Path(s) to the dataset file(s). Formats supported
+            dataset_name_or_path (str or list): Path(s) to the dataset file(s). Formats supported
                 depend on the base `OmniDataset` class.
             tokenizer (transformers.PreTrainedTokenizer): Tokenizer used to process input sequences.
             max_length (int, optional): Maximum sequence length for tokenization. Sequences longer
@@ -52,7 +52,7 @@ class OmniDatasetForTokenClassification(OmniDataset):
             **kwargs: Additional metadata key-value pairs stored in `self.metadata`.
         """
         super(OmniDatasetForTokenClassification, self).__init__(
-            data_source, tokenizer, max_length, **kwargs
+            dataset_name_or_path, tokenizer, max_length, **kwargs
         )
         self.metadata.update(
             {
@@ -148,12 +148,12 @@ class OmniDatasetForSequenceClassification(OmniDataset):
         label2id: Mapping from label strings to integer IDs
     """
 
-    def __init__(self, data_source, tokenizer, max_length=None, **kwargs):
+    def __init__(self, dataset_name_or_path, tokenizer, max_length=None, **kwargs):
         """
         Initialize the dataset for sequence classification.
 
         Args:
-            data_source: Path to the data file or a list of paths.
+            dataset_name_or_path: Path to the data file or a list of paths.
                         Supported formats depend on the `OmniDataset` implementation.
             tokenizer: The tokenizer instance to use for converting sequences into
                       tokenized inputs.
@@ -163,7 +163,7 @@ class OmniDatasetForSequenceClassification(OmniDataset):
             **kwargs: Additional keyword arguments to be stored in the dataset's metadata.
         """
         super(OmniDatasetForSequenceClassification, self).__init__(
-            data_source, tokenizer, max_length, **kwargs
+            dataset_name_or_path, tokenizer, max_length, **kwargs
         )
 
         self.metadata.update(
@@ -246,12 +246,12 @@ class OmniDatasetForTokenRegression(OmniDataset):
         metadata: Dictionary containing dataset metadata including library information
     """
 
-    def __init__(self, data_source, tokenizer, max_length=None, **kwargs):
+    def __init__(self, dataset_name_or_path, tokenizer, max_length=None, **kwargs):
         """
         Initialize the dataset for token regression.
 
         Args:
-            data_source: Path to the data file or a list of paths.
+            dataset_name_or_path: Path to the data file or a list of paths.
                         Supported formats depend on the `OmniDataset` implementation.
             tokenizer: The tokenizer instance to use for converting sequences into
                       tokenized inputs.
@@ -261,7 +261,7 @@ class OmniDatasetForTokenRegression(OmniDataset):
             **kwargs: Additional keyword arguments to be stored in the dataset's metadata.
         """
         super(OmniDatasetForTokenRegression, self).__init__(
-            data_source, tokenizer, max_length, **kwargs
+            dataset_name_or_path, tokenizer, max_length, **kwargs
         )
 
         self.metadata.update(
@@ -353,12 +353,12 @@ class OmniDatasetForSequenceRegression(OmniDataset):
         metadata: Dictionary containing dataset metadata including library information
     """
 
-    def __init__(self, data_source, tokenizer, max_length=None, **kwargs):
+    def __init__(self, dataset_name_or_path, tokenizer, max_length=None, **kwargs):
         """
         Initialize the dataset for sequence regression.
 
         Args:
-            data_source: Path to the data file or a list of paths.
+            dataset_name_or_path: Path to the data file or a list of paths.
                         Supported formats depend on the `OmniDataset` implementation.
             tokenizer: The tokenizer instance to use for converting sequences into
                       tokenized inputs.
@@ -368,7 +368,7 @@ class OmniDatasetForSequenceRegression(OmniDataset):
             **kwargs: Additional keyword arguments to be stored in the dataset's metadata.
         """
         super(OmniDatasetForSequenceRegression, self).__init__(
-            data_source, tokenizer, max_length, **kwargs
+            dataset_name_or_path, tokenizer, max_length, **kwargs
         )
 
         self.metadata.update(
@@ -450,12 +450,19 @@ class OmniDatasetForMultiLabelClassification(OmniDataset):
         label_indices: Optional list of label indices to select specific labels from the dataset
     """
 
-    def __init__(self, data_source, tokenizer, max_length=None, label_indices=None, **kwargs):
+    def __init__(
+        self,
+        dataset_name_or_path,
+        tokenizer,
+        max_length=None,
+        label_indices=None,
+        **kwargs,
+    ):
         """
         Initialize the dataset for multi-label classification.
 
         Args:
-            data_source: Path to the data file or a list of paths.
+            dataset_name_or_path: Path to the data file or a list of paths.
                         Supported formats depend on the `OmniDataset` implementation.
             tokenizer: The tokenizer instance to use for converting sequences into
                       tokenized inputs.
@@ -480,7 +487,7 @@ class OmniDatasetForMultiLabelClassification(OmniDataset):
             ... )
         """
         super(OmniDatasetForMultiLabelClassification, self).__init__(
-            data_source, tokenizer, max_length, **kwargs
+            dataset_name_or_path, tokenizer, max_length, **kwargs
         )
 
         self.label_indices = label_indices
@@ -527,6 +534,7 @@ class OmniDatasetForMultiLabelClassification(OmniDataset):
             }
             Returns tokenized inputs with labels as float tensor for multi-label classification.
         """
+
         def truncate_sequence(seq, max_len):
             """
             Truncate sequence to max_len, centering the truncation if sequence is too long.
@@ -538,7 +546,7 @@ class OmniDatasetForMultiLabelClassification(OmniDataset):
                 return seq
             elif len(seq) > max_len:
                 start_idx = (len(seq) - max_len) // 2
-                return seq[start_idx:start_idx + max_len]
+                return seq[start_idx : start_idx + max_len]
             else:
                 return seq + ("N" * (max_len - len(seq)))
 
@@ -575,7 +583,10 @@ class OmniDatasetForMultiLabelClassification(OmniDataset):
 
         # Squeeze tensors to remove batch dimension
         for key in tokenized_inputs:
-            if isinstance(tokenized_inputs[key], torch.Tensor) and tokenized_inputs[key].ndim > 1:
+            if (
+                isinstance(tokenized_inputs[key], torch.Tensor)
+                and tokenized_inputs[key].ndim > 1
+            ):
                 tokenized_inputs[key] = tokenized_inputs[key].squeeze(0)
 
         # Process multi-label targets
@@ -585,8 +596,10 @@ class OmniDatasetForMultiLabelClassification(OmniDataset):
             labels_tensor = torch.tensor(labels, dtype=torch.float32)
 
             # Select specific label indices if provided
-            if hasattr(self, 'label_indices') and self.label_indices is not None:
-                labels_tensor = labels_tensor[torch.tensor(self.label_indices, dtype=torch.long)]
+            if hasattr(self, "label_indices") and self.label_indices is not None:
+                labels_tensor = labels_tensor[
+                    torch.tensor(self.label_indices, dtype=torch.long)
+                ]
 
         tokenized_inputs["labels"] = labels_tensor
         return tokenized_inputs
@@ -596,7 +609,11 @@ class OmniDatasetForMultiLabelClassification(OmniDataset):
         Print statistics about the multi-label distribution in the dataset.
         This includes the number of positive labels per sample and per label class.
         """
-        if not self.data or "labels" not in self.data[0] or self.data[0]["labels"] is None:
+        if (
+            not self.data
+            or "labels" not in self.data[0]
+            or self.data[0]["labels"] is None
+        ):
             fprint("No labels found in the dataset.")
             return
 
@@ -624,7 +641,9 @@ class OmniDatasetForMultiLabelClassification(OmniDataset):
         fprint("-" * 50)
         fprint(f"Total samples: {num_samples}")
         fprint(f"Total label classes: {num_labels}")
-        fprint(f"Average positive labels per sample: {np.mean(positive_per_sample):.2f}")
+        fprint(
+            f"Average positive labels per sample: {np.mean(positive_per_sample):.2f}"
+        )
         fprint(f"Min positive labels per sample: {np.min(positive_per_sample)}")
         fprint(f"Max positive labels per sample: {np.max(positive_per_sample)}")
 
@@ -638,4 +657,3 @@ class OmniDatasetForMultiLabelClassification(OmniDataset):
             fprint(f"{i:<12}\t\t{int(count):<15}\t\t{percentage:.2f}%")
 
         fprint("-" * 50)
-

@@ -10,6 +10,8 @@ import json
 import os
 import subprocess
 import shutil
+import sys
+import importlib.util
 from pathlib import Path
 
 import autocuda
@@ -179,7 +181,11 @@ class ModelHub:
             >>> model, tokenizer = ModelHub.load_model_and_tokenizer("yangheng/OmniGenome-186M")
             >>> # Load from local path
             >>> model, tokenizer = ModelHub.load_model_and_tokenizer("/path/to/local/model")
-            >>> print(f"Model loaded on device: {next(model.parameters()).device}")
+            >>> # Force re-download
+            >>> model, tokenizer = ModelHub.load_model_and_tokenizer(
+            ...     "yangheng/OmniGenome-186M",
+            ...     force_download=True
+            ... )
         """
         model = ModelHub.load(
             model_name_or_path,
@@ -285,8 +291,6 @@ class ModelHub:
                         f"Error: {og_error}"
                     )
 
-        import importlib
-
         # Load configuration
         config = AutoConfig.from_pretrained(path, trust_remote_code=True, **kwargs)
 
@@ -315,41 +319,121 @@ class ModelHub:
             config.metadata = metadata
 
         # Load model based on whether we have metadata - all from local files now
-        if metadata and "library_name" in metadata and "model_cls" in metadata:
-            # OmniGenome model with custom class
-            base_model = AutoModel.from_config(config, trust_remote_code=True, **kwargs)
-            model_lib = importlib.import_module(metadata["library_name"].lower()).model
-            model_cls = getattr(model_lib, metadata["model_cls"])
-            model = model_cls(
-                base_model,
-                tokenizer,
-                label2id=getattr(config, "label2id", {}),
-                num_labels=getattr(config, "num_labels", 2),
-                **kwargs,
-            )
+        if metadata and "model_cls" in metadata:
+            # Try to load custom model class
+            model_cls = None
 
-            # Load state dict from local files
-            state_dict_path = os.path.join(path, "pytorch_model.bin")
-            safetensors_path = os.path.join(path, "model.safetensors")
+            # Method 1: Try to load from built-in omnigenbench/omnigenome modules
+            if "library_name" in metadata:
+                try:
+                    import importlib
 
-            try:
-                if os.path.exists(state_dict_path):
-                    fprint(f"Loading state dict from: {state_dict_path}")
-                    with open(state_dict_path, "rb") as f:
-                        model.load_state_dict(
-                            torch.load(f, map_location=kwargs.get("device", "cpu")),
-                            strict=False,
+                    model_lib = importlib.import_module(
+                        metadata["library_name"].lower()
+                    ).model
+                    model_cls = getattr(model_lib, metadata["model_cls"])
+                    fprint(
+                        f"Loaded model class {metadata['model_cls']} from {metadata['library_name']}"
+                    )
+                except (ImportError, AttributeError) as e:
+                    fprint(f"Could not load from library_name: {e}")
+
+            # Method 2: Try to load from model_module if specified
+            if model_cls is None and "model_module" in metadata:
+                try:
+                    import importlib
+
+                    model_module = importlib.import_module(metadata["model_module"])
+                    model_cls = getattr(model_module, metadata["model_cls"])
+                    fprint(
+                        f"Loaded model class {metadata['model_cls']} from module {metadata['model_module']}"
+                    )
+                except (ImportError, AttributeError) as e:
+                    fprint(f"Could not load from model_module: {e}")
+
+            # Method 3: Try to load from custom_model.py file
+            if model_cls is None and "custom_model_file" in metadata:
+                custom_model_path = os.path.join(path, metadata["custom_model_file"])
+                if os.path.exists(custom_model_path):
+                    try:
+                        # Dynamically import the custom model file
+                        spec = importlib.util.spec_from_file_location(
+                            "custom_model", custom_model_path
                         )
-                elif os.path.exists(safetensors_path):
-                    fprint(f"Loading state dict from safetensors: {safetensors_path}")
-                    from safetensors.torch import load_file
+                        custom_module = importlib.util.module_from_spec(spec)
+                        sys.modules["custom_model"] = custom_module
+                        spec.loader.exec_module(custom_module)
+                        model_cls = getattr(custom_module, metadata["model_cls"])
+                        fprint(
+                            f"Loaded custom model class {metadata['model_cls']} from {custom_model_path}"
+                        )
+                    except Exception as e:
+                        fprint(f"Could not load from custom_model_file: {e}")
 
-                    state_dict = load_file(safetensors_path)
-                    model.load_state_dict(state_dict, strict=False)
-                else:
-                    fprint("Warning: No pytorch_model.bin or model.safetensors found")
-            except Exception as e:
-                fprint(f"Warning: Could not load state dict: {e}")
+            # If we successfully loaded the model class, instantiate it
+            if model_cls is not None:
+                base_model = AutoModel.from_config(
+                    config, trust_remote_code=True, **kwargs
+                )
+
+                # Prepare initialization parameters
+                init_kwargs = {
+                    "label2id": getattr(config, "label2id", {}),
+                    "num_labels": getattr(config, "num_labels", 2),
+                }
+
+                # Add custom attributes from metadata
+                if "custom_attrs" in metadata:
+                    init_kwargs.update(metadata["custom_attrs"])
+
+                # Merge with user-provided kwargs
+                init_kwargs.update(kwargs)
+
+                model = model_cls(
+                    base_model,
+                    tokenizer,
+                    **init_kwargs,
+                )
+
+                # Load state dict from local files
+                state_dict_path = os.path.join(path, "pytorch_model.bin")
+                safetensors_path = os.path.join(path, "model.safetensors")
+
+                try:
+                    if os.path.exists(state_dict_path):
+                        fprint(f"Loading state dict from: {state_dict_path}")
+                        with open(state_dict_path, "rb") as f:
+                            model.load_state_dict(
+                                torch.load(f, map_location=kwargs.get("device", "cpu")),
+                                strict=False,
+                            )
+                    elif os.path.exists(safetensors_path):
+                        fprint(
+                            f"Loading state dict from safetensors: {safetensors_path}"
+                        )
+                        from safetensors.torch import load_file
+
+                        state_dict = load_file(safetensors_path)
+                        model.load_state_dict(state_dict, strict=False)
+                    else:
+                        fprint(
+                            "Warning: No pytorch_model.bin or model.safetensors found"
+                        )
+                except Exception as e:
+                    fprint(f"Warning: Could not load state dict: {e}")
+            else:
+                # Fallback to standard Transformers model
+                fprint(
+                    f"Could not load custom model class {metadata['model_cls']}, falling back to standard model"
+                )
+                model = AutoModel.from_pretrained(
+                    path,
+                    config=config,
+                    trust_remote_code=True,
+                    local_files_only=True,
+                    **kwargs,
+                )
+                model.tokenizer = tokenizer
         else:
             # Standard Transformers model - load from local path
             fprint("Loading as standard Transformers model from local path")

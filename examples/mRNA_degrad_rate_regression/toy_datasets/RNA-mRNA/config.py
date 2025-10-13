@@ -22,8 +22,8 @@ from omnigenbench import (
 
 
 class Dataset(OmniDatasetForTokenRegression):
-    def __init__(self, data_name_or_path, tokenizer, max_length, **kwargs):
-        super().__init__(data_name_or_path, tokenizer, max_length, **kwargs)
+    def __init__(self, dataset_name_or_path, tokenizer, max_length, **kwargs):
+        super().__init__(dataset_name_or_path, tokenizer, max_length, **kwargs)
 
     def prepare_input(self, instance, **kwargs):
         target_cols = ["reactivity", "deg_Mg_pH10", "deg_Mg_50C"]

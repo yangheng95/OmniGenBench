@@ -284,7 +284,7 @@ class AutoBench:
                 if kwargs.get("lora_config", {}) or kwargs.get("lora", True):
                     fprint(
                         "Applying LoRA to the model with config:",
-                        kwargs.get("lora_config", {}) or 'Default Config'
+                        kwargs.get("lora_config", {}) or "Default Config",
                     )
                     model = OmniLoraModel(model, **kwargs.get("lora_config", {}))
 

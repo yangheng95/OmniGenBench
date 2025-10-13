@@ -788,20 +788,27 @@ class OmniModelForEmbedding(torch.nn.Module):
             if isinstance(arg, torch.device):
                 self._device = arg
                 break
-            elif isinstance(arg, str) and ('cuda' in arg or 'cpu' in arg):
+            elif isinstance(arg, str) and ("cuda" in arg or "cpu" in arg):
                 self._device = torch.device(arg)
                 break
 
         # Check if device is specified in kwargs
-        if 'device' in kwargs:
-            device = kwargs['device']
+        if "device" in kwargs:
+            device = kwargs["device"]
             if isinstance(device, torch.device):
                 self._device = device
             else:
                 self._device = torch.device(device)
 
         # If no explicit device was provided, sync with the actual model device
-        if not any(isinstance(arg, (torch.device, str)) and ('cuda' in str(arg) or 'cpu' in str(arg)) for arg in args) and 'device' not in kwargs:
+        if (
+            not any(
+                isinstance(arg, (torch.device, str))
+                and ("cuda" in str(arg) or "cpu" in str(arg))
+                for arg in args
+            )
+            and "device" not in kwargs
+        ):
             # Get the actual device from model parameters
             try:
                 model_device = next(self.model.parameters()).device

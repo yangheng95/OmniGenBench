@@ -105,12 +105,12 @@ class OmniDataset(torch.utils.data.Dataset):
         rna2structure (RNA2StructureCache): Cache for RNA structure predictions.
     """
 
-    def __init__(self, data_source, tokenizer, max_length=None, **kwargs):
+    def __init__(self, dataset_name_or_path, tokenizer, max_length=None, **kwargs):
         """
         Initializes the dataset.
 
         Args:
-            data_source (str or list): Path to the data file or a list of paths.
+            dataset_name_or_path (str or list): Path to the data file or a list of paths.
             tokenizer: The tokenizer to use for processing sequences.
             max_length (int, optional): The maximum sequence length.
             **kwargs: Additional keyword arguments.
@@ -130,9 +130,9 @@ class OmniDataset(torch.utils.data.Dataset):
             >>> # Initialize with label mapping
             >>> dataset = OmniDataset("data.json", tokenizer,
             ...                       label2id={"A": 0, "B": 1})
-            
+
             >>> # Initialize with automatic dataset download
-            >>> dataset = OmniDataset("data.csv", tokenizer, 
+            >>> dataset = OmniDataset("data.csv", tokenizer,
             ...                       dataset_url="https://example.com/data.zip")
         """
         super(OmniDataset, self).__init__()
@@ -149,10 +149,11 @@ class OmniDataset(torch.utils.data.Dataset):
         if self.label2id is not None:
             self.id2label = {v: k for k, v in self.label2id.items()}
         else:
-            fprint("No label2id provided, something wrong may happen. "
-                   "label2id indicates the mapping from label to indices. "
-                   "e.g., {'positive': 1, 'negative': 0} for binary classification.")
-
+            fprint(
+                "No label2id provided, something wrong may happen. "
+                "label2id indicates the mapping from label to indices. "
+                "e.g., {'positive': 1, 'negative': 0} for binary classification."
+            )
 
         if max_length is not None:
             fprint(
@@ -175,10 +176,10 @@ class OmniDataset(torch.utils.data.Dataset):
         self.examples = []
         self.data = []
 
-        if data_source is not None:
+        if dataset_name_or_path is not None:
             # Check if dataset needs to be downloaded
-            fprint(f"Loading data from {data_source}...")
-            self.load_data_source(data_source, **kwargs)
+            fprint(f"Loading data from {dataset_name_or_path}...")
+            self.load_data_source(dataset_name_or_path, **kwargs)
             self._preprocessing()
 
             for example in tqdm.tqdm(self.examples):
@@ -195,6 +196,11 @@ class OmniDataset(torch.utils.data.Dataset):
                     if key in tokenization_args:
                         new_args[key] = kwargs[key]
                 prepared_input = self.prepare_input(example, **new_args)
+
+                # Squeeze the batch dimension if it exists
+                for key, value in prepared_input.items():
+                    prepared_input[key] = value.squeeze(0)
+
                 if not prepared_input:
                     continue
                 if (
@@ -209,54 +215,162 @@ class OmniDataset(torch.utils.data.Dataset):
 
             self._postprocessing()
             self._pad_and_truncate()
-    
-    def get_dataloader(self, batch_size=16, shuffle=None, num_workers=0, pin_memory=None, **kwargs):
+
+    def get_dataloader(
+        self, batch_size=16, shuffle=None, num_workers=0, pin_memory=None, **kwargs
+    ):
         """
         Creates a PyTorch DataLoader for this dataset.
-        
+
         Args:
             batch_size (int): Batch size for the DataLoader.
             shuffle (bool): Whether to shuffle the data. If None, uses self.shuffle.
             num_workers (int): Number of worker processes for data loading.
             pin_memory (bool): Whether to pin memory. If None, auto-detects based on CUDA availability.
             **kwargs: Additional arguments passed to DataLoader.
-            
+
         Returns:
             torch.utils.data.DataLoader: A DataLoader for this dataset.
         """
         if shuffle is None:
             shuffle = self.shuffle
-            
+
         if pin_memory is None:
             pin_memory = torch.cuda.is_available()
-        
+
         from torch.utils.data import DataLoader
-        
+
         return DataLoader(
             self,
             batch_size=batch_size,
             shuffle=shuffle,
             num_workers=num_workers,
             pin_memory=pin_memory,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
-    def from_huggingface(cls, dataset_name, tokenizer, splits=None, max_length=None, cache_dir=None, **kwargs):
+    def from_hub(
+        cls,
+        dataset_name_or_path,
+        tokenizer,
+        splits=None,
+        max_length=None,
+        cache_dir=None,
+        **kwargs,
+    ):
+        """
+        Create OmniDataset instances from HuggingFace Hub or local directory.
+
+        This method supports loading datasets from:
+        1. OmniGenBench Hub on HuggingFace (downloads if needed)
+        2. Local directory containing dataset files
+
+        Args:
+            dataset_name_or_path (str): Name of the dataset on HuggingFace Hub, or path to local directory.
+            tokenizer: The tokenizer to use for processing sequences.
+            splits (list, optional): List of splits to create. Defaults to ['train', 'valid', 'test'].
+            max_length (int, optional): Maximum sequence length.
+            cache_dir (str, optional): Directory to cache the dataset or look for local files.
+            **kwargs: Additional arguments passed to the dataset constructor.
+
+        Returns:
+            dict: Dictionary containing datasets for each split.
+
+        Example:
+            >>> from omnigenbench import OmniTokenizer, OmniDatasetForSequenceClassification
+            >>> tokenizer = OmniTokenizer.from_pretrained("yangheng/OmniGenome-52M")
+
+            >>> # Load from HuggingFace Hub
+            >>> datasets = OmniDatasetForSequenceClassification.from_hub(
+            ...     "translation_efficiency_prediction",
+            ...     tokenizer=tokenizer
+            ... )
+
+            >>> # Load from local directory
+            >>> datasets = OmniDatasetForSequenceClassification.from_hub(
+            ...     "/path/to/local/dataset",
+            ...     tokenizer=tokenizer,
+            ...     cache_dir="/path/to/local/dataset"
+            ... )
+
+            >>> train_loader = datasets['train'].get_dataloader(batch_size=16)
+        """
+        if splits is None:
+            splits = ["train", "valid", "test"]
+
+        # Determine if dataset_name_or_path is a local path or a HuggingFace dataset name
+        is_local = os.path.exists(dataset_name_or_path) or (
+            cache_dir and os.path.exists(cache_dir)
+        )
+
+        if not is_local:
+            # Download from HuggingFace if not a local path
+            cls._download_dataset_from_hub(dataset_name_or_path, cache_dir)
+        else:
+            fprint(
+                f"Loading dataset from local path: {dataset_name_or_path or cache_dir}"
+            )
+
+        # Create datasets for each split
+        datasets = {"train": None, "valid": None, "test": None}
+        for split in splits:
+            if not cache_dir:
+                if is_local and os.path.exists(dataset_name_or_path):
+                    # If dataset_name_or_path itself is a local directory
+                    cache_dir = dataset_name_or_path
+                else:
+                    # Use default cache directory
+                    cache_dir = os.getcwd()
+
+            data_source = findfile.find_files(
+                cache_dir, [split], exclude_key=[".ipynb", ".py", "md", "txt"]
+            )
+            if not data_source:
+                fprint(
+                    f"Warning: No data files found for split '{split}' in {cache_dir}. Skipping this split."
+                )
+                continue
+            else:
+                fprint(f"Load data files for split '{split}': {data_source}")
+
+            datasets[split] = cls(
+                dataset_name_or_path=data_source,
+                tokenizer=tokenizer,
+                max_length=max_length,
+                **kwargs,
+            )
+
+        return datasets
+
+    @classmethod
+    def from_huggingface(
+        cls,
+        dataset_name_or_path,
+        tokenizer,
+        splits=None,
+        max_length=None,
+        cache_dir=None,
+        **kwargs,
+    ):
         """
         Create OmniDataset instances from a HuggingFace dataset.
-        
+
+        .. deprecated::
+            `from_huggingface` is deprecated and will be removed in a future version.
+            Use `from_huggingface` instead, which supports both HuggingFace Hub and local data sources.
+
         Args:
-            dataset_name (str): Name of the HuggingFace dataset or base URL.
+            dataset_name_or_path (str): Name of the HuggingFace dataset or base URL.
             tokenizer: The tokenizer to use for processing sequences.
             splits (list, optional): List of splits to create. Defaults to ['train', 'valid', 'test'].
             max_length (int, optional): Maximum sequence length.
             cache_dir (str, optional): Directory to cache the dataset.
             **kwargs: Additional arguments passed to the dataset constructor.
-            
+
         Returns:
             dict: Dictionary containing datasets for each split.
-            
+
         Example:
             >>> from omnigenbench import OmniTokenizer,OmniDatasetForSequenceClassification
             >>> tokenizer = OmniTokenizer.from_pretrained("yangheng/OmniGenome-52M")
@@ -266,27 +380,21 @@ class OmniDataset(torch.utils.data.Dataset):
             ... )
             >>> train_loader = datasets['train'].get_dataloader(batch_size=16)
         """
-        if splits is None:
-            splits = ['train', 'valid', 'test']
+        warnings.warn(
+            "from_huggingface() is deprecated and will be removed in a future version. "
+            "Please use from_huggingface() instead, which supports both HuggingFace Hub and local data sources.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
-        cls._download_dataset_from_huggingface(dataset_name, cache_dir)
-
-        # Create datasets for each split
-        datasets = {}
-        for split in splits:
-            if not cache_dir: # Use current directory if no cache_dir provided
-                cache_dir = os.getcwd()
-            data_source = findfile.find_file(cache_dir, [split], exclude_key=['.ipynb', '.py', 'md', 'txt'])
-
-            datasets[split] = cls(
-                data_source=data_source,
-                tokenizer=tokenizer,
-                max_length=max_length,
-                **kwargs
-            )
-        
-        return datasets
-
+        return cls.from_hub(
+            dataset_name_or_path=dataset_name_or_path,
+            tokenizer=tokenizer,
+            splits=splits,
+            max_length=max_length,
+            cache_dir=cache_dir,
+            **kwargs,
+        )
 
     def print_label_distribution(self):
         """
@@ -385,7 +493,6 @@ class OmniDataset(torch.utils.data.Dataset):
         else:
             pad_token_id = self.tokenizer.base_tokenizer.pad_token_id
 
-        # 计算输入和标签的最大长度
         max_input_length = max(
             [
                 torch.sum(data_item["input_ids"] != pad_token_id).item()
@@ -399,11 +506,9 @@ class OmniDataset(torch.utils.data.Dataset):
             ]
         )
 
-        # 确定初始max_length，不超过self.max_length
         original_max_length = max(max_input_length, max_label_length)
         original_max_length = min(original_max_length, self.max_length)
 
-        # 调整到不超过self.max_length的最大的8的倍数
         remainder = original_max_length % 8
         if remainder != 0:
             adjusted_max_length = original_max_length + (8 - remainder)
@@ -412,13 +517,12 @@ class OmniDataset(torch.utils.data.Dataset):
             adjusted_max_length = original_max_length
         max_length = adjusted_max_length
 
-        # 处理标签的特殊情况（修复错误的关键部分）
         first_labels = self.data[0]["labels"]
 
         label_shape = first_labels.shape
         if len(label_shape) >= 1:
-            label_padding_length = max(max_length, self.data[0]["labels"].shape[0])
-            label_padding_length = min(label_padding_length, max_length)
+            max_length = max(max_length, self.data[0]["labels"].shape[0])
+            label_padding_length = min(max_label_length, max_length)
             max_length = max(max_length, label_padding_length)
         else:
             label_padding_length = 0
@@ -430,7 +534,7 @@ class OmniDataset(torch.utils.data.Dataset):
 
         for data_item in self.data:
             for key, value in data_item.items():
-                # 确保转换为Tensor
+
                 if not isinstance(value, torch.Tensor):
                     value = torch.as_tensor(value)
                 dtype = value.dtype
@@ -438,18 +542,17 @@ class OmniDataset(torch.utils.data.Dataset):
                     value.dtype == torch.int16 or value.dtype == torch.int32
                 ):
                     data_item[key] = value.long()
-                # 确定填充长度
+
                 if "label" in key:
-                    if value.ndim == 0:  # 处理标量标签
+                    if value.ndim == 0:
                         padding_length = 0
                     else:
                         padding_length = label_padding_length - value.size(0)
                 else:
                     padding_length = max_length - value.size(0)
 
-                # 处理填充或截断
                 if padding_length > 0:
-                    # 确定填充值
+
                     if key == "input_ids":
                         _pad_value = pad_token_id
                     elif key == "attention_mask":
@@ -463,7 +566,6 @@ class OmniDataset(torch.utils.data.Dataset):
                     else:
                         _pad_value = pad_value
 
-                    # 构建填充张量
                     if value.ndim == 2:
                         pad_shape = (padding_length, value.size(1))
                     else:
@@ -473,7 +575,6 @@ class OmniDataset(torch.utils.data.Dataset):
                 elif padding_length < 0:
                     data_item[key] = value[:max_length]
 
-                # 确保数据类型正确
                 data_item[key] = data_item[key].to(dtype)
 
         return self.data
@@ -491,35 +592,38 @@ class OmniDataset(torch.utils.data.Dataset):
         """
         examples = []
         max_examples = kwargs.get("max_examples", None)
+        columns = kwargs.get("select_columns", None)
         if not isinstance(data_source, list):
             data_source = [data_source]
 
         for data_source in data_source:
+            _examples = []
+
             if data_source.endswith(".csv"):
                 import pandas as pd
 
                 df = pd.read_csv(data_source)
                 for i in range(len(df)):
-                    examples.append(df.iloc[i].to_dict())
+                    _examples.append(df.iloc[i].to_dict())
             elif data_source.endswith(".json") or data_source.endswith(".jsonl"):
                 import json
 
                 try:
                     with open(data_source, "r", encoding="utf8") as f:
-                        examples = json.load(f)
+                        _examples = json.load(f)
                 except:
                     with open(data_source, "r", encoding="utf8") as f:
                         lines = f.readlines()  # Assume the data is a list of examples
                     for i in range(len(lines)):
                         lines[i] = json.loads(lines[i])
                     for line in lines:
-                        examples.append(line)
+                        _examples.append(line)
             elif data_source.endswith(".parquet"):
                 import pandas as pd
 
                 df = pd.read_parquet(data_source)
                 for i in range(len(df)):
-                    examples.append(df.iloc[i].to_dict())
+                    _examples.append(df.iloc[i].to_dict())
             elif data_source.endswith(".npy") or data_source.endswith(".npz"):
                 import numpy as np
 
@@ -527,7 +631,7 @@ class OmniDataset(torch.utils.data.Dataset):
                     data = np.load(data_source, allow_pickle=True)
                     if isinstance(data, np.ndarray):
                         for item in data:
-                            examples.append(
+                            _examples.append(
                                 {
                                     "sequence": item["sequence"],
                                     "label": item.get("label", None),
@@ -544,7 +648,7 @@ class OmniDataset(torch.utils.data.Dataset):
                         item = data[key]
                         if isinstance(item, np.ndarray):
                             for sub_item in item:
-                                examples.append(
+                                _examples.append(
                                     {
                                         "sequence": sub_item["sequence"],
                                         "label": sub_item.get("label", None),
@@ -565,7 +669,7 @@ class OmniDataset(torch.utils.data.Dataset):
                         "Biopython is required for FASTA parsing. Please install with 'pip install biopython'."
                     )
                 for record in SeqIO.parse(data_source, "fasta"):
-                    examples.append(
+                    _examples.append(
                         {
                             "id": record.id,
                             "sequence": str(record.seq),
@@ -580,7 +684,7 @@ class OmniDataset(torch.utils.data.Dataset):
                         "Biopython is required for FASTQ parsing. Please install with 'pip install biopython'."
                     )
                 for record in SeqIO.parse(data_source, "fastq"):
-                    examples.append(
+                    _examples.append(
                         {
                             "id": record.id,
                             "sequence": str(record.seq),
@@ -593,13 +697,23 @@ class OmniDataset(torch.utils.data.Dataset):
                 import pandas as pd
 
                 df = pd.read_csv(data_source, sep="\t", comment="#")
-                # Assign column names for standard BED fields
-                for _, row in df.iterrows():
-                    examples.append(row.to_dict())
             else:
                 raise Exception("Unknown file format.")
 
-        fprint(f"Loaded {len(examples)} examples from {data_source}")
+            if columns := kwargs.get("select_columns", None):
+                fprint(f"Selecting columns: {columns}")
+                filtered_examples = []
+                for ex in _examples:
+                    filtered_ex = {col: ex[col] for col in columns if col in ex}
+                    filtered_examples.append(filtered_ex)
+                _examples = filtered_examples
+
+            examples.extend(_examples)
+            del _examples
+
+            fprint(
+                f"Reading from {data_source}, Loaded {len(examples)} examples so far..."
+            )
 
         if self.shuffle is True:
             fprint("Detected shuffle=True, shuffling the examples...")
@@ -610,7 +724,7 @@ class OmniDataset(torch.utils.data.Dataset):
             examples = examples[:max_examples]
 
         self.examples = examples
-        return examples
+        return self.examples
 
     def prepare_input(self, instance, **kwargs):
         """
@@ -628,12 +742,20 @@ class OmniDataset(torch.utils.data.Dataset):
         )
 
     @staticmethod
-    def _download_dataset_from_huggingface(dataset_name, local_dir=None):
+    def _download_dataset_from_hub(dataset_name, local_dir=None):
         """
-        Downloads and extracts datasets from OmniGenBench Hub on powered by HuggingFace.
+        Downloads and extracts datasets from OmniGenBench Hub powered by HuggingFace.
+
+        This method supports downloading datasets from the OmniGenBench Hub on HuggingFace.
+
+        Args:
+            dataset_name (str): Name of the dataset to download.
+            local_dir (str, optional): Directory to save the dataset. If None, saves to default location.
         """
         if local_dir is None:
-            local_dir = os.path.join(os.getcwd(), f"__OMNIGENOME_DATA__/datasets/{dataset_name}")
+            local_dir = os.path.join(
+                os.getcwd(), f"__OMNIGENOME_DATA__/datasets/{dataset_name}"
+            )
         else:
             local_dir = os.path.abspath(local_dir)
 
@@ -641,7 +763,6 @@ class OmniDataset(torch.utils.data.Dataset):
         zip_path = os.path.join(local_dir, f"{dataset_name}.zip")
 
         if not os.path.exists(local_dir):
-
             if not os.path.exists(local_dir):
                 os.makedirs(local_dir, exist_ok=True)
 
@@ -649,20 +770,37 @@ class OmniDataset(torch.utils.data.Dataset):
             response = requests.get(url_to_download, stream=True)
             response.raise_for_status()
 
-            with open(zip_path, 'wb') as f:
+            with open(zip_path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
             fprint(f"Downloaded {zip_path}")
 
         # Unzip the dataset
         if os.path.exists(zip_path):
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            with zipfile.ZipFile(zip_path, "r") as zip_ref:
                 zip_ref.extractall(local_dir)
             os.remove(zip_path)
         else:
-            fprint(f"Dataset already downloaded and extracted at {local_dir}."
-                   f"If you want to re-download, please delete the existing directory.")
+            fprint(
+                f"Dataset already downloaded and extracted at {local_dir}."
+                f"If you want to re-download, please delete the existing directory."
+            )
 
+    @staticmethod
+    def _download_dataset_from_huggingface(dataset_name, local_dir=None):
+        """
+        Downloads and extracts datasets from OmniGenBench Hub on powered by HuggingFace.
+
+        .. deprecated::
+            Use `_download_dataset_from_huggingface` instead.
+        """
+        warnings.warn(
+            "_download_dataset_from_huggingface() is deprecated. "
+            "Use _download_dataset_from_huggingface() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return OmniDataset._download_dataset_from_hub(dataset_name, local_dir)
 
     def _preprocessing(self):
         """
@@ -735,7 +873,7 @@ class OmniDataset(torch.utils.data.Dataset):
         # convert the data item to a omnigenbench dict
         return OmniDict(self.data[idx])
 
-    def sample(self, n=1):
+    def sample(self, n=1) -> "OmniDataset":
         """
         Returns a random sample of n items from the dataset.
 
@@ -743,9 +881,40 @@ class OmniDataset(torch.utils.data.Dataset):
             n (int): The number of samples to return.
 
         Returns:
-            list: A list of data samples.
+            OmniDataset: A OmniDataset of data samples.
         """
-        return random.sample(self.data, n)
+        # Ensure n doesn't exceed dataset size
+        n = min(n, len(self.data))
+
+        # Randomly sample indices
+        sampled_indices = random.sample(range(len(self.data)), n)
+
+        # Create a new OmniDataset instance with None dataset_name_or_path to skip loading
+        sampled_dataset = self.__class__(
+            dataset_name_or_path=None,
+            tokenizer=self.tokenizer,
+            max_length=self.max_length,
+            label2id=self.label2id,
+            shuffle=False,  # Don't shuffle sampled data
+            structure_in=self.structure_in,
+            drop_long_seq=self.drop_long_seq,
+            force_padding=self.force_padding,
+        )
+
+        # Copy sampled data
+        sampled_dataset.data = [self.data[i] for i in sampled_indices]
+        sampled_dataset.examples = (
+            [self.examples[i] for i in sampled_indices] if self.examples else []
+        )
+
+        # Copy metadata and other attributes
+        sampled_dataset.metadata = self.metadata.copy()
+        if hasattr(self, "id2label"):
+            sampled_dataset.id2label = self.id2label
+        if hasattr(self, "rna2structure"):
+            sampled_dataset.rna2structure = self.rna2structure
+
+        return sampled_dataset
 
     def get_column(self, column_name):
         """
@@ -816,4 +985,3 @@ class OmniDataset(torch.utils.data.Dataset):
         """
         for data_item in self.data:
             yield OmniDict(data_item)
-

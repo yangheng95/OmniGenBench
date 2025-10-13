@@ -79,7 +79,7 @@ class RNA2StructureCache(dict):
         self.cache_file = (
             cache_file
             if cache_file is not None
-            else os.path.join(tempfile.gettempdir(), "rna_structure_cache.pkl")
+            else os.path.join(os.getcwd(), "rna_structure_cache.pkl")
         )
         self.queue_num = 0
 
@@ -204,14 +204,14 @@ class RNA2StructureCache(dict):
                     self.cache[seq] = self._fold_single_sequence(seq)
                     self.queue_num += 1
 
+            # Update cache file periodically
+            self.update_cache_file(self.cache_file)
+
         # Prepare output
         if return_mfe:
             structures = [self.cache[seq] for seq in sequences]
         else:
             structures = [self.cache[seq][0] for seq in sequences]
-
-        # Update cache file periodically
-        self.update_cache_file(self.cache_file)
 
         # Return single result or list
         if len(structures) == 1:
