@@ -39,6 +39,10 @@ pyvenv.cfg
 .venv
 pip-selfcheck.json
 
+# macOS and editor temp files
+.DS_Store
+.vscode/
+
 ### C template
 # Prerequisites
 *.d

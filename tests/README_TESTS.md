@@ -147,7 +147,7 @@ def test_init_with_string_model(self, mock_tokenizer, mock_config):
 def test_prepare_input_with_dict(self, mock_tokenizer):
     """测试使用字典输入准备数据"""
     dataset = OmniDatasetForSequenceClassification(
-        data_source="test_data",
+        dataset_name_or_path="test_data",
         tokenizer=mock_tokenizer,
         max_length=512
     )
