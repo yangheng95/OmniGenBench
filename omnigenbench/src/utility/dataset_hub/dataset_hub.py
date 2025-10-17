@@ -118,7 +118,7 @@ def load_benchmark_datasets(
         max_length = bench_config["max_length"]
 
         train_set = dataset_cls(
-            data_source=bench_config["train_file"],
+            dataset_name_or_path=bench_config["train_file"],
             tokenizer=tokenizer,
             label2id=bench_config["label2id"],
             max_length=max_length,
@@ -129,7 +129,7 @@ def load_benchmark_datasets(
             **_kwargs,
         )
         test_set = dataset_cls(
-            data_source=bench_config["test_file"],
+            dataset_name_or_path=bench_config["test_file"],
             tokenizer=tokenizer,
             label2id=bench_config["label2id"],
             max_length=max_length,
@@ -140,7 +140,7 @@ def load_benchmark_datasets(
             **_kwargs,
         )
         valid_set = dataset_cls(
-            data_source=bench_config["valid_file"],
+            dataset_name_or_path=bench_config["valid_file"],
             tokenizer=tokenizer,
             label2id=bench_config["label2id"],
             max_length=max_length,

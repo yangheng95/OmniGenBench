@@ -1220,7 +1220,7 @@ class OmniModel(torch.nn.Module):
                     # Create a temporary dataset instance for using prepare_input
                     max_length = kwargs.pop("max_length", 1024)
                     dataset_instance = self.dataset_class(
-                        dataset_name=None,
+                        dataset_name_or_path=None,
                         tokenizer=self.tokenizer,
                         max_length=max_length,
                         **kwargs,
@@ -1271,7 +1271,7 @@ class OmniModel(torch.nn.Module):
 
                     max_length = kwargs.pop("max_length", 1024)
                     dataset_instance = self.dataset_class(
-                        dataset_name=None,
+                        dataset_name_or_path=None,
                         tokenizer=self.tokenizer,
                         max_length=max_length,
                         **kwargs,
@@ -1334,7 +1334,7 @@ class OmniModel(torch.nn.Module):
             raise ValueError(f"Unsupported input type: {type(sequence_or_inputs)}")
 
         # Ensure inputs are on the correct device and add batch dimension if needed
-        if not isinstance(inputs, dict):
+        if not isinstance(inputs, (BatchEncoding, dict)):
             raise ValueError(f"Processed inputs must be a dict, got {type(inputs)}")
 
         # Add batch dimension if missing

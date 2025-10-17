@@ -105,7 +105,9 @@ class OmniDataset(torch.utils.data.Dataset):
         rna2structure (RNA2StructureCache): Cache for RNA structure predictions.
     """
 
-    def __init__(self, dataset_name_or_path, tokenizer, max_length=None, **kwargs):
+    def __init__(
+        self, dataset_name_or_path=None, tokenizer=None, max_length=None, **kwargs
+    ):
         """
         Initializes the dataset.
 
@@ -136,7 +138,13 @@ class OmniDataset(torch.utils.data.Dataset):
             ...                       dataset_url="https://example.com/data.zip")
         """
         super(OmniDataset, self).__init__()
+        if not dataset_name_or_path and kwargs.get("data_source", None):
+            dataset_name_or_path = kwargs.get("data_source", None)
+        if not dataset_name_or_path:
+            raise ValueError("Please provide dataset_name_or_path")
+
         self.metadata = env_meta_info()
+        self.dataset_info = None  # Store dataset_info separately from metadata
         self.tokenizer = tokenizer
         self.label2id = kwargs.get("label2id", None)
         self.shuffle = kwargs.get("shuffle", True)
@@ -180,41 +188,50 @@ class OmniDataset(torch.utils.data.Dataset):
             # Check if dataset needs to be downloaded
             fprint(f"Loading data from {dataset_name_or_path}...")
             self.load_data_source(dataset_name_or_path, **kwargs)
+            # Try to load dataset_info.json from the same directory
+            self._load_dataset_info(dataset_name_or_path)
             self._preprocessing()
+            if self.tokenizer is not None:
+                for example in tqdm.tqdm(self.examples):
+                    if hasattr(self.tokenizer, "max_length"):
+                        self.tokenizer.max_length = self.max_length
+                    else:
+                        self.tokenizer.base_tokenizer.max_length = self.max_length
 
-            for example in tqdm.tqdm(self.examples):
-                if hasattr(self.tokenizer, "max_length"):
-                    self.tokenizer.max_length = self.max_length
-                else:
-                    self.tokenizer.base_tokenizer.max_length = self.max_length
+                    import inspect
 
-                import inspect
+                    new_args = {}
+                    tokenization_args = inspect.getfullargspec(
+                        self.tokenizer.encode
+                    ).args
+                    for key in kwargs:
+                        if key in tokenization_args:
+                            new_args[key] = kwargs[key]
+                    prepared_input = self.prepare_input(example, **new_args)
 
-                new_args = {}
-                tokenization_args = inspect.getfullargspec(self.tokenizer.encode).args
-                for key in kwargs:
-                    if key in tokenization_args:
-                        new_args[key] = kwargs[key]
-                prepared_input = self.prepare_input(example, **new_args)
+                    if not prepared_input:
+                        continue
 
-                # Squeeze the batch dimension if it exists
-                for key, value in prepared_input.items():
-                    prepared_input[key] = value.squeeze(0)
+                    if (
+                        self.drop_long_seq
+                        and len(prepared_input["input_ids"]) > self.max_length
+                    ):
+                        fprint(
+                            f"Dropping sequence {example['sequence']} due to length > {self.max_length}"
+                        )
+                    else:
 
-                if not prepared_input:
-                    continue
-                if (
-                    self.drop_long_seq
-                    and len(prepared_input["input_ids"]) > self.max_length
-                ):
-                    fprint(
-                        f"Dropping sequence {example['sequence']} due to length > {self.max_length}"
-                    )
-                else:
-                    self.data.append(prepared_input)
+                        if isinstance(prepared_input, BatchEncoding):
+                            prepared_input = [prepared_input]
 
-            self._postprocessing()
-            self._pad_and_truncate()
+                        # Squeeze the batch dimension if it exists
+                        for item in prepared_input:
+                            for key, value in item.items():
+                                item[key] = value.squeeze(0)
+                            self.data.append(item)
+
+                self._postprocessing()
+                self._pad_and_truncate()
 
     def get_dataloader(
         self, batch_size=16, shuffle=None, num_workers=0, pin_memory=None, **kwargs
@@ -314,6 +331,11 @@ class OmniDataset(torch.utils.data.Dataset):
 
         # Create datasets for each split
         datasets = {"train": None, "valid": None, "test": None}
+        keys_to_search = {
+            "train": ["train."],
+            "valid": ["val.", "valid.", "dev."],
+            "test": ["test."],
+        }
         for split in splits:
             if not cache_dir:
                 if is_local and os.path.exists(dataset_name_or_path):
@@ -324,7 +346,9 @@ class OmniDataset(torch.utils.data.Dataset):
                     cache_dir = os.getcwd()
 
             data_source = findfile.find_files(
-                cache_dir, [split], exclude_key=[".ipynb", ".py", "md", "txt"]
+                cache_dir,
+                or_key=keys_to_search[split],
+                exclude_key=[".ipynb", ".py", "md", "txt"],
             )
             if not data_source:
                 fprint(
@@ -338,6 +362,7 @@ class OmniDataset(torch.utils.data.Dataset):
                 dataset_name_or_path=data_source,
                 tokenizer=tokenizer,
                 max_length=max_length,
+                split=split,
                 **kwargs,
             )
 
@@ -578,6 +603,209 @@ class OmniDataset(torch.utils.data.Dataset):
                 data_item[key] = data_item[key].to(dtype)
 
         return self.data
+
+    def _load_dataset_info(self, dataset_path):
+        """
+        Load dataset_info.json from the dataset directory.
+
+        This method searches for dataset_info.json in the directory containing
+        the dataset file(s). The dataset_info provides structured metadata about
+        the dataset including description, statistics, features, and more.
+
+        Note: This is separate from the 'metadata' attribute used by OmniGenBench
+        for model/tokenizer versioning. dataset_info is specifically for dataset
+        documentation and characteristics.
+
+        Args:
+            dataset_path (str or list): Path to dataset file(s) or directory
+        """
+        import json
+        import os
+
+        # Determine the directory to search
+        if isinstance(dataset_path, list):
+            # Use the directory of the first file
+            search_dir = os.path.dirname(os.path.abspath(dataset_path[0]))
+        elif os.path.isdir(dataset_path):
+            search_dir = dataset_path
+        else:
+            search_dir = os.path.dirname(os.path.abspath(dataset_path))
+
+        # Look for dataset_info.json in the directory
+        info_path = os.path.join(search_dir, "dataset_info.json")
+
+        if os.path.exists(info_path):
+            try:
+                with open(info_path, "r", encoding="utf-8") as f:
+                    self.dataset_info = json.load(f)
+                fprint(f"✓ Loaded dataset_info from: {info_path}")
+            except Exception as e:
+                fprint(f"Warning: Failed to load dataset_info.json: {e}")
+                self.dataset_info = None
+        else:
+            fprint(f"Note: No dataset_info.json found in {search_dir}")
+            self.dataset_info = None
+
+    def info(self, sections=None):
+        """
+        Print formatted dataset information.
+
+        This method displays dataset_info in a human-readable format. It's separate
+        from model/tokenizer metadata and focuses on dataset characteristics.
+
+        Args:
+            sections (list, optional): List of section names to print. If None, prints all.
+                Available sections: 'basic', 'statistics', 'features', 'splits',
+                'preprocessing', 'metrics', 'citation', 'all'
+
+        Example:
+            >>> dataset.info()  # Print all sections
+            >>> dataset.info(sections=['basic', 'statistics'])  # Print specific sections
+        """
+        if self.dataset_info is None:
+            fprint(
+                "No dataset_info available. Load a dataset with dataset_info.json or use load_dataset_info()."
+            )
+            return
+
+        if sections is None or "all" in sections:
+            sections = [
+                "basic",
+                "statistics",
+                "features",
+                "splits",
+                "preprocessing",
+                "metrics",
+                "citation",
+            ]
+
+        info = self.dataset_info
+
+        fprint("\n" + "=" * 70)
+        fprint("DATASET INFORMATION".center(70))
+        fprint("=" * 70)
+
+        # Basic Information
+        if "basic" in sections:
+            fprint("\n📊 BASIC INFORMATION")
+            fprint("-" * 70)
+            if "dataset_name" in info:
+                fprint(f"  Name: {info['dataset_name']}")
+            if "dataset_version" in info:
+                fprint(f"  Version: {info['dataset_version']}")
+            if "description" in info:
+                fprint(f"  Description: {info['description']}")
+            if "task_type" in info:
+                fprint(f"  Task Type: {info['task_type']}")
+            if "domain" in info:
+                fprint(f"  Domain: {info['domain']}")
+            if "source" in info:
+                fprint(f"  Source: {info['source']}")
+            if "license" in info:
+                fprint(f"  License: {info['license']}")
+
+        # Statistics
+        if "statistics" in sections and "statistics" in info:
+            fprint("\n📈 STATISTICS")
+            fprint("-" * 70)
+            stats = info["statistics"]
+            for key, value in stats.items():
+                formatted_key = key.replace("_", " ").title()
+                if isinstance(value, dict):
+                    fprint(f"  {formatted_key}:")
+                    for sub_key, sub_value in value.items():
+                        fprint(f"    - {sub_key}: {sub_value}")
+                else:
+                    fprint(f"  {formatted_key}: {value}")
+
+        # Features
+        if "features" in sections and "features" in info:
+            fprint("\n🔧 FEATURES")
+            fprint("-" * 70)
+            features = info["features"]
+
+            if "input" in features:
+                fprint("  Input Features:")
+                for feat_name, feat_info in features["input"].items():
+                    fprint(f"    • {feat_name}")
+                    if isinstance(feat_info, dict):
+                        if "description" in feat_info:
+                            fprint(f"      Description: {feat_info['description']}")
+                        if "type" in feat_info:
+                            fprint(f"      Type: {feat_info['type']}")
+
+            if "output" in features:
+                fprint("  Output Features:")
+                for feat_name, feat_info in features["output"].items():
+                    fprint(f"    • {feat_name}")
+                    if isinstance(feat_info, dict) and "description" in feat_info:
+                        fprint(f"      Description: {feat_info['description']}")
+
+        # Data Splits
+        if "splits" in sections and "data_splits" in info:
+            fprint("\n📂 DATA SPLITS")
+            fprint("-" * 70)
+            for split_name, split_info in info["data_splits"].items():
+                fprint(f"  {split_name.title()}:")
+                if isinstance(split_info, dict):
+                    for key, value in split_info.items():
+                        fprint(f"    - {key}: {value}")
+
+        # Preprocessing
+        if "preprocessing" in sections and "preprocessing" in info:
+            fprint("\n⚙️  PREPROCESSING")
+            fprint("-" * 70)
+            preproc = info["preprocessing"]
+            for key, value in preproc.items():
+                formatted_key = key.replace("_", " ").title()
+                if isinstance(value, list):
+                    fprint(f"  {formatted_key}: {', '.join(value)}")
+                else:
+                    fprint(f"  {formatted_key}: {value}")
+
+        # Evaluation Metrics
+        if "metrics" in sections and "evaluation_metrics" in info:
+            fprint("\n📊 EVALUATION METRICS")
+            fprint("-" * 70)
+            metrics = info["evaluation_metrics"]
+            if "primary" in metrics:
+                fprint(f"  Primary Metric: {metrics['primary']}")
+            if "description" in metrics:
+                fprint(f"  Description: {metrics['description']}")
+            if "secondary" in metrics:
+                fprint(f"  Secondary Metrics: {', '.join(metrics['secondary'])}")
+
+        # Citation
+        if "citation" in sections and "citation" in info:
+            fprint("\n📚 CITATION")
+            fprint("-" * 70)
+            fprint(info["citation"])
+
+        # Additional Notes
+        if "notes" in info and sections is None:
+            fprint("\n📝 NOTES")
+            fprint("-" * 70)
+            for i, note in enumerate(info["notes"], 1):
+                fprint(f"  {i}. {note}")
+
+        fprint("\n" + "=" * 70 + "\n")
+
+        if self.dataset_info is None:
+            return None
+
+        if key is None:
+            return self.dataset_info
+
+        # Support dot notation for nested keys
+        keys = key.split(".")
+        value = self.dataset_info
+        for k in keys:
+            if isinstance(value, dict) and k in value:
+                value = value[k]
+            else:
+                return None
+
+        return value
 
     def load_data_source(self, data_source, **kwargs):
         """

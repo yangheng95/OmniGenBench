@@ -249,7 +249,7 @@ class AutoTrain:
                 max_length = train_config["max_length"]
 
             train_set = dataset_cls(
-                data_source=train_config["train_file"],
+                dataset_name_or_path=train_config["train_file"],
                 tokenizer=tokenizer,
                 label2id=train_config["label2id"],
                 max_length=max_length,
@@ -260,7 +260,7 @@ class AutoTrain:
                 **_kwargs,
             )
             test_set = dataset_cls(
-                data_source=train_config["test_file"],
+                dataset_name_or_path=train_config["test_file"],
                 tokenizer=tokenizer,
                 label2id=train_config["label2id"],
                 max_length=max_length,
@@ -271,7 +271,7 @@ class AutoTrain:
                 **_kwargs,
             )
             valid_set = dataset_cls(
-                data_source=train_config["valid_file"],
+                dataset_name_or_path=train_config["valid_file"],
                 tokenizer=tokenizer,
                 label2id=train_config["label2id"],
                 max_length=max_length,
