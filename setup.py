@@ -54,8 +54,11 @@ setup(
     packages=find_packages(include=["omnigenbench", "omnigenbench.*", "omnigenome", "omnigenome.*"]),
     entry_points={
         "console_scripts": [
+            "ogb=omnigenbench.cli.ogb_cli:main",
+            # Legacy commands for backward compatibility
             "autobench=omnigenbench.auto.auto_bench.auto_bench_cli:run_bench",
             "autotrain=omnigenbench.auto.auto_train.auto_train_cli:run_train",
+            "autoinfer=omnigenbench.cli.autoinfer_cli:main",
         ],
     },
     install_requires=[

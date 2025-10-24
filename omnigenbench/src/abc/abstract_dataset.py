@@ -925,10 +925,13 @@ class OmniDataset(torch.utils.data.Dataset):
                 import pandas as pd
 
                 df = pd.read_csv(data_source, sep="\t", comment="#")
+                for i in range(len(df)):
+                    _examples.append(df.iloc[i].to_dict())
+
             else:
                 raise Exception("Unknown file format.")
 
-            if columns := kwargs.get("select_columns", None):
+            if columns is not None:
                 fprint(f"Selecting columns: {columns}")
                 filtered_examples = []
                 for ex in _examples:

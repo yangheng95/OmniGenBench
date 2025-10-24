@@ -79,10 +79,10 @@ class AutoTrain:
 
         Example:
             >>> # Initialize with a dataset and model
-            >>> trainer = AutoTrain("dataset_name", "model_name")
+            >>> trainer = AutoTrain("dataset_name_or_path", "model_name")
 
             >>> # Initialize with custom settings
-            >>> trainer = AutoTrain("dataset_name", "model_name",
+            >>> trainer = AutoTrain("dataset_name_or_path", "model_name",
             ...                     autocast="bf16", trainer="accelerate")
         """
         self.dataset = dataset.rstrip("/")

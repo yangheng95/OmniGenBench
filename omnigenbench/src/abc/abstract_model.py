@@ -223,6 +223,18 @@ class OmniModel(torch.nn.Module):
             self.dataset_class = dataset_class
             self.metadata["dataset_cls"] = dataset_class.__name__
             self.metadata["dataset_module"] = dataset_class.__module__
+        elif hasattr(self, "dataset_class"):
+            dataset_class = self.dataset_class
+            self.metadata["dataset_cls"] = dataset_class.__name__
+            self.metadata["dataset_module"] = dataset_class.__module__
+        else:
+            self.dataset_class = None
+            self.metadata["dataset_cls"] = None
+            self.metadata["dataset_module"] = None
+            fprint(
+                "Warning: No dataset_class is provided for the model, please set 'dataset_class=...' "
+                "when initializing the model if you want to use the dataset's prepare_input method during inference."
+            )
 
         # The config of the model
         if hasattr(self.config, "n_embd") and self.config.n_embd:

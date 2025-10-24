@@ -1,6 +1,6 @@
-![favicon.png](asset/favicon.png)
+[//]: # (![favicon.png]&#40;asset/favicon.png&#41;)
 
-<h3 align="center">OmniGenBench provides an all-in-one solution for genomic foundation model finetuning, inference, deployment and automated benchmarking, designed for research and applications in genomics.</h3>
+[//]: # (<h3 align="center">OmniGenBench provides an all-in-one solution for genomic foundation model finetuning, inference, deployment and automated benchmarking, designed for research and applications in genomics.</h3>)
 
 <div align="center">
 
@@ -70,14 +70,42 @@ pip install -e .
 ```
 
 ## Quick Start
-`OmniGenBench is available for diverse models and benchmark suites, please refer to the  following sections for more details.`
+`OmniGenBench is available for diverse models and benchmark suites, please refer to the following sections for more details.`
+
+### Auto-inference via CLI
+Run inference with fine-tuned models on genomic sequences:
+```bash
+# Single sequence inference
+ogb autoinfer --model yangheng/ogb_tfb_finetuned --sequence "ATCGATCGATCGATCG" --output-file predictions.json
+
+# Batch inference from file
+ogb autoinfer --model yangheng/ogb_te_finetuned --input-file sequences.json --batch-size 64 --output-file results.json
+
+# Legacy command (still supported)
+autoinfer --model yangheng/ogb_tfb_finetuned --sequence "ATCGATCGATCG"
+```
+
+### Auto-inference via Python API
+Or use the Python API for programmatic inference:
+```python
+from omnigenbench import ModelHub
+
+model = ModelHub.load("yangheng/ogb_tfb_finetuned")
+outputs = model.inference("ATCGATCGATCGATCGATCGATCGATCGATCG")
+print(outputs)  # {'predictions': array([1, 0, 1, ...]), 'probabilities': array([0.92, 0.15, ...])}
+```
+You can find more examples in the [Getting Started Guide](docs/GETTING_STARTED.md) and [AutoInfer Examples](examples/autoinfer_examples/).
+
 ### Auto-benchmark via CLI
 The following command will download the model from the Hugging Face model hub and run the benchmark on the RGB benchmark:
 ```bash
+# New unified command
+ogb autobench --model yangheng/OmniGenome-186M --benchmark RGB --trainer accelerate
+
+# Legacy command (still supported)
 autobench --model_name_or_path "yangheng/OmniGenome-186M" --benchmark "RGB" --trainer accelerate
 ```
 You can find a visualization of AutoBench [here](asset/AutoBench.gif).
-
 
 ### Auto-benchmark via Python API
 Or you can use the following python code to run the auto-benchmark:
