@@ -1,0 +1,6 @@
+sequence,gene_id,description,tissue,expected_label
+ATCGATCGATCGATCGATCGATCGATCGATCG,gene_001,Promoter region A,leaf,high
+GCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGC,gene_002,5' UTR optimized,root,high
+TATATATATATATATATATATATATATATATAT,gene_003,Random control sequence,stem,low
+AGAGAGAGAGAGAGAGAGAGAGAGAGAGAGAG,gene_004,Wild-type 5' UTR,flower,medium
+CTCTCTCTCTCTCTCTCTCTCTCTCTCTCTCT,gene_005,Mutant sequence,seed,low

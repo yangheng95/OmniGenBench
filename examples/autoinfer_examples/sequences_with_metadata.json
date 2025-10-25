@@ -1,0 +1,32 @@
+{
+  "data": [
+    {
+      "sequence": "ATCGATCGATCGATCGATCGATCGATCGATCG",
+      "gene_id": "gene_001",
+      "description": "Promoter region A",
+      "tissue": "leaf",
+      "expected_label": "high"
+    },
+    {
+      "sequence": "GCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGC",
+      "gene_id": "gene_002",
+      "description": "5' UTR optimized",
+      "tissue": "root",
+      "expected_label": "high"
+    },
+    {
+      "sequence": "TATATATATATATATATATATATATATATATAT",
+      "gene_id": "gene_003",
+      "description": "Random control sequence",
+      "tissue": "stem",
+      "expected_label": "low"
+    },
+    {
+      "sequence": "AGAGAGAGAGAGAGAGAGAGAGAGAGAGAGAG",
+      "gene_id": "gene_004",
+      "description": "Wild-type 5' UTR",
+      "tissue": "flower",
+      "expected_label": "medium"
+    }
+  ]
+}
