@@ -354,20 +354,38 @@ class AccelerateTrainer(BaseTrainer):
                 labels = batch["labels"]
 
                 # Gather predictions and labels from all processes
-                gathered_predictions = self.accelerator.gather(predictions)
-                gathered_labels = self.accelerator.gather(labels)
+                # Use gather_for_metrics to handle variable-sized last batch
+                gathered_predictions = self.accelerator.gather_for_metrics(predictions)
+                gathered_labels = self.accelerator.gather_for_metrics(labels)
 
                 # Only main process processes gathered data
                 if self.accelerator.is_main_process:
                     gathered_predictions = gathered_predictions.float().cpu().numpy()
                     gathered_labels = gathered_labels.float().cpu().numpy()
+                    
+                    # Flatten the first dimension if it exists (from multi-process gathering)
+                    # This handles the case where gather adds an extra dimension
+                    if gathered_predictions.ndim > 1 and gathered_predictions.shape[0] > 0:
+                        # Reshape to (batch_size, ...) by flattening the first dimension
+                        gathered_predictions = gathered_predictions.reshape(-1, *gathered_predictions.shape[2:]) if gathered_predictions.ndim > 2 else gathered_predictions.reshape(-1)
+                    if gathered_labels.ndim > 1 and gathered_labels.shape[0] > 0:
+                        gathered_labels = gathered_labels.reshape(-1, *gathered_labels.shape[2:]) if gathered_labels.ndim > 2 else gathered_labels.reshape(-1)
+                    
                     all_preds.append(gathered_predictions)
                     all_truth.append(gathered_labels)
 
         # Only main process computes metrics
         if self.accelerator.is_main_process:
-            all_preds = np.concatenate(all_preds, axis=0)
-            all_truth = np.concatenate(all_truth, axis=0)
+            # Use vstack to handle variable-sized batches more robustly
+            # This works even when batches have different sizes in dimension 1
+            try:
+                all_preds = np.concatenate(all_preds, axis=0)
+                all_truth = np.concatenate(all_truth, axis=0)
+            except ValueError as e:
+                # If concatenate fails due to shape mismatch, try vstack
+                fprint(f"Warning: Using vstack due to shape mismatch: {e}")
+                all_preds = np.vstack(all_preds)
+                all_truth = np.vstack(all_truth)
 
             if not np.all(all_truth == -100):
                 valid_metrics = {}
@@ -412,19 +430,37 @@ class AccelerateTrainer(BaseTrainer):
                 predictions = output["predictions"]
                 labels = batch["labels"]
 
-                gathered_predictions = self.accelerator.gather(predictions)
-                gathered_labels = self.accelerator.gather(labels)
+                # Use gather_for_metrics to handle variable-sized last batch
+                gathered_predictions = self.accelerator.gather_for_metrics(predictions)
+                gathered_labels = self.accelerator.gather_for_metrics(labels)
 
                 if self.accelerator.is_main_process:
                     gathered_predictions = gathered_predictions.float().cpu().numpy()
                     gathered_labels = gathered_labels.float().cpu().numpy()
+                    
+                    # Flatten the first dimension if it exists (from multi-process gathering)
+                    # This handles the case where gather adds an extra dimension
+                    if gathered_predictions.ndim > 1 and gathered_predictions.shape[0] > 0:
+                        # Reshape to (batch_size, ...) by flattening the first dimension
+                        gathered_predictions = gathered_predictions.reshape(-1, *gathered_predictions.shape[2:]) if gathered_predictions.ndim > 2 else gathered_predictions.reshape(-1)
+                    if gathered_labels.ndim > 1 and gathered_labels.shape[0] > 0:
+                        gathered_labels = gathered_labels.reshape(-1, *gathered_labels.shape[2:]) if gathered_labels.ndim > 2 else gathered_labels.reshape(-1)
+                    
                     all_preds.append(gathered_predictions)
                     all_truth.append(gathered_labels)
 
         # Only main process computes metrics
         if self.accelerator.is_main_process:
-            all_preds = np.concatenate(all_preds, axis=0)
-            all_truth = np.concatenate(all_truth, axis=0)
+            # Use vstack to handle variable-sized batches more robustly
+            # This works even when batches have different sizes in dimension 1
+            try:
+                all_preds = np.concatenate(all_preds, axis=0)
+                all_truth = np.concatenate(all_truth, axis=0)
+            except ValueError as e:
+                # If concatenate fails due to shape mismatch, try vstack
+                fprint(f"Warning: Using vstack due to shape mismatch: {e}")
+                all_preds = np.vstack(all_preds)
+                all_truth = np.vstack(all_truth)
 
             if not np.all(all_truth == -100):
                 test_metrics = {}
