@@ -16,7 +16,7 @@ from ..module_utils import OmniPooling
 class OmniModelForTokenClassification(OmniModel):
     """
     Model for token-level (per-nucleotide) classification tasks in genomic analysis.
-    
+
     This class implements per-token classification where each nucleotide in the input
     sequence receives an independent class prediction. Common genomic applications include:
     - Splice site detection (donor/acceptor/none)
@@ -24,21 +24,21 @@ class OmniModelForTokenClassification(OmniModel):
     - Protein binding site identification (per-nucleotide)
     - Chromatin state annotation (per-position)
     - Base modification detection (m6A, m5C, etc.)
-    
+
     Unlike sequence classification, this model produces outputs of the same length as
     the input sequence, with each position classified independently.
-    
+
     **Key Features**:
-    
+
     - **Per-Token Predictions**: Each nucleotide receives an independent classification,
       enabling fine-grained sequence annotation.
-      
+
     - **Variable-Length Output**: Output length matches input sequence length (excluding
       special tokens), handling sequences of arbitrary length.
-      
+
     - **Special Token Handling**: Automatically excludes [CLS], [SEP], [PAD] tokens from
       predictions to return only biologically relevant positions.
-      
+
     - **Loss Computation**: Uses CrossEntropyLoss with automatic padding token masking
       via PyTorch's ignore_index=-100 convention.
 
@@ -59,12 +59,12 @@ class OmniModelForTokenClassification(OmniModel):
         ...     tokenizer=tokenizer,
         ...     num_labels=3  # e.g., 3 classes: background, donor, acceptor
         ... )
-        >>> 
+        >>>
         >>> # Inference on single sequence
         >>> result = model.inference("ATCGATCGATCG")
         >>> print(len(result['predictions']))  # Length matches input sequence
         >>> print(result['predictions'])       # Per-nucleotide class labels
-        >>> 
+        >>>
         >>> # Training example
         >>> outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
         >>> loss = model.loss_function(outputs['logits'], labels)
@@ -259,28 +259,28 @@ class OmniModelForTokenClassification(OmniModel):
 class OmniModelForSequenceClassification(OmniModel):
     """
     Model for sequence-level classification tasks in genomic analysis.
-    
+
     This class implements sequence classification where the entire input sequence
     is classified into discrete categories. Common genomic applications include:
     - Promoter vs. non-promoter classification
     - Functional region annotation (enhancer, silencer, insulator)
     - Sequence origin classification (species, cell type)
     - Regulatory element prediction
-    
+
     The model applies pooling over the sequence dimension to create a fixed-length
     representation, which is then classified via a linear head with softmax activation.
-    
+
     **Key Features**:
-    
+
     - **Flexible Pooling**: Supports mean, max, cls-token, and attention-based pooling
       strategies via OmniPooling. Strategy is configurable in model config.
-      
+
     - **Multi-Class Support**: Handles binary and multi-class classification through
       configurable num_labels parameter.
-      
+
     - **Probability Output**: Provides both logits and probability distributions via
       softmax activation for confidence-based predictions.
-      
+
     - **Loss Function**: Uses CrossEntropyLoss by default, suitable for single-label
       classification with mutually exclusive classes.
 
@@ -303,12 +303,12 @@ class OmniModelForSequenceClassification(OmniModel):
         ...     tokenizer=tokenizer,
         ...     num_labels=2
         ... )
-        >>> 
+        >>>
         >>> # Inference on single sequence
         >>> result = model.inference("ATCGATCGATCG")
         >>> print(result['predictions'])  # Class index
         >>> print(result['confidence'])   # Prediction confidence
-        >>> 
+        >>>
         >>> # Batch inference
         >>> sequences = ["ATCGATCG", "GCTAGCTA", "TTAACCGG"]
         >>> results = model.inference(sequences)

@@ -368,18 +368,18 @@ class OmniModelForRNADesign(torch.nn.Module):
     ):
         """
         Design RNA sequences for a target structure using evolutionary algorithms.
-        
+
         Args:
             structure (str): Target secondary structure in dot-bracket notation
             mutation_ratio (float): Mutation rate for genetic algorithm (0.0-1.0)
             num_population (int): Population size for each generation
             num_generation (int): Maximum number of evolutionary generations
-            
+
         Returns:
             list: List of designed RNA sequences that fold into the target structure.
                   Returns all sequences with perfect match (score=0) if found,
                   otherwise returns the best sequences from final population.
-                  
+
         Example:
             >>> model = OmniModelForRNADesign(model="yangheng/OmniGenome-186M")
             >>> sequences = model.design(structure="(((...)))", num_population=100, num_generation=50)
@@ -389,7 +389,9 @@ class OmniModelForRNADesign(torch.nn.Module):
         population = self._init_population(structure, num_population)
         population = self._mlm_mutate(population, structure, mutation_ratio)
         # evolve
-        with tqdm(total=num_generation, desc="Designing RNA sequences", unit="gen") as pbar:
+        with tqdm(
+            total=num_generation, desc="Designing RNA sequences", unit="gen"
+        ) as pbar:
             for _ in range(num_generation):
                 next_generation = self._crossover(population)
                 next_generation = self._mlm_mutate(
@@ -406,12 +408,12 @@ class OmniModelForRNADesign(torch.nn.Module):
                     pbar.update(num_generation - pbar.n)  # Complete the progress bar
                     pbar.set_description(f"✅ Found {len(candidates)} perfect matches")
                     return candidates
-                
+
                 # Update progress with best score info
                 best_score = next_generation[0][2] if next_generation else 1.0
                 pbar.set_postfix({"best_score": f"{best_score:.4f}"})
                 pbar.update(1)
-                
+
                 population = [
                     (seq, bp_span) for seq, bp_span, _score, _mfe in next_generation
                 ]

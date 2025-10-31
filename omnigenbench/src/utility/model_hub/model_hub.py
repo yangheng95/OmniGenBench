@@ -105,7 +105,7 @@ class ModelHub:
     This class provides a unified interface for model acquisition and loading, implementing
     a hybrid strategy: clone from HuggingFace Hub to local cache on first access, then
     load exclusively from local files for all subsequent operations. This approach ensures:
-    
+
     - **Reproducibility**: Local caching prevents silent model updates
     - **Offline Access**: Models remain available without internet connectivity after initial clone
     - **Version Control**: Explicit control over model versions via git tags/commits
@@ -129,7 +129,7 @@ class ModelHub:
       metadata. Loaded as base AutoModel instances with attached tokenizer for compatibility.
 
     **Cache Management**: Models are cached with HuggingFace Hub naming convention:
-    
+
     - ``yangheng/OmniGenome-186M`` → ``__OMNIGENOME_DATA__/models/yangheng--OmniGenome-186M/``
     - Supports ``force_download=True`` to re-clone updated versions
     - No automatic cache cleanup; manual management required for disk space constraints

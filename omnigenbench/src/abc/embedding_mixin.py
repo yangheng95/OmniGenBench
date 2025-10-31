@@ -14,19 +14,19 @@ from ..misc.utils import fprint
 class EmbeddingMixin:
     """
     Mixin class that adds embedding and attention extraction capabilities to any model.
-    
+
     This mixin provides a unified interface for:
     - Generating sequence embeddings (pooled and token-level)
     - Extracting attention scores from transformer layers
     - Computing similarity between embeddings
     - Visualizing attention patterns
-    
+
     Usage:
         Simply inherit from this mixin along with your base model class:
-        
+
         >>> class OmniModel(EmbeddingMixin, torch.nn.Module):
         ...     pass
-        
+
     All methods require the model to have:
     - self.model: The underlying transformer model
     - self.tokenizer: The tokenizer for processing sequences
@@ -68,7 +68,7 @@ class EmbeddingMixin:
         embeds = []
         device = self.device
         is_cuda = isinstance(device, torch.device) and device.type == "cuda"
-        
+
         for i in range(0, len(sequences), batch_size):
             batch_sequences = sequences[i : i + batch_size]
             inputs = self.tokenizer(
@@ -79,7 +79,7 @@ class EmbeddingMixin:
                 max_length=max_length,
             )
             inputs = {k: v.to(device) for k, v in inputs.items()}
-            
+
             ctx = (
                 (
                     torch.autocast(device_type="cuda", dtype=amp_dtype)
@@ -89,12 +89,12 @@ class EmbeddingMixin:
                 if require_grad
                 else torch.no_grad()
             )
-            
+
             with ctx:
                 outputs = self.model(**inputs).last_hidden_state  # (B,L,H)
-            
+
             hidden = outputs if not return_on_cpu else outputs.cpu()
-            
+
             if agg == "head":
                 pooled = hidden[:, 0, :]
             elif agg == "mean":
@@ -115,9 +115,9 @@ class EmbeddingMixin:
                 pooled = torch.stack(pooled_list, 0)
             else:
                 raise ValueError(f"Unsupported agg: {agg}")
-            
+
             embeds.append(pooled)
-        
+
         out = torch.cat(embeds, 0)
         return out
 
@@ -163,7 +163,7 @@ class EmbeddingMixin:
                 max_length=max_length,
             )
             inputs = {key: value.to(self.device) for key, value in inputs.items()}
-            
+
             ctx = (
                 (
                     torch.autocast(device_type="cuda", dtype=amp_dtype)
@@ -177,14 +177,14 @@ class EmbeddingMixin:
                 if require_grad
                 else torch.no_grad()
             )
-            
+
             with ctx:
                 last_hidden = self.model(**inputs).last_hidden_state  # (B, L, H)
-            
+
             if return_on_cpu:
                 last_hidden = last_hidden.cpu()
             outputs.append(last_hidden)
-        
+
         out = torch.cat(outputs, dim=0)
         return out
 
@@ -527,20 +527,20 @@ class EmbeddingMixin:
             # Process each sequence in the batch
             for batch_idx in range(attentions_tensor.size(0)):
                 seq_attention = attentions_tensor[batch_idx]
-                
+
                 if layer_indices is not None:
                     seq_attention = seq_attention[layer_indices]
-                
+
                 if head_indices is not None:
                     seq_attention = seq_attention[:, head_indices]
-                
+
                 if return_on_cpu:
                     seq_attention = seq_attention.cpu()
-                
+
                 tokens = self.tokenizer.convert_ids_to_tokens(
                     inputs["input_ids"][batch_idx]
                 )
-                
+
                 result = {
                     "attentions": seq_attention,
                     "tokens": tokens,

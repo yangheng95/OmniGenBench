@@ -30,26 +30,26 @@ from ..misc.utils import env_meta_info, fprint, seed_everything
 class MetricsDict(dict):
     """
     A custom dictionary class for storing training metrics with enhanced readability.
-    
+
     This class extends the built-in dict to provide a more readable string representation
     of metrics, making it easier to understand training progress and results.
     """
-    
+
     def __repr__(self) -> str:
         """
         Return a formatted, human-readable string representation of the metrics.
-        
+
         Returns:
             str: A formatted string showing metrics organized by stage (train/valid/test)
                  and best validation metrics.
         """
         if not self:
             return "MetricsDict(empty)"
-        
+
         lines = ["=" * 80]
         lines.append("Training Metrics Summary".center(80))
         lines.append("=" * 80)
-        
+
         # Display best validation metrics first if available
         if "best_valid" in self:
             lines.append("\n[Best Validation Metrics]")
@@ -68,18 +68,18 @@ class MetricsDict(dict):
                             lines.append(f"  {key:.<40} {value}")
                     else:
                         lines.append(f"  {key:.<40} {value}")
-        
+
         # Display metrics for each stage (train, valid, test)
         for stage in ["train", "valid", "test"]:
             if stage in self and self[stage]:
                 lines.append(f"\n[{stage.capitalize()} Metrics History]")
                 lines.append("-" * 80)
-                
+
                 metrics_list = self[stage]
                 if isinstance(metrics_list, list) and len(metrics_list) > 0:
                     # Show the number of epochs/evaluations
                     lines.append(f"  Total evaluations: {len(metrics_list)}")
-                    
+
                     # Show the latest metrics
                     latest_metrics = metrics_list[-1]
                     if isinstance(latest_metrics, dict):
@@ -88,15 +88,19 @@ class MetricsDict(dict):
                             if isinstance(value, (int, float)):
                                 lines.append(f"    {key:.<38} {value:.6f}")
                             elif isinstance(value, (list, tuple, np.ndarray)):
-                                if len(value) > 0 and isinstance(value[0], (int, float)):
+                                if len(value) > 0 and isinstance(
+                                    value[0], (int, float)
+                                ):
                                     mean_val = np.mean(value)
                                     std_val = np.std(value)
-                                    lines.append(f"    {key:.<38} {mean_val:.6f} ± {std_val:.6f}")
+                                    lines.append(
+                                        f"    {key:.<38} {mean_val:.6f} ± {std_val:.6f}"
+                                    )
                                 else:
                                     lines.append(f"    {key:.<38} {value}")
                             else:
                                 lines.append(f"    {key:.<38} {value}")
-                    
+
                     # Show trend if we have multiple epochs
                     if len(metrics_list) > 1:
                         lines.append(f"  First (Epoch 1):")
@@ -106,13 +110,15 @@ class MetricsDict(dict):
                                 if isinstance(value, (int, float)):
                                     lines.append(f"    {key:.<38} {value:.6f}")
                                 elif isinstance(value, (list, tuple, np.ndarray)):
-                                    if len(value) > 0 and isinstance(value[0], (int, float)):
+                                    if len(value) > 0 and isinstance(
+                                        value[0], (int, float)
+                                    ):
                                         mean_val = np.mean(value)
                                         lines.append(f"    {key:.<38} {mean_val:.6f}")
-        
+
         lines.append("=" * 80)
         return "\n".join(lines)
-    
+
     def __str__(self) -> str:
         """Return the same formatted representation as __repr__."""
         return self.__repr__()

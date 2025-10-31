@@ -50,13 +50,13 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
     OmniGenBench framework. This class handles model initialization, forward passes, loss
     computation, prediction interfaces, and model persistence while maintaining compatibility
     with HuggingFace's ecosystem.
-    
+
     **Architectural Pattern**: This class follows the Template Method pattern, providing
     common infrastructure while delegating task-specific behavior to subclasses
     (OmniModelForSequenceClassification, OmniModelForTokenClassification, etc.).
-    
+
     **Inherited Capabilities** (via EmbeddingMixin):
-    
+
     - **Embedding Generation**: ``batch_encode()``, ``encode()``, ``encode_tokens()``
       for extracting fixed-length sequence representations from genomic sequences
     - **Attention Extraction**: ``extract_attention_scores()``, ``batch_extract_attention_scores()``
@@ -65,18 +65,18 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
       relatedness analysis
     - **Visualization Tools**: ``visualize_attention_pattern()`` for generating attention heatmaps
       and understanding model focus
-    
+
     All task-specific OmniModel subclasses automatically inherit these capabilities,
     enabling representation learning and interpretability without additional implementation.
-    
+
     **Design Philosophy**: By inheriting from both EmbeddingMixin and torch.nn.Module,
     this class seamlessly integrates sequence embedding capabilities with PyTorch's
     standard training infrastructure, making it compatible with native PyTorch training
     loops, HuggingFace Trainer, and Accelerate-based distributed training.
-    
+
     **Task-Specific Subclasses**: Users should instantiate concrete implementations rather
     than this abstract class directly:
-    
+
     - ``OmniModelForSequenceClassification``: Sequence-level classification tasks
       (e.g., promoter identification, functional annotation)
     - ``OmniModelForMultiLabelSequenceClassification``: Multi-label classification
@@ -97,14 +97,14 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
         Initializes the genomic foundation model with flexible input types.
 
         This method handles three initialization patterns:
-        
+
         1. **From pre-trained path** (recommended): Loads model from HuggingFace Hub or local
            directory. The architecture is automatically detected via ``config.json`` using
            the ``auto_map`` or ``architectures`` fields.
-           
+
         2. **From PyTorch module**: Wraps an existing ``nn.Module`` with OmniModel interface,
            useful for integrating custom architectures or models loaded via other means.
-           
+
         3. **From configuration**: Initializes a new model from AutoConfig specification,
            typically used for training models from scratch.
 
@@ -120,39 +120,39 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
                   interface, enabling use of custom architectures within the framework.
                 - **AutoConfig**: Configuration object for new model initialization, used when
                   training models from scratch or with custom configurations.
-                  
+
             tokenizer: Tokenizer instance compatible with the model architecture.
                 Used for sequence preprocessing during inference. Should implement either
                 OmniTokenizer interface or HuggingFace tokenizer protocol.
-                
+
             *args: Additional positional arguments passed to torch.nn.Module.__init__
-            
+
             **kwargs: Additional keyword arguments:
                 - **label2id** (dict, optional): Mapping from class labels to integer IDs.
                   Required for classification tasks. Example: {"negative": 0, "positive": 1}.
                   Either this or num_labels must be provided.
-                  
+
                 - **num_labels** (int, optional): Number of output classes. Alternative to label2id
                   for when label names are not available. If both provided, they must be consistent
                   (len(label2id) must equal num_labels).
-                  
+
                 - **trust_remote_code** (bool, optional): Whether to trust remote code when loading
                   from HuggingFace Hub. Defaults to True. Set to False for security-critical
                   environments where only vetted models should be loaded.
-                  
+
                 - **ignore_mismatched_sizes** (bool, optional): Whether to ignore size mismatches
                   when loading pre-trained weights (e.g., different classifier head dimensions).
                   Defaults to False. Set to True when fine-tuning for a different number of
                   labels than the pre-trained model.
-                  
+
                 - **dropout** (float, optional): Dropout probability for regularization in
                   classification/regression heads. Defaults to 0.0. Typical values: 0.1-0.5.
-                  
+
                 - **dataset_class** (type, optional): Dataset class used for preprocessing.
                   Enables models to use the dataset's ``prepare_input`` method during inference,
                   allowing custom field handling beyond basic tokenization. Useful when inference
                   requires the same complex preprocessing as training.
-                  
+
                 - **problem_type** (str, optional): Type of prediction problem. Common values:
                   "single_label_classification", "multi_label_classification", "regression".
                   Affects loss calculation and output interpretation.
@@ -161,11 +161,11 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
             ValueError: If neither label2id nor num_labels is provided, or if they are
                 inconsistent (len(label2id) != num_labels). Also raised if config_or_model
                 is an unsupported type (not str, nn.Module, or AutoConfig).
-                
+
             RuntimeError: If the hidden size cannot be determined from the config (model must
                 define one of: hidden_size, n_embd, or d_model), or if the model architecture
                 cannot be auto-detected from config.json (missing both architectures and auto_map).
-                
+
             FileNotFoundError: If the specified model path does not exist locally and cannot be
                 found on HuggingFace Hub. Check model path/ID spelling and internet connectivity.
 
@@ -201,7 +201,7 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
             >>> model = OmniModelForSequenceClassification(
             ...     base_model, tokenizer, num_labels=2
             ... )
-            
+
             >>> # Pattern 5: Initialize with dataset class for complex preprocessing
             >>> from omnigenbench import OmniDatasetForSequenceClassification
             >>> model = OmniModelForSequenceClassification(

@@ -26,38 +26,38 @@ class OmniTokenizer:
     sequence normalization) while maintaining compatibility with HuggingFace's tokenizer ecosystem.
 
     **Architecture**: The tokenizer stack consists of three layers:
-    
+
     1. **Base Tokenizer**: HuggingFace AutoTokenizer or custom implementation providing
        vocabulary, encoding/decoding primitives, and special token handling.
-       
+
     2. **OmniTokenizer Wrapper** (this class): Adds genomic preprocessing, metadata tracking,
        and unified API across different tokenizer types.
-       
+
     3. **Custom Wrappers**: Optional task-specific wrappers (loaded from omnigenome_wrapper.py
        if present in model directory) for specialized preprocessing logic.
 
     **Genomic-Specific Features**:
-    
+
     - **Sequence Normalization**: Automatic uppercase conversion and nucleotide standardization
       (converts lowercase to uppercase, handles ambiguous nucleotide codes).
-      
+
     - **RNA/DNA Conversion**: Bidirectional U↔T conversion via u2t and t2u flags. Essential
       when applying models trained on one sequence type to another (e.g., using DNA models
       for RNA data).
-      
+
     - **Whitespace Injection**: Optional character separation for character-level models.
       Converts "ATCG" → "A T C G" for models trained with spaced sequences.
-      
+
     - **Special Token Handling**: Automatic insertion of [CLS], [SEP], [PAD], [MASK] tokens
       according to model requirements. Handles both BERT-style (e.g., [CLS] seq [SEP]) and
       GPT-style (seq [EOS]) conventions.
-      
+
     - **K-mer Tokenization**: Support for overlapping k-mer segmentation (k=3,4,5,6) for
       capturing local sequence patterns. Example: "ATCGATCG" with k=3 → "ATC TCG CGA GAT ATC TCG".
-      
+
     - **Codon-Aware Tokenization**: Specialized handling for protein-coding sequences with
       triplet nucleotide units, preserving reading frame information.
-      
+
     - **Structure-Informed Tokenization**: Optional integration with RNA secondary structure
       for structure-aware models (dot-bracket notation encoding).
 
@@ -67,7 +67,7 @@ class OmniTokenizer:
     model-specific preprocessing without modifying core code.
 
     **Common Tokenizer Types**:
-    
+
     - **OmniSingleNucleotideTokenizer**: Character-level tokenization (vocab size ~10)
     - **OmniKmersTokenizer**: K-mer based tokenization (vocab size 4^k, typically 64-4096)
     - **OmniBPETokenizer**: Byte-Pair Encoding for learned subword units (vocab size 1000-50000)
@@ -76,32 +76,32 @@ class OmniTokenizer:
         base_tokenizer: Underlying tokenizer instance (e.g., from HuggingFace Transformers).
             Provides vocabulary, encoding primitives, and special token definitions.
             Can be any object implementing encode(), decode(), and __call__() methods.
-            
+
         max_length (int): Default maximum sequence length for tokenization. Can be overridden
             in individual tokenization calls. Sequences longer than this are truncated.
             Typical values: 512 (short sequences), 2048 (medium), 10000+ (long genomic regions).
-            
+
         metadata (dict): Framework metadata including version information and custom attributes.
             Automatically populated with tokenizer type, version, timestamp, etc.
-            
+
         u2t (bool): Whether to convert 'U' (uracil) to 'T' (thymine) for RNA→DNA conversion.
             Useful when training DNA models on RNA data or applying DNA-trained models to
             RNA sequences. Default False.
-            
+
         t2u (bool): Whether to convert 'T' to 'U' for DNA→RNA conversion. Useful for RNA
             structure prediction models trained on DNA sequences, or when applying RNA models
             to DNA data. Default False.
-            
+
         add_whitespace (bool): Whether to insert spaces between characters for character-level
             tokenization. Required for some BERT-style models trained on spaced sequences.
             Example: "ATCG" becomes "A T C G". Default False.
-            
+
         trust_remote_code (bool): Whether to trust remote code when loading tokenizers from
             HuggingFace Hub. Default True. Set to False in security-critical environments.
 
     Note:
         - Set u2t=True when using DNA models on RNA sequences
-        - Set t2u=True when using RNA models on DNA sequences  
+        - Set t2u=True when using RNA models on DNA sequences
         - Never set both u2t=True and t2u=True simultaneously (results undefined)
         - add_whitespace should match the training configuration of the model
     """
@@ -129,7 +129,7 @@ class OmniTokenizer:
                 - trust_remote_code (bool): Whether to trust remote code when loading from
                   HuggingFace Hub. Defaults to True. Set to False in security-sensitive
                   environments.
-                
+
                 Additional custom attributes are stored in metadata for access by
                 downstream components.
 

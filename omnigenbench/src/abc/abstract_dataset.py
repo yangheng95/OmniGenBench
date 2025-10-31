@@ -96,25 +96,25 @@ class OmniDataset(torch.utils.data.Dataset):
     applied uniformly regardless of input format.
 
     **Key Features**:
-    
+
     - **Format Agnosticism**: Supports JSON, CSV, Parquet, FASTA, FASTQ, BED, VCF, and NumPy
       formats through auto-detection based on file extension. Custom formats can be added by
       subclassing and implementing format-specific loaders.
-      
+
     - **Integrated Tokenization**: Sequences are tokenized within the dataset pipeline for
       consistency and efficient caching. Tokenization parameters (max_length, padding, truncation)
       are configured at dataset initialization.
-      
+
     - **Lazy Loading**: Large datasets are loaded incrementally to minimize memory footprint.
       Data is read into memory on-demand during training/inference rather than all at once.
-      
+
     - **Label Management**: Automatic bidirectional mapping between string labels and integer
       indices (label2id/id2label), with support for multi-label scenarios and PyTorch's -100
       ignore convention for masked tokens.
-      
+
     - **RNA Structure Integration**: Optional secondary structure prediction via ViennaRNA
       for structure-aware models. Structures are cached to avoid redundant computation.
-      
+
     - **Sequence Filtering**: Optional filtering of sequences exceeding max_length via
       drop_long_seq parameter, useful for maintaining fixed-length batches without truncation.
 
@@ -124,7 +124,7 @@ class OmniDataset(torch.utils.data.Dataset):
     custom fields are preserved and passed through the pipeline.
 
     **Supported File Formats**:
-    
+
     - **JSON**: Line-delimited JSON (.json, .jsonl) with one record per line
     - **CSV/TSV**: Comma or tab-separated values (.csv, .tsv) with header row
     - **Parquet**: Apache Parquet format (.parquet) for efficient columnar storage
@@ -137,39 +137,39 @@ class OmniDataset(torch.utils.data.Dataset):
     Attributes:
         tokenizer: Tokenizer instance for sequence encoding. Must be compatible with the
             model architecture being used. Can be OmniTokenizer or HuggingFace tokenizer.
-            
+
         max_length (int): Maximum sequence length for tokenization. Sequences exceeding this
             length are truncated (default) or dropped (if drop_long_seq=True).
-            
+
         label2id (dict): Mapping from string labels to integer indices. Automatically populated
             during data loading if not provided. Example: {"negative": 0, "positive": 1}.
-            
+
         id2label (dict): Inverse mapping from integer indices to string labels. Automatically
             generated from label2id.
-            
+
         shuffle (bool): Whether to shuffle dataset order on initialization. Default True.
             Set to False for validation/test sets to maintain reproducible evaluation.
-            
+
         structure_in (bool): Whether to include RNA secondary structure predictions as input
             features. Requires ViennaRNA installation. Default False. Adds dot-bracket notation
             as additional input for structure-aware models.
-            
+
         drop_long_seq (bool): Whether to drop sequences longer than max_length instead of
             truncating them. Default False. When True, sequences exceeding max_length are
             filtered out during loading.
-            
+
         metadata (dict): Framework metadata including version information and environment details.
             Automatically populated with Python version, OmniGenBench version, timestamp, etc.
-            
+
         rna2structure (RNA2StructureCache): Persistent cache for RNA structure predictions to
             avoid redundant ViennaRNA calls. Only created when structure_in=True.
-            
+
         data (list): Internal storage for loaded dataset samples. Each element is a dictionary
             containing 'sequence', 'label', and any additional custom fields.
 
     Note:
         This is an abstract base class. Use task-specific subclasses for actual datasets:
-        
+
         - ``OmniDatasetForSequenceClassification``: Sequence-level classification
         - ``OmniDatasetForMultiLabelClassification``: Multi-label classification
         - ``OmniDatasetForTokenClassification``: Per-nucleotide classification
@@ -795,16 +795,17 @@ class OmniDataset(torch.utils.data.Dataset):
             >>> info_dict = dataset.info(return_dict=True)  # Get info as dictionary
         """
         import json
-        
+
         try:
             from tabulate import tabulate
         except ImportError:
             fprint("Warning: 'tabulate' package not found. Installing...")
             import subprocess
             import sys
+
             subprocess.check_call([sys.executable, "-m", "pip", "install", "tabulate"])
             from tabulate import tabulate
-        
+
         if self.dataset_info is None:
             fprint(
                 "No dataset_info available. Load a dataset with dataset_info.json or use load_dataset_info()."
@@ -853,36 +854,61 @@ class OmniDataset(torch.utils.data.Dataset):
                 ("source", "Source"),
                 ("license", "License"),
             ]
-            
+
             table_data = []
             for field_key, field_label in basic_fields:
                 if field_key in info:
                     table_data.append([field_label, info[field_key]])
-            
+
             if table_data:
-                fprint(tabulate(table_data, headers=["Field", "Value"], tablefmt="grid", maxcolwidths=[20, 60]))
+                fprint(
+                    tabulate(
+                        table_data,
+                        headers=["Field", "Value"],
+                        tablefmt="grid",
+                        maxcolwidths=[20, 60],
+                    )
+                )
 
         # Statistics - Table Format
         if "statistics" in sections and "statistics" in info:
             fprint("\n📈 STATISTICS")
             stats = info["statistics"]
-            
+
             # Separate simple and nested statistics
             simple_stats = {k: v for k, v in stats.items() if not isinstance(v, dict)}
             nested_stats = {k: v for k, v in stats.items() if isinstance(v, dict)}
-            
+
             # Print simple statistics in table
             if simple_stats:
-                table_data = [[k.replace("_", " ").title(), v] for k, v in simple_stats.items()]
-                fprint(tabulate(table_data, headers=["Metric", "Value"], tablefmt="grid", maxcolwidths=[30, 50]))
-            
+                table_data = [
+                    [k.replace("_", " ").title(), v] for k, v in simple_stats.items()
+                ]
+                fprint(
+                    tabulate(
+                        table_data,
+                        headers=["Metric", "Value"],
+                        tablefmt="grid",
+                        maxcolwidths=[30, 50],
+                    )
+                )
+
             # Print nested statistics
             if nested_stats:
                 for key, value in nested_stats.items():
                     formatted_key = key.replace("_", " ").title()
                     fprint(f"\n  {formatted_key}:")
-                    table_data = [[sub_key, sub_value] for sub_key, sub_value in value.items()]
-                    fprint(tabulate(table_data, headers=["Item", "Value"], tablefmt="grid", maxcolwidths=[25, 50]))
+                    table_data = [
+                        [sub_key, sub_value] for sub_key, sub_value in value.items()
+                    ]
+                    fprint(
+                        tabulate(
+                            table_data,
+                            headers=["Item", "Value"],
+                            tablefmt="grid",
+                            maxcolwidths=[25, 50],
+                        )
+                    )
 
         # Features - Table Format
         if "features" in sections and "features" in info:
@@ -899,10 +925,16 @@ class OmniDataset(torch.utils.data.Dataset):
                         table_data.append([feat_name, feat_type, feat_desc])
                     else:
                         table_data.append([feat_name, "N/A", "N/A"])
-                
+
                 if table_data:
-                    fprint(tabulate(table_data, headers=["Feature", "Type", "Description"], 
-                                  tablefmt="grid", maxcolwidths=[25, 15, 40]))
+                    fprint(
+                        tabulate(
+                            table_data,
+                            headers=["Feature", "Type", "Description"],
+                            tablefmt="grid",
+                            maxcolwidths=[25, 15, 40],
+                        )
+                    )
 
             if "output" in features:
                 fprint("\n  Output Features:")
@@ -914,26 +946,34 @@ class OmniDataset(torch.utils.data.Dataset):
                         table_data.append([feat_name, feat_type, feat_desc])
                     else:
                         table_data.append([feat_name, "N/A", "N/A"])
-                
+
                 if table_data:
-                    fprint(tabulate(table_data, headers=["Feature", "Type", "Description"], 
-                                  tablefmt="grid", maxcolwidths=[25, 15, 40]))
+                    fprint(
+                        tabulate(
+                            table_data,
+                            headers=["Feature", "Type", "Description"],
+                            tablefmt="grid",
+                            maxcolwidths=[25, 15, 40],
+                        )
+                    )
 
         # Data Splits - Table Format
         if "splits" in sections and "data_splits" in info:
             fprint("\n📂 DATA SPLITS")
-            
+
             # Collect all unique keys across splits
             all_keys = set()
             for split_info in info["data_splits"].values():
                 if isinstance(split_info, dict):
                     all_keys.update(split_info.keys())
-            
+
             # Build table
             if all_keys:
-                headers = ["Split"] + [key.replace("_", " ").title() for key in sorted(all_keys)]
+                headers = ["Split"] + [
+                    key.replace("_", " ").title() for key in sorted(all_keys)
+                ]
                 table_data = []
-                
+
                 for split_name, split_info in info["data_splits"].items():
                     if isinstance(split_info, dict):
                         row = [split_name.title()]
@@ -942,7 +982,7 @@ class OmniDataset(torch.utils.data.Dataset):
                         table_data.append(row)
                     else:
                         table_data.append([split_name.title(), split_info])
-                
+
                 if table_data:
                     fprint(tabulate(table_data, headers=headers, tablefmt="grid"))
 
@@ -950,7 +990,7 @@ class OmniDataset(torch.utils.data.Dataset):
         if "preprocessing" in sections and "preprocessing" in info:
             fprint("\n⚙️  PREPROCESSING")
             preproc = info["preprocessing"]
-            
+
             table_data = []
             for key, value in preproc.items():
                 formatted_key = key.replace("_", " ").title()
@@ -959,26 +999,44 @@ class OmniDataset(torch.utils.data.Dataset):
                 else:
                     value_str = str(value)
                 table_data.append([formatted_key, value_str])
-            
+
             if table_data:
-                fprint(tabulate(table_data, headers=["Step", "Details"], tablefmt="grid", maxcolwidths=[30, 50]))
+                fprint(
+                    tabulate(
+                        table_data,
+                        headers=["Step", "Details"],
+                        tablefmt="grid",
+                        maxcolwidths=[30, 50],
+                    )
+                )
 
         # Evaluation Metrics - Table Format
         if "metrics" in sections and "evaluation_metrics" in info:
             fprint("\n📊 EVALUATION METRICS")
             metrics = info["evaluation_metrics"]
-            
+
             table_data = []
             if "primary" in metrics:
                 table_data.append(["Primary Metric", metrics["primary"]])
             if "description" in metrics:
                 table_data.append(["Description", metrics["description"]])
             if "secondary" in metrics:
-                secondary_str = ", ".join(metrics['secondary']) if isinstance(metrics['secondary'], list) else str(metrics['secondary'])
+                secondary_str = (
+                    ", ".join(metrics["secondary"])
+                    if isinstance(metrics["secondary"], list)
+                    else str(metrics["secondary"])
+                )
                 table_data.append(["Secondary Metrics", secondary_str])
-            
+
             if table_data:
-                fprint(tabulate(table_data, headers=["Metric Type", "Details"], tablefmt="grid", maxcolwidths=[25, 55]))
+                fprint(
+                    tabulate(
+                        table_data,
+                        headers=["Metric Type", "Details"],
+                        tablefmt="grid",
+                        maxcolwidths=[25, 55],
+                    )
+                )
 
         # Citation
         if "citation" in sections and "citation" in info:
@@ -994,7 +1052,7 @@ class OmniDataset(torch.utils.data.Dataset):
                 fprint(f"  {i}. {note}")
 
         fprint("\n" + "=" * 80 + "\n")
-        
+
         return self.dataset_info
 
     def load_data_source(self, data_source, **kwargs):
@@ -1216,7 +1274,7 @@ class OmniDataset(torch.utils.data.Dataset):
 
         .. deprecated:: 0.3.0
             Use `_download_dataset_from_hub` instead. This method will be removed in version 0.4.0.
-            
+
         Args:
             dataset_name (str): Name of the dataset to download.
             local_dir (str, optional): Directory to save the dataset. If None, saves to default location.

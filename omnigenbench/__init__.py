@@ -18,10 +18,10 @@ with four core abstract base classes (OmniModel, OmniDataset, OmniTokenizer, Omn
 Quick Start
 -----------
 >>> from omnigenbench import ModelHub
->>> 
+>>>
 >>> # Load fine-tuned model for transcription factor binding prediction
 >>> model = ModelHub.load("yangheng/ogb_tfb_finetuned")
->>> 
+>>>
 >>> # Run inference on genomic sequence
 >>> predictions = model.inference("ATCGATCGATCGATCG")
 >>> print(predictions)  # {'predictions': array([...]), 'probabilities': array([...])}
@@ -82,13 +82,10 @@ Core API Components
 Use `dir(omnigenbench)` to see all available APIs or visit the documentation at:
 https://omnigenbenchdoc.readthedocs.io/
 
-Version: 0.3.23alpha
-License: Apache-2.0
-Author: YANG, HENG (yangheng2021@gmail.com)
 """
 
 __name__ = "omnigenbench"
-__version__ = "0.3.23alpha"
+__version__ = "0.3.24alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "Apache-2.0"
