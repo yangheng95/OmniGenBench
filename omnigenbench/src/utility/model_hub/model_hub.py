@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # file: model_hub.py
-# time: 18:13 12/04/2024
+# time: 14:47 06/04/2024
 # author: YANG, HENG <hy345@exeter.ac.uk> (杨恒)
 # github: https://github.com/yangheng95
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
-# Copyright (C) 2019-2024. All Rights Reserved.
+# Copyright (C) 2019-2025. All Rights Reserved.
 import json
 import os
 import subprocess
@@ -100,41 +100,65 @@ def clone_hf_model(
 
 class ModelHub:
     """
-    A hub for loading and managing pre-trained genomic models.
+    Centralized hub for loading and managing pre-trained genomic foundation models.
 
-    This class provides a unified interface for loading pre-trained models
-    by cloning them from Hugging Face Hub to local directories, loading from
-    existing local paths, or downloading from the OmniGenome hub (as fallback).
-    All model loading is performed using local file system access only.
+    This class provides a unified interface for model acquisition and loading, implementing
+    a hybrid strategy: clone from HuggingFace Hub to local cache on first access, then
+    load exclusively from local files for all subsequent operations. This approach ensures:
+    
+    - **Reproducibility**: Local caching prevents silent model updates
+    - **Offline Access**: Models remain available without internet connectivity after initial clone
+    - **Version Control**: Explicit control over model versions via git tags/commits
+    - **Large File Handling**: Git LFS support for multi-gigabyte model weights
 
-    The ModelHub supports various model types including standard Transformers models
-    and OmniGenome models with custom metadata. It prioritizes cloning from
-    Hugging Face Hub to ensure local access and falls back to the OmniGenome hub if needed.
+    **Architecture**: The ModelHub implements a three-tier loading strategy:
 
-    Key Features:
-    - Clones models from HF Hub using git (with Git LFS support for large files)
-    - Caches models locally to avoid repeated downloads
-    - Loads all models from local file system only (no online transformers loading)
-    - Supports both OmniGenome models and standard Transformers models
+    1. **HuggingFace Hub Cloning** (Primary): Uses git to clone model repositories to
+       ``__OMNIGENOME_DATA__/models/`` directory, preserving full git history and metadata
+    2. **OmniGenome Hub Fallback** (Secondary): Legacy download mechanism for models not
+       on HuggingFace Hub (deprecated, maintained for backward compatibility)
+    3. **Local-Only Loading** (Always): After cloning, all model loading uses ``local_files_only=True``
+       to ensure deterministic behavior
+
+    **Model Type Detection**: The hub supports two model categories:
+
+    - **OmniGenBench Models**: Saved via OmniGenBench with ``metadata.json`` containing task
+      type, label mappings, and custom attributes. The hub reconstructs the original
+      task-specific model class (e.g., OmniModelForSequenceClassification) from metadata.
+    - **Standard Transformers Models**: Generic HuggingFace models without OmniGenBench
+      metadata. Loaded as base AutoModel instances with attached tokenizer for compatibility.
+
+    **Cache Management**: Models are cached with HuggingFace Hub naming convention:
+    
+    - ``yangheng/OmniGenome-186M`` → ``__OMNIGENOME_DATA__/models/yangheng--OmniGenome-186M/``
+    - Supports ``force_download=True`` to re-clone updated versions
+    - No automatic cache cleanup; manual management required for disk space constraints
 
     Attributes:
-        metadata (dict): Environment metadata information
+        metadata (dict): Framework environment metadata including version information and
+            system configuration.
 
     Example:
         >>> from omnigenbench import ModelHub
         >>> hub = ModelHub()
 
-        >>> # Clone and load a model from Hugging Face Hub
+        >>> # Clone and load a model from HuggingFace Hub (cached for future use)
         >>> model, tokenizer = ModelHub.load_model_and_tokenizer("yangheng/OmniGenome-186M")
 
-        >>> # Load a model from local path
-        >>> model, tokenizer = ModelHub.load_model_and_tokenizer("/path/to/local/model")
+        >>> # Load from existing local cache (instant, no network access)
+        >>> model, tokenizer = ModelHub.load_model_and_tokenizer("yangheng/OmniGenome-186M")
 
-        >>> # Force re-download/clone of a model
-        >>> model, tokenizer = ModelHub.load_model_and_tokenizer(
+        >>> # Load only the model (tokenizer already available)
+        >>> model = ModelHub.load("yangheng/ogb_tfb_finetuned")
+
+        >>> # Force re-clone to get latest version
+        >>> model = ModelHub.load(
         ...     "yangheng/OmniGenome-186M",
         ...     force_download=True
         ... )
+
+        >>> # Load from local directory (no cloning)
+        >>> model = ModelHub.load("/path/to/local/model")
     """
 
     def __init__(self, *args, **kwargs):

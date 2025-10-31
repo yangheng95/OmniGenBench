@@ -1,13 +1,13 @@
 # AutoInfer CLI Examples
 
-This folder contains example input files and usage patterns for the `autoinfer` command-line tool.
+This folder contains example input files and usage patterns for the `ogb autoinfer` command-line tool.
 
 ## Quick Start
 
 ### 1. Single Sequence Inference
 
 ```bash
-autoinfer \
+ogb autoinfer \
   --model yangheng/ogb_tfb_finetuned \
   --sequence "ATCGATCGATCGATCGATCGATCGATCGATCG" \
   --output-file tfb_predictions.json
@@ -16,7 +16,7 @@ autoinfer \
 ### 2. Multiple Sequences (Comma-Separated)
 
 ```bash
-autoinfer \
+ogb autoinfer \
   --model yangheng/ogb_te_finetuned \
   --sequence "ATCGATCGATCG,GCGCGCGCGCGC,TATATATATATAT" \
   --output-file predictions.json
@@ -25,7 +25,7 @@ autoinfer \
 ### 3. Batch Inference from JSON File
 
 ```bash
-autoinfer \
+ogb autoinfer \
   --model yangheng/ogb_tfb_finetuned \
   --input-file sequences.json \
   --batch-size 64 \
@@ -35,7 +35,7 @@ autoinfer \
 ### 4. Inference from CSV File
 
 ```bash
-autoinfer \
+ogb autoinfer \
   --model yangheng/ogb_tfb_finetuned \
   --input-file data.csv \
   --output-file predictions.json \
@@ -45,10 +45,56 @@ autoinfer \
 ### 5. Inference from Text File (One Sequence Per Line)
 
 ```bash
-autoinfer \
+ogb autoinfer \
   --model yangheng/ogb_te_finetuned \
   --sequence sequences.txt \
   --output-file predictions.json
+```
+
+### 6. With Custom Batch Size and Device
+
+```bash
+ogb autoinfer \
+  --model yangheng/ogb_tfb_finetuned \
+  --input-file sequences.json \
+  --batch-size 128 \
+  --device cuda:0 \
+  --output-file results.json
+```
+
+## Python API Examples
+
+For programmatic access and integration into pipelines:
+
+```python
+from omnigenbench import ModelHub, OmniTokenizer
+
+# Load model and tokenizer (optionally choose device)
+tokenizer = OmniTokenizer.from_pretrained(
+  "yangheng/ogb_tfb_finetuned",
+  trust_remote_code=True
+)
+
+model = ModelHub.load("yangheng/ogb_tfb_finetuned", device="cuda:0")
+
+# Single sequence inference
+sequence = "ATCGATCGATCGATCGATCGATCGATCGATCG"
+result = model.inference(sequence)
+
+print(f"Prediction: {result['predictions']}")
+print(f"Confidence: {float(result['confidence']) if 'confidence' in result else 'N/A'}")
+
+# Batch inference (loop over sequences)
+sequences = [
+  "ATCGATCGATCG",
+  "GCGCGCGCGCGC",
+  "TATATATATATAT"
+]
+
+batch_results = [model.inference(seq) for seq in sequences]
+for i, res in enumerate(batch_results, 1):
+  print(f"Sequence {i}: Prediction={res['predictions']}, Confidence={float(res['confidence']) if 'confidence' in res else 'N/A'}")
+```
 ```
 
 ## Input File Formats
@@ -158,7 +204,7 @@ The output is always saved as a JSON file with the following structure:
 ### Large-Scale Batch Processing with GPU
 
 ```bash
-autoinfer \
+ogb autoinfer \
   --model yangheng/ogb_tfb_finetuned \
   --input-file large_dataset.csv \
   --batch-size 128 \
@@ -173,7 +219,7 @@ autoinfer \
 # Process multiple input files
 for file in data/*.csv; do
   output="${file%.csv}_predictions.json"
-  autoinfer \
+  ogb autoinfer \
     --model yangheng/ogb_tfb_finetuned \
     --input-file "$file" \
     --output-file "$output"
@@ -183,7 +229,7 @@ done
 ### CPU-Only Inference
 
 ```bash
-autoinfer \
+ogb autoinfer \
   --model yangheng/ogb_te_finetuned \
   --input-file sequences.json \
   --device cpu \
@@ -220,14 +266,123 @@ If a sequence fails to process, the error will be logged in the output:
 
 The inference will continue processing remaining sequences.
 
+## Advanced Configuration
+
+### Batch Size Tuning
+
+The `--batch-size` parameter controls how many sequences are processed simultaneously. Larger batch sizes can speed up inference but require more memory.
+
+**Recommended Settings**:
+```bash
+# Small GPU (4-8GB VRAM) or CPU
+ogb autoinfer --model MODEL --input-file data.json --batch-size 16
+
+# Medium GPU (8-16GB VRAM)
+ogb autoinfer --model MODEL --input-file data.json --batch-size 32
+
+# Large GPU (16GB+ VRAM)
+ogb autoinfer --model MODEL --input-file data.json --batch-size 64
+
+# Very large datasets (24GB+ VRAM)
+ogb autoinfer --model MODEL --input-file data.json --batch-size 128
+```
+
+**Performance Tips**:
+- Start with a smaller batch size and increase gradually
+- Monitor GPU memory usage with `nvidia-smi` (Linux) or Task Manager (Windows)
+- If you encounter out-of-memory errors, reduce batch size by half
+- For CPU inference, smaller batches (8-16) typically work better
+
+### Device Selection
+
+The `--device` parameter specifies which hardware to use for inference.
+
+**Options**:
+```bash
+# Automatic device selection (default - uses CUDA if available)
+ogb autoinfer --model MODEL --sequence "ATCG"
+
+# Force CPU usage
+ogb autoinfer --model MODEL --sequence "ATCG" --device cpu
+
+# Specific GPU by index
+ogb autoinfer --model MODEL --sequence "ATCG" --device cuda:0
+ogb autoinfer --model MODEL --sequence "ATCG" --device cuda:1
+
+# Multi-GPU systems: select fastest GPU
+ogb autoinfer --model MODEL --input-file data.json --device cuda:0 --batch-size 64
+```
+
+**When to Use Which Device**:
+- **`cuda:0` (default)**: Best for speed if GPU is available
+- **`cpu`**: When GPU is unavailable, or for small-scale inference (<100 sequences)
+- **`cuda:1+`**: On multi-GPU systems, distribute different jobs to different GPUs
+
+### Output File Formats
+
+By default, results are saved in JSON format. You can customize the output:
+
+```bash
+# Default JSON output
+ogb autoinfer --model MODEL --input-file data.json --output-file results.json
+
+# Custom output path
+ogb autoinfer --model MODEL --input-file data.json --output-file /path/to/results.json
+
+# Organized by experiment
+ogb autoinfer --model MODEL --input-file data.json --output-file experiments/exp1/predictions.json
+```
+
+**Output Structure**:
+```json
+[
+  {
+    "sequence": "ATCGATCGATCG",
+    "prediction": 1,
+    "probabilities": [0.23, 0.77],
+    "metadata": {"sample_id": "sample_001"}
+  }
+]
+```
+
+### Python API Advanced Configuration
+
+For programmatic control over inference:
+
+```python
+from omnigenbench import ModelHub
+import torch
+
+# Load model with specific device
+model = ModelHub.load("yangheng/ogb_tfb_finetuned", device="cuda:0")
+
+# Configure inference parameters
+sequences = ["ATCGATCG" * 10, "GCGCGCGC" * 10]
+results = model.batch_inference(
+    sequences,
+    batch_size=32,           # Control memory usage
+    device="cuda:0",         # Explicit device selection
+    return_embeddings=False, # Set True to get hidden representations
+    max_length=512          # Truncate long sequences
+)
+
+# Access detailed outputs
+for i, result in enumerate(results['predictions']):
+    print(f"Sequence {i}: Prediction={result}")
+    print(f"  Confidence: {max(results['probabilities'][i]):.4f}")
+```
+
+**Additional Python API Options**:
+- `return_embeddings=True`: Get model embeddings alongside predictions
+- `max_length`: Control sequence truncation (default: model's max length)
+- `device`: Override model device for specific inference
+- `batch_size`: Process sequences in batches to manage memory
+
 ## Tips
 
-1. **Batch Size**: Adjust `--batch-size` based on your GPU memory:
-   - Small GPU (4-8GB): `--batch-size 16`
-   - Medium GPU (8-16GB): `--batch-size 32`
-   - Large GPU (16GB+): `--batch-size 64` or higher
+1. **Start Simple**: Begin with default parameters, then optimize if needed
 
-2. **Input Format**: Use CSV format when you have metadata to track alongside sequences.
+2. **Input Format**: Use CSV format when you have metadata to track alongside sequences
 
 3. **Output Analysis**: The JSON output can be easily loaded into Python for further analysis:
    ```python
@@ -236,14 +391,18 @@ The inference will continue processing remaining sequences.
        results = json.load(f)
    ```
 
-4. **Model Selection**: Use models fine-tuned for your specific task for best results.
+4. **Model Selection**: Use models fine-tuned for your specific task for best results
+
+5. **Memory Management**: If you experience crashes, reduce `--batch-size` first
 
 ## Getting Help
 
 For more information about available options:
 
 ```bash
-autoinfer --help
+ogb autoinfer --help
 ```
+
+**Note**: The legacy `autoinfer` command is still supported for backward compatibility, but `ogb autoinfer` is the recommended interface.
 
 For issues or questions, visit: https://github.com/yangheng95/OmniGenBench/issues

@@ -5,7 +5,7 @@
 # github: https://github.com/yangheng95
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
-# Copyright (C) 2019-2024. All Rights Reserved.
+# Copyright (C) 2019-2025. All Rights Reserved.
 import os
 import random
 import warnings
@@ -86,56 +86,180 @@ class OmniDict(dict):
 
 class OmniDataset(torch.utils.data.Dataset):
     """
-    A unified interface for genomic datasets in the OmniGenome
-    framework. It handles data loading, preprocessing, tokenization, and provides
-    a PyTorch-compatible dataset interface.
+    Abstract base class providing a unified interface for genomic datasets in the OmniGenBench
+    framework. This class handles polymorphic data loading from multiple formats, integrated
+    tokenization, label management, and PyTorch DataLoader compatibility.
 
-    The class supports various data formats and can handle different types of
-    genomic tasks including classification, regression, and token-level tasks.
+    **Design Pattern**: This class implements the Strategy pattern for format-specific parsing
+    while maintaining a consistent API. Different file formats (JSON, CSV, FASTA, Parquet, etc.)
+    are handled transparently through pluggable loaders, with tokenization and preprocessing
+    applied uniformly regardless of input format.
+
+    **Key Features**:
+    
+    - **Format Agnosticism**: Supports JSON, CSV, Parquet, FASTA, FASTQ, BED, VCF, and NumPy
+      formats through auto-detection based on file extension. Custom formats can be added by
+      subclassing and implementing format-specific loaders.
+      
+    - **Integrated Tokenization**: Sequences are tokenized within the dataset pipeline for
+      consistency and efficient caching. Tokenization parameters (max_length, padding, truncation)
+      are configured at dataset initialization.
+      
+    - **Lazy Loading**: Large datasets are loaded incrementally to minimize memory footprint.
+      Data is read into memory on-demand during training/inference rather than all at once.
+      
+    - **Label Management**: Automatic bidirectional mapping between string labels and integer
+      indices (label2id/id2label), with support for multi-label scenarios and PyTorch's -100
+      ignore convention for masked tokens.
+      
+    - **RNA Structure Integration**: Optional secondary structure prediction via ViennaRNA
+      for structure-aware models. Structures are cached to avoid redundant computation.
+      
+    - **Sequence Filtering**: Optional filtering of sequences exceeding max_length via
+      drop_long_seq parameter, useful for maintaining fixed-length batches without truncation.
+
+    **Data Format Convention**: All input files must contain at minimum a ``sequence`` field
+    (or one of its aliases: ``seq``, ``text``, ``dna``, ``rna``). For supervised tasks, a
+    ``label`` field (or aliases: ``labels``, ``target``, ``y``) is also required. Additional
+    custom fields are preserved and passed through the pipeline.
+
+    **Supported File Formats**:
+    
+    - **JSON**: Line-delimited JSON (.json, .jsonl) with one record per line
+    - **CSV/TSV**: Comma or tab-separated values (.csv, .tsv) with header row
+    - **Parquet**: Apache Parquet format (.parquet) for efficient columnar storage
+    - **FASTA**: Biological sequence format (.fasta, .fa) with optional metadata in headers
+    - **FASTQ**: Sequencing format (.fastq, .fq) with quality scores (quality scores ignored)
+    - **BED**: Genomic interval format (.bed) for position-based features
+    - **VCF**: Variant Call Format (.vcf) for genetic variants (experimental)
+    - **NumPy**: NumPy arrays (.npy, .npz) for pre-computed features
 
     Attributes:
-        tokenizer: The tokenizer to use for processing sequences.
-        max_length (int): The maximum sequence length for tokenization.
-        label2id (dict): Mapping from labels to integer IDs.
-        id2label (dict): Mapping from integer IDs to labels.
-        shuffle (bool): Whether to shuffle the data.
-        structure_in (bool): Whether to include secondary structure information.
-        drop_long_seq (bool): Whether to drop sequences longer than max_length.
-        metadata (dict): Metadata about the dataset including version info.
-        rna2structure (RNA2StructureCache): Cache for RNA structure predictions.
+        tokenizer: Tokenizer instance for sequence encoding. Must be compatible with the
+            model architecture being used. Can be OmniTokenizer or HuggingFace tokenizer.
+            
+        max_length (int): Maximum sequence length for tokenization. Sequences exceeding this
+            length are truncated (default) or dropped (if drop_long_seq=True).
+            
+        label2id (dict): Mapping from string labels to integer indices. Automatically populated
+            during data loading if not provided. Example: {"negative": 0, "positive": 1}.
+            
+        id2label (dict): Inverse mapping from integer indices to string labels. Automatically
+            generated from label2id.
+            
+        shuffle (bool): Whether to shuffle dataset order on initialization. Default True.
+            Set to False for validation/test sets to maintain reproducible evaluation.
+            
+        structure_in (bool): Whether to include RNA secondary structure predictions as input
+            features. Requires ViennaRNA installation. Default False. Adds dot-bracket notation
+            as additional input for structure-aware models.
+            
+        drop_long_seq (bool): Whether to drop sequences longer than max_length instead of
+            truncating them. Default False. When True, sequences exceeding max_length are
+            filtered out during loading.
+            
+        metadata (dict): Framework metadata including version information and environment details.
+            Automatically populated with Python version, OmniGenBench version, timestamp, etc.
+            
+        rna2structure (RNA2StructureCache): Persistent cache for RNA structure predictions to
+            avoid redundant ViennaRNA calls. Only created when structure_in=True.
+            
+        data (list): Internal storage for loaded dataset samples. Each element is a dictionary
+            containing 'sequence', 'label', and any additional custom fields.
+
+    Note:
+        This is an abstract base class. Use task-specific subclasses for actual datasets:
+        
+        - ``OmniDatasetForSequenceClassification``: Sequence-level classification
+        - ``OmniDatasetForMultiLabelClassification``: Multi-label classification
+        - ``OmniDatasetForTokenClassification``: Per-nucleotide classification
+        - ``OmniDatasetForSequenceRegression``: Sequence-level regression
+        - ``OmniDatasetForTokenRegression``: Per-nucleotide regression
     """
 
     def __init__(
         self, dataset_name_or_path=None, tokenizer=None, max_length=None, **kwargs
     ):
         """
-        Initializes the dataset.
+        Initializes the genomic dataset with flexible input sources and preprocessing options.
+
+        This method handles dataset loading from various sources: local file paths, HuggingFace
+        Hub identifiers, or lists of file paths for multi-file datasets. It automatically
+        detects file formats and applies appropriate parsers.
 
         Args:
-            dataset_name_or_path (str or list): Path to the data file or a list of paths.
-            tokenizer: The tokenizer to use for processing sequences.
-            max_length (int, optional): The maximum sequence length.
-            **kwargs: Additional keyword arguments.
-                - label2id (dict): A mapping from labels to integer IDs.
-                - shuffle (bool): Whether to shuffle the data. Defaults to True.
-                - structure_in (bool): Whether to include secondary structure
-                  information. Defaults to False.
-                - drop_long_seq (bool): Whether to drop sequences longer than
-                  max_length. Defaults to False.
+            dataset_name_or_path (str or list): One of the following:
+                - Path to a single data file (e.g., "data.json", "sequences.fasta")
+                - HuggingFace Hub dataset identifier (e.g., "yangheng/tfb_promoters")
+                - List of file paths for multi-file datasets
+                - Directory path containing train.json/test.json/val.json
+            tokenizer: Tokenizer instance for sequence encoding. Must implement the
+                OmniTokenizer interface or be a HuggingFace tokenizer.
+            max_length (int, optional): Maximum sequence length after tokenization.
+                Sequences exceeding this length are truncated unless drop_long_seq=True.
+                If None, uses tokenizer's default max_length or 512.
+            **kwargs: Additional keyword arguments:
+                - label2id (dict): Pre-defined mapping from labels to integer IDs. If not
+                  provided, will be auto-generated from unique labels in the dataset.
+                - shuffle (bool): Whether to shuffle dataset order. Defaults to True.
+                  Set to False for validation/test sets to maintain consistent ordering.
+                - structure_in (bool): Whether to include RNA secondary structure
+                  predictions as additional input features. Requires ViennaRNA installation.
+                  Defaults to False. Adds computational overhead during loading.
+                - drop_long_seq (bool): Whether to filter out sequences longer than
+                  max_length instead of truncating. Defaults to False. Useful for
+                  maintaining fixed-length training batches without truncation artifacts.
                 - dataset_url (str): URL to download dataset if not found locally.
-                - cache_dir (str): Directory to cache downloaded datasets.
+                  Supports .zip archives that will be automatically extracted.
+                - cache_dir (str): Directory for caching downloaded datasets. Defaults
+                  to "./__OMNIGENOME_DATA__/datasets/".
+                - data_source (str): Alternative parameter name for dataset_name_or_path
+                  for backward compatibility.
+
+        Raises:
+            ValueError: If dataset_name_or_path is not provided or cannot be located.
+            FileNotFoundError: If the specified dataset file does not exist and cannot
+                be downloaded from the provided dataset_url.
+            RuntimeError: If the dataset format is not recognized or parsing fails.
 
         Example:
-            >>> # Initialize with a single data file
-            >>> dataset = OmniDataset("data.json", tokenizer, max_length=512)
+            >>> # Pattern 1: Initialize with a single local file (format auto-detected)
+            >>> dataset = OmniDatasetForSequenceClassification(
+            ...     "promoters.json",
+            ...     tokenizer=tokenizer,
+            ...     max_length=512
+            ... )
 
-            >>> # Initialize with label mapping
-            >>> dataset = OmniDataset("data.json", tokenizer,
-            ...                       label2id={"A": 0, "B": 1})
+            >>> # Pattern 2: Initialize with explicit label mapping
+            >>> dataset = OmniDatasetForSequenceClassification(
+            ...     "data.csv",
+            ...     tokenizer=tokenizer,
+            ...     label2id={"positive": 1, "negative": 0},
+            ...     max_length=256
+            ... )
 
-            >>> # Initialize with automatic dataset download
-            >>> dataset = OmniDataset("data.csv", tokenizer,
-            ...                       dataset_url="https://example.com/data.zip")
+            >>> # Pattern 3: Initialize with automatic dataset download from URL
+            >>> dataset = OmniDatasetForSequenceClassification(
+            ...     "custom_dataset.zip",
+            ...     tokenizer=tokenizer,
+            ...     dataset_url="https://example.com/datasets/custom_dataset.zip",
+            ...     cache_dir="./my_datasets/"
+            ... )
+
+            >>> # Pattern 4: Load with RNA secondary structure features
+            >>> dataset = OmniDatasetForSequenceClassification(
+            ...     "rna_sequences.json",
+            ...     tokenizer=tokenizer,
+            ...     structure_in=True,  # Adds ViennaRNA structure predictions
+            ...     max_length=512
+            ... )
+
+            >>> # Pattern 5: Load from multiple files
+            >>> dataset = OmniDatasetForSequenceClassification(
+            ...     ["train_part1.json", "train_part2.json", "train_part3.json"],
+            ...     tokenizer=tokenizer,
+            ...     shuffle=True
+            ... )
         """
         super(OmniDataset, self).__init__()
         if not dataset_name_or_path and kwargs.get("data_source", None):
@@ -381,9 +505,9 @@ class OmniDataset(torch.utils.data.Dataset):
         """
         Create OmniDataset instances from a HuggingFace dataset.
 
-        .. deprecated::
-            `from_huggingface` is deprecated and will be removed in a future version.
-            Use `from_huggingface` instead, which supports both HuggingFace Hub and local data sources.
+        .. deprecated:: 0.3.0
+            `from_huggingface` is deprecated and will be removed in version 0.4.0.
+            Use `from_hub` instead, which supports both HuggingFace Hub and local data sources.
 
         Args:
             dataset_name_or_path (str): Name of the HuggingFace dataset or base URL.
@@ -406,8 +530,8 @@ class OmniDataset(torch.utils.data.Dataset):
             >>> train_loader = datasets['train'].get_dataloader(batch_size=16)
         """
         warnings.warn(
-            "from_huggingface() is deprecated and will be removed in a future version. "
-            "Please use from_huggingface() instead, which supports both HuggingFace Hub and local data sources.",
+            "from_huggingface() is deprecated and will be removed in version 0.4.0. "
+            "Please use from_hub() instead, which supports both HuggingFace Hub and local data sources.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -646,29 +770,61 @@ class OmniDataset(torch.utils.data.Dataset):
             fprint(f"Note: No dataset_info.json found in {search_dir}")
             self.dataset_info = None
 
-    def info(self, sections=None):
+    def info(self, sections=None, detailed=False, return_dict=False):
         """
-        Print formatted dataset information.
+        Print formatted dataset information in table format using tabulate.
 
-        This method displays dataset_info in a human-readable format. It's separate
+        This method displays dataset_info in a human-readable table format. It's separate
         from model/tokenizer metadata and focuses on dataset characteristics.
 
         Args:
             sections (list, optional): List of section names to print. If None, prints all.
                 Available sections: 'basic', 'statistics', 'features', 'splits',
                 'preprocessing', 'metrics', 'citation', 'all'
+            detailed (bool, optional): If True, prints detailed JSON data. Defaults to False.
+            return_dict (bool, optional): If True, returns the dataset_info dict instead of printing.
+                Defaults to False.
+
+        Returns:
+            dict or None: Returns dataset_info dict if return_dict=True, otherwise None.
 
         Example:
-            >>> dataset.info()  # Print all sections
+            >>> dataset.info()  # Print all sections in table format
             >>> dataset.info(sections=['basic', 'statistics'])  # Print specific sections
+            >>> dataset.info(detailed=True)  # Print detailed JSON data
+            >>> info_dict = dataset.info(return_dict=True)  # Get info as dictionary
         """
+        import json
+        
+        try:
+            from tabulate import tabulate
+        except ImportError:
+            fprint("Warning: 'tabulate' package not found. Installing...")
+            import subprocess
+            import sys
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "tabulate"])
+            from tabulate import tabulate
+        
         if self.dataset_info is None:
             fprint(
                 "No dataset_info available. Load a dataset with dataset_info.json or use load_dataset_info()."
             )
-            return
+            return None
 
-        if sections is None or "all" in sections:
+        # Return dict if requested
+        if return_dict:
+            return self.dataset_info
+
+        # Print detailed JSON if requested
+        if detailed:
+            fprint("\n" + "=" * 80)
+            fprint("DETAILED DATASET INFORMATION (JSON)".center(80))
+            fprint("=" * 80 + "\n")
+            fprint(json.dumps(self.dataset_info, indent=2, ensure_ascii=False))
+            fprint("\n" + "=" * 80 + "\n")
+            return self.dataset_info
+
+        if sections is None or (isinstance(sections, list) and "all" in sections):
             sections = [
                 "basic",
                 "statistics",
@@ -681,131 +837,165 @@ class OmniDataset(torch.utils.data.Dataset):
 
         info = self.dataset_info
 
-        fprint("\n" + "=" * 70)
-        fprint("DATASET INFORMATION".center(70))
-        fprint("=" * 70)
+        fprint("\n" + "=" * 80)
+        fprint("DATASET INFORMATION".center(80))
+        fprint("=" * 80)
 
-        # Basic Information
+        # Basic Information - Table Format
         if "basic" in sections:
             fprint("\n📊 BASIC INFORMATION")
-            fprint("-" * 70)
-            if "dataset_name" in info:
-                fprint(f"  Name: {info['dataset_name']}")
-            if "dataset_version" in info:
-                fprint(f"  Version: {info['dataset_version']}")
-            if "description" in info:
-                fprint(f"  Description: {info['description']}")
-            if "task_type" in info:
-                fprint(f"  Task Type: {info['task_type']}")
-            if "domain" in info:
-                fprint(f"  Domain: {info['domain']}")
-            if "source" in info:
-                fprint(f"  Source: {info['source']}")
-            if "license" in info:
-                fprint(f"  License: {info['license']}")
+            basic_fields = [
+                ("dataset_name", "Dataset Name"),
+                ("dataset_version", "Version"),
+                ("description", "Description"),
+                ("task_type", "Task Type"),
+                ("domain", "Domain"),
+                ("source", "Source"),
+                ("license", "License"),
+            ]
+            
+            table_data = []
+            for field_key, field_label in basic_fields:
+                if field_key in info:
+                    table_data.append([field_label, info[field_key]])
+            
+            if table_data:
+                fprint(tabulate(table_data, headers=["Field", "Value"], tablefmt="grid", maxcolwidths=[20, 60]))
 
-        # Statistics
+        # Statistics - Table Format
         if "statistics" in sections and "statistics" in info:
             fprint("\n📈 STATISTICS")
-            fprint("-" * 70)
             stats = info["statistics"]
-            for key, value in stats.items():
-                formatted_key = key.replace("_", " ").title()
-                if isinstance(value, dict):
-                    fprint(f"  {formatted_key}:")
-                    for sub_key, sub_value in value.items():
-                        fprint(f"    - {sub_key}: {sub_value}")
-                else:
-                    fprint(f"  {formatted_key}: {value}")
+            
+            # Separate simple and nested statistics
+            simple_stats = {k: v for k, v in stats.items() if not isinstance(v, dict)}
+            nested_stats = {k: v for k, v in stats.items() if isinstance(v, dict)}
+            
+            # Print simple statistics in table
+            if simple_stats:
+                table_data = [[k.replace("_", " ").title(), v] for k, v in simple_stats.items()]
+                fprint(tabulate(table_data, headers=["Metric", "Value"], tablefmt="grid", maxcolwidths=[30, 50]))
+            
+            # Print nested statistics
+            if nested_stats:
+                for key, value in nested_stats.items():
+                    formatted_key = key.replace("_", " ").title()
+                    fprint(f"\n  {formatted_key}:")
+                    table_data = [[sub_key, sub_value] for sub_key, sub_value in value.items()]
+                    fprint(tabulate(table_data, headers=["Item", "Value"], tablefmt="grid", maxcolwidths=[25, 50]))
 
-        # Features
+        # Features - Table Format
         if "features" in sections and "features" in info:
             fprint("\n🔧 FEATURES")
-            fprint("-" * 70)
             features = info["features"]
 
             if "input" in features:
-                fprint("  Input Features:")
+                fprint("\n  Input Features:")
+                table_data = []
                 for feat_name, feat_info in features["input"].items():
-                    fprint(f"    • {feat_name}")
                     if isinstance(feat_info, dict):
-                        if "description" in feat_info:
-                            fprint(f"      Description: {feat_info['description']}")
-                        if "type" in feat_info:
-                            fprint(f"      Type: {feat_info['type']}")
+                        feat_type = feat_info.get("type", "N/A")
+                        feat_desc = feat_info.get("description", "N/A")
+                        table_data.append([feat_name, feat_type, feat_desc])
+                    else:
+                        table_data.append([feat_name, "N/A", "N/A"])
+                
+                if table_data:
+                    fprint(tabulate(table_data, headers=["Feature", "Type", "Description"], 
+                                  tablefmt="grid", maxcolwidths=[25, 15, 40]))
 
             if "output" in features:
-                fprint("  Output Features:")
+                fprint("\n  Output Features:")
+                table_data = []
                 for feat_name, feat_info in features["output"].items():
-                    fprint(f"    • {feat_name}")
-                    if isinstance(feat_info, dict) and "description" in feat_info:
-                        fprint(f"      Description: {feat_info['description']}")
+                    if isinstance(feat_info, dict):
+                        feat_type = feat_info.get("type", "N/A")
+                        feat_desc = feat_info.get("description", "N/A")
+                        table_data.append([feat_name, feat_type, feat_desc])
+                    else:
+                        table_data.append([feat_name, "N/A", "N/A"])
+                
+                if table_data:
+                    fprint(tabulate(table_data, headers=["Feature", "Type", "Description"], 
+                                  tablefmt="grid", maxcolwidths=[25, 15, 40]))
 
-        # Data Splits
+        # Data Splits - Table Format
         if "splits" in sections and "data_splits" in info:
             fprint("\n📂 DATA SPLITS")
-            fprint("-" * 70)
-            for split_name, split_info in info["data_splits"].items():
-                fprint(f"  {split_name.title()}:")
+            
+            # Collect all unique keys across splits
+            all_keys = set()
+            for split_info in info["data_splits"].values():
                 if isinstance(split_info, dict):
-                    for key, value in split_info.items():
-                        fprint(f"    - {key}: {value}")
+                    all_keys.update(split_info.keys())
+            
+            # Build table
+            if all_keys:
+                headers = ["Split"] + [key.replace("_", " ").title() for key in sorted(all_keys)]
+                table_data = []
+                
+                for split_name, split_info in info["data_splits"].items():
+                    if isinstance(split_info, dict):
+                        row = [split_name.title()]
+                        for key in sorted(all_keys):
+                            row.append(split_info.get(key, "N/A"))
+                        table_data.append(row)
+                    else:
+                        table_data.append([split_name.title(), split_info])
+                
+                if table_data:
+                    fprint(tabulate(table_data, headers=headers, tablefmt="grid"))
 
-        # Preprocessing
+        # Preprocessing - Table Format
         if "preprocessing" in sections and "preprocessing" in info:
             fprint("\n⚙️  PREPROCESSING")
-            fprint("-" * 70)
             preproc = info["preprocessing"]
+            
+            table_data = []
             for key, value in preproc.items():
                 formatted_key = key.replace("_", " ").title()
                 if isinstance(value, list):
-                    fprint(f"  {formatted_key}: {', '.join(value)}")
+                    value_str = ", ".join(str(v) for v in value)
                 else:
-                    fprint(f"  {formatted_key}: {value}")
+                    value_str = str(value)
+                table_data.append([formatted_key, value_str])
+            
+            if table_data:
+                fprint(tabulate(table_data, headers=["Step", "Details"], tablefmt="grid", maxcolwidths=[30, 50]))
 
-        # Evaluation Metrics
+        # Evaluation Metrics - Table Format
         if "metrics" in sections and "evaluation_metrics" in info:
             fprint("\n📊 EVALUATION METRICS")
-            fprint("-" * 70)
             metrics = info["evaluation_metrics"]
+            
+            table_data = []
             if "primary" in metrics:
-                fprint(f"  Primary Metric: {metrics['primary']}")
+                table_data.append(["Primary Metric", metrics["primary"]])
             if "description" in metrics:
-                fprint(f"  Description: {metrics['description']}")
+                table_data.append(["Description", metrics["description"]])
             if "secondary" in metrics:
-                fprint(f"  Secondary Metrics: {', '.join(metrics['secondary'])}")
+                secondary_str = ", ".join(metrics['secondary']) if isinstance(metrics['secondary'], list) else str(metrics['secondary'])
+                table_data.append(["Secondary Metrics", secondary_str])
+            
+            if table_data:
+                fprint(tabulate(table_data, headers=["Metric Type", "Details"], tablefmt="grid", maxcolwidths=[25, 55]))
 
         # Citation
         if "citation" in sections and "citation" in info:
             fprint("\n📚 CITATION")
-            fprint("-" * 70)
+            fprint("-" * 80)
             fprint(info["citation"])
 
         # Additional Notes
-        if "notes" in info and sections is None:
+        if "notes" in info and (sections is None or "notes" in sections):
             fprint("\n📝 NOTES")
-            fprint("-" * 70)
+            fprint("-" * 80)
             for i, note in enumerate(info["notes"], 1):
                 fprint(f"  {i}. {note}")
 
-        fprint("\n" + "=" * 70 + "\n")
-
-        if self.dataset_info is None:
-            return None
-
-        if key is None:
-            return self.dataset_info
-
-        # Support dot notation for nested keys
-        keys = key.split(".")
-        value = self.dataset_info
-        for k in keys:
-            if isinstance(value, dict) and k in value:
-                value = value[k]
-            else:
-                return None
-
-        return value
+        fprint("\n" + "=" * 80 + "\n")
+        
+        return self.dataset_info
 
     def load_data_source(self, data_source, **kwargs):
         """
@@ -892,10 +1082,11 @@ class OmniDataset(torch.utils.data.Dataset):
             ):
                 try:
                     from Bio import SeqIO
-                except ImportError:
+                except ImportError as e:
                     raise ImportError(
-                        "Biopython is required for FASTA parsing. Please install with 'pip install biopython'."
-                    )
+                        "Biopython is required for FASTA file parsing. "
+                        "Please install it with: pip install biopython"
+                    ) from e
                 for record in SeqIO.parse(data_source, "fasta"):
                     _examples.append(
                         {
@@ -907,10 +1098,11 @@ class OmniDataset(torch.utils.data.Dataset):
             elif data_source.endswith((".fastq", ".fq")):
                 try:
                     from Bio import SeqIO
-                except ImportError:
+                except ImportError as e:
                     raise ImportError(
-                        "Biopython is required for FASTQ parsing. Please install with 'pip install biopython'."
-                    )
+                        "Biopython is required for FASTQ file parsing. "
+                        "Please install it with: pip install biopython"
+                    ) from e
                 for record in SeqIO.parse(data_source, "fastq"):
                     _examples.append(
                         {
@@ -1020,14 +1212,18 @@ class OmniDataset(torch.utils.data.Dataset):
     @staticmethod
     def _download_dataset_from_huggingface(dataset_name, local_dir=None):
         """
-        Downloads and extracts datasets from OmniGenBench Hub on powered by HuggingFace.
+        Downloads and extracts datasets from OmniGenBench Hub powered by HuggingFace.
 
-        .. deprecated::
-            Use `_download_dataset_from_huggingface` instead.
+        .. deprecated:: 0.3.0
+            Use `_download_dataset_from_hub` instead. This method will be removed in version 0.4.0.
+            
+        Args:
+            dataset_name (str): Name of the dataset to download.
+            local_dir (str, optional): Directory to save the dataset. If None, saves to default location.
         """
         warnings.warn(
             "_download_dataset_from_huggingface() is deprecated. "
-            "Use _download_dataset_from_huggingface() instead.",
+            "Use _download_dataset_from_hub() instead.",
             DeprecationWarning,
             stacklevel=2,
         )

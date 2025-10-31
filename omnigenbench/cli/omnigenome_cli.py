@@ -133,8 +133,13 @@ def main():
 
         # Output results
         print(f"Best RNA sequences for {args.structure}:")
-        for seq in best_sequences:
-            print(f"- {seq}")
+        if isinstance(best_sequences, list):
+            for seq in best_sequences:
+                print(f"- {seq}")
+        else:
+            # Fallback for single sequence (shouldn't happen with updated model)
+            print(f"- {best_sequences}")
+            best_sequences = [best_sequences]
 
         # Save to file if specified
         if args.output_file:
@@ -143,9 +148,10 @@ def main():
                     {
                         "structure": args.structure,
                         "parameters": {
+                            "model": args.model,
                             "mutation_ratio": args.mutation_ratio,
-                            "population": args.num_population,
-                            "generations": args.num_generation,
+                            "num_population": args.num_population,
+                            "num_generation": args.num_generation,
                         },
                         "best_sequences": best_sequences,
                     },

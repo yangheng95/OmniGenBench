@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # file: lora_model.py
 # time: 12:36 11/06/2025
-# author: YENG, HENG <hy345@exeter.ac.uk> (杨恒)
+# author: YANG, HENG <hy345@exeter.ac.uk> (杨恒)
 # homepage: https://yangheng95.github.io
 # github: https://github.com/yangheng95
 # huggingface: https://huggingface.co/yangheng

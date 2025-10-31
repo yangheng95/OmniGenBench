@@ -5,7 +5,7 @@
 # github: https://github.com/yangheng95
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
-# Copyright (C) 2019-2024. All Rights Reserved.
+# Copyright (C) 2019-2025. All Rights Reserved.
 
 import os
 import time
@@ -34,28 +34,58 @@ from ... import __version__ as omnigenbench_version
 
 class AutoBench:
     """
-    This class provides a comprehensive framework for evaluating genomic models
-    across multiple benchmarks and tasks. It handles loading benchmarks, models,
-    tokenizers, and running evaluations with proper metric tracking and result
-    visualization.
+    Automated benchmarking framework for evaluating genomic foundation models across
+    standardized benchmark suites with reproducible protocols and statistical rigor.
 
-    AutoBench supports various evaluation scenarios including:
+    This class orchestrates the complete evaluation pipeline: benchmark dataset acquisition,
+    model loading, distributed inference, metric calculation, multi-seed averaging, and
+    results visualization. It implements best practices for genomic machine learning evaluation,
+    including proper cross-validation, ignored label handling, and task-specific metric selection.
 
-    - Single model evaluation across multiple benchmarks
-    - Multi-seed evaluation for robustness testing
-    - Different trainer backends (native, accelerate, huggingface)
-    - Automatic metric visualization and result tracking
+    **Design Philosophy**: AutoBench follows the "Convention over Configuration" principle,
+    providing sensible defaults while allowing full customization. By default, it uses the
+    ``native`` trainer for single-GPU evaluation (optimizing for control and debuggability),
+    while the CLI defaults to ``accelerate`` for distributed evaluation (optimizing for throughput).
+
+    **Benchmark Suites Supported**:
+
+    - **RGB**: RNA Genome Benchmarks (12 tasks) - RNA structure and function prediction
+    - **BEACON**: Broad Evaluation Across Computational geNOmics (13 tasks) - Multi-domain RNA
+    - **PGB**: Plant Genomics Benchmarks (7 categories) - Plant-specific sequence analysis
+    - **GUE**: Genomics Understanding Evaluation (36 datasets) - DNA general understanding
+    - **GB**: Genomics Benchmarks (9 datasets) - Classic DNA classification tasks
+
+    **Evaluation Protocol**:
+
+    1. **Dataset Loading**: Automatically downloads benchmark datasets from HuggingFace Hub
+       or local cache, validates data format, and applies task-specific preprocessing
+    2. **Model Initialization**: Loads pre-trained models with proper task-specific heads,
+       handling multi-label classification, regression, and token-level prediction
+    3. **Multi-Seed Evaluation**: Runs independent training/evaluation with different random
+       seeds (typically 3-5) to quantify variance and ensure statistical significance
+    4. **Metric Calculation**: Computes task-appropriate metrics (MCC, F1, AUPRC for
+       classification; MSE, Spearman for regression) with proper handling of ignored labels
+    5. **Result Aggregation**: Calculates mean ± standard deviation across seeds, generates
+       visualizations, and serializes results with MetricVisualizer
+
+    **Trainer Backend Selection**:
+
+    - ``native`` (Python API default): Pure PyTorch training loop for single-GPU evaluation,
+      providing explicit control over training dynamics and simplified debugging
+    - ``accelerate`` (CLI default): HuggingFace Accelerate for distributed evaluation across
+      multiple GPUs, enabling efficient parallel inference on large benchmarks
+    - ``hf_trainer``: HuggingFace Trainer API integration for users familiar with that ecosystem
 
     Attributes:
-        benchmark (str): The name or path of the benchmark to use.
-        model_name_or_path (str): The name or path of the model to evaluate.
-        tokenizer: The tokenizer to use for evaluation.
-        autocast (str): The autocast precision to use ('fp16', 'bf16', etc.).
-        overwrite (bool): Whether to overwrite existing evaluation results.
-        trainer (str): The trainer to use ('native', 'accelerate', 'hf_trainer').
-        mv_path (str): Path to the metric visualizer file.
-        mv (MetricVisualizer): The metric visualizer instance.
-        bench_metadata: Metadata about the benchmark configuration.
+        benchmark (str): Name or local path of the benchmark suite to evaluate on.
+        model_name_or_path (str): HuggingFace Hub identifier or local path to the model.
+        tokenizer: Tokenizer instance for sequence preprocessing. Auto-loaded if None.
+        autocast (str): Mixed precision mode ('fp16', 'bf16', 'fp32') for memory efficiency.
+        overwrite (bool): Whether to overwrite existing evaluation results or resume from cache.
+        trainer (str): Training backend ('native', 'accelerate', 'hf_trainer').
+        mv_path (str): Path to MetricVisualizer file for result serialization and visualization.
+        mv (MetricVisualizer): Active visualizer instance for tracking metrics across seeds.
+        bench_metadata: Benchmark configuration metadata loaded from benchmark's metadata.py.
     """
 
     def __init__(

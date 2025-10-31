@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-# file: omnigenbench_model.py
+# file: abstract_model.py
 # time: 18:36 06/04/2024
 # author: YANG, HENG <hy345@exeter.ac.uk> (杨恒)
 # github: https://github.com/yangheng95
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
-# Copyright (C) 2019-2024. All Rights Reserved.
+# Copyright (C) 2019-2025. All Rights Reserved.
 import json
 import os
 import shutil
@@ -20,6 +20,7 @@ import torch
 from transformers import AutoModel, AutoConfig, AutoTokenizer, BatchEncoding
 
 from ..misc.utils import fprint, env_meta_info
+from .embedding_mixin import EmbeddingMixin
 
 warnings.filterwarnings("once")
 
@@ -43,51 +44,173 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-class OmniModel(torch.nn.Module):
+class OmniModel(EmbeddingMixin, torch.nn.Module):
     """
-    This class provides a unified interface for all genomic models in the OmniGenome
-    framework. It handles model initialization, forward passes, loss computation,
-    prediction, inference, and model persistence.
+    Abstract base class providing a unified interface for genomic foundation models in the
+    OmniGenBench framework. This class handles model initialization, forward passes, loss
+    computation, prediction interfaces, and model persistence while maintaining compatibility
+    with HuggingFace's ecosystem.
+    
+    **Architectural Pattern**: This class follows the Template Method pattern, providing
+    common infrastructure while delegating task-specific behavior to subclasses
+    (OmniModelForSequenceClassification, OmniModelForTokenClassification, etc.).
+    
+    **Inherited Capabilities** (via EmbeddingMixin):
+    
+    - **Embedding Generation**: ``batch_encode()``, ``encode()``, ``encode_tokens()``
+      for extracting fixed-length sequence representations from genomic sequences
+    - **Attention Extraction**: ``extract_attention_scores()``, ``batch_extract_attention_scores()``
+      for model interpretability and attention weight visualization
+    - **Similarity Computation**: ``compute_similarity()`` for sequence comparison and
+      relatedness analysis
+    - **Visualization Tools**: ``visualize_attention_pattern()`` for generating attention heatmaps
+      and understanding model focus
+    
+    All task-specific OmniModel subclasses automatically inherit these capabilities,
+    enabling representation learning and interpretability without additional implementation.
+    
+    **Design Philosophy**: By inheriting from both EmbeddingMixin and torch.nn.Module,
+    this class seamlessly integrates sequence embedding capabilities with PyTorch's
+    standard training infrastructure, making it compatible with native PyTorch training
+    loops, HuggingFace Trainer, and Accelerate-based distributed training.
+    
+    **Task-Specific Subclasses**: Users should instantiate concrete implementations rather
+    than this abstract class directly:
+    
+    - ``OmniModelForSequenceClassification``: Sequence-level classification tasks
+      (e.g., promoter identification, functional annotation)
+    - ``OmniModelForMultiLabelSequenceClassification``: Multi-label classification
+      (e.g., transcription factor binding site prediction with 919 TFs)
+    - ``OmniModelForTokenClassification``: Per-nucleotide predictions
+      (e.g., splice site detection, secondary structure annotation)
+    - ``OmniModelForSequenceRegression``: Sequence-level continuous predictions
+      (e.g., gene expression levels, binding affinity scores)
+    - ``OmniModelForTokenRegression``: Per-nucleotide continuous predictions
+      (e.g., chromatin accessibility profiles, conservation scores)
+    - ``OmniModelForRNADesign``: Structure-guided RNA sequence generation
+      (genetic algorithm + masked language model)
+    - ``OmniModelForEmbedding``: Representation learning and feature extraction
     """
 
     def __init__(self, config_or_model, tokenizer, *args, **kwargs):
         """
-        Initializes the model.
+        Initializes the genomic foundation model with flexible input types.
 
-        This method handles different types of model initialization:
-        - From a pre-trained model path (string)
-        - From a PyTorch model instance
-        - From a configuration object
+        This method handles three initialization patterns:
+        
+        1. **From pre-trained path** (recommended): Loads model from HuggingFace Hub or local
+           directory. The architecture is automatically detected via ``config.json`` using
+           the ``auto_map`` or ``architectures`` fields.
+           
+        2. **From PyTorch module**: Wraps an existing ``nn.Module`` with OmniModel interface,
+           useful for integrating custom architectures or models loaded via other means.
+           
+        3. **From configuration**: Initializes a new model from AutoConfig specification,
+           typically used for training models from scratch.
+
+        The initialization process automatically detects the underlying architecture via
+        HuggingFace's ``config.json`` (using ``auto_map`` or ``architectures`` fields),
+        eliminating manual architecture specification for standard models.
 
         Args:
-            config_or_model: A model configuration, a pre-trained model path (str),
-                           or a `torch.nn.Module` instance.
-            tokenizer: The tokenizer associated with the model.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
-                - label2id (dict): Mapping from class labels to IDs.
-                - num_labels (int): The number of labels.
-                - trust_remote_code (bool): Whether to trust remote code when loading
-                  from Hugging Face Hub. Defaults to True.
-                - ignore_mismatched_sizes (bool): Whether to ignore size mismatches
-                  when loading pre-trained weights. Defaults to False.
-                - dropout (float): Dropout rate. Defaults to 0.0.
-                - dataset_class: The dataset class used for data preprocessing.
-                  This allows the model to use dataset's prepare_input method
-                  during inference. Defaults to None.
+            config_or_model: One of the following:
+                - **str**: Path or HuggingFace Hub identifier (e.g., "yangheng/OmniGenome-186M").
+                  Can be a local path to a model directory or a Hub model ID.
+                - **torch.nn.Module**: Pre-instantiated PyTorch model to wrap with OmniModel
+                  interface, enabling use of custom architectures within the framework.
+                - **AutoConfig**: Configuration object for new model initialization, used when
+                  training models from scratch or with custom configurations.
+                  
+            tokenizer: Tokenizer instance compatible with the model architecture.
+                Used for sequence preprocessing during inference. Should implement either
+                OmniTokenizer interface or HuggingFace tokenizer protocol.
+                
+            *args: Additional positional arguments passed to torch.nn.Module.__init__
+            
+            **kwargs: Additional keyword arguments:
+                - **label2id** (dict, optional): Mapping from class labels to integer IDs.
+                  Required for classification tasks. Example: {"negative": 0, "positive": 1}.
+                  Either this or num_labels must be provided.
+                  
+                - **num_labels** (int, optional): Number of output classes. Alternative to label2id
+                  for when label names are not available. If both provided, they must be consistent
+                  (len(label2id) must equal num_labels).
+                  
+                - **trust_remote_code** (bool, optional): Whether to trust remote code when loading
+                  from HuggingFace Hub. Defaults to True. Set to False for security-critical
+                  environments where only vetted models should be loaded.
+                  
+                - **ignore_mismatched_sizes** (bool, optional): Whether to ignore size mismatches
+                  when loading pre-trained weights (e.g., different classifier head dimensions).
+                  Defaults to False. Set to True when fine-tuning for a different number of
+                  labels than the pre-trained model.
+                  
+                - **dropout** (float, optional): Dropout probability for regularization in
+                  classification/regression heads. Defaults to 0.0. Typical values: 0.1-0.5.
+                  
+                - **dataset_class** (type, optional): Dataset class used for preprocessing.
+                  Enables models to use the dataset's ``prepare_input`` method during inference,
+                  allowing custom field handling beyond basic tokenization. Useful when inference
+                  requires the same complex preprocessing as training.
+                  
+                - **problem_type** (str, optional): Type of prediction problem. Common values:
+                  "single_label_classification", "multi_label_classification", "regression".
+                  Affects loss calculation and output interpretation.
 
         Raises:
-            ValueError: If config_or_model is not a valid type or if required
-                      configuration is missing.
-            RuntimeError: If the hidden size cannot be determined from the config.
+            ValueError: If neither label2id nor num_labels is provided, or if they are
+                inconsistent (len(label2id) != num_labels). Also raised if config_or_model
+                is an unsupported type (not str, nn.Module, or AutoConfig).
+                
+            RuntimeError: If the hidden size cannot be determined from the config (model must
+                define one of: hidden_size, n_embd, or d_model), or if the model architecture
+                cannot be auto-detected from config.json (missing both architectures and auto_map).
+                
+            FileNotFoundError: If the specified model path does not exist locally and cannot be
+                found on HuggingFace Hub. Check model path/ID spelling and internet connectivity.
 
         Example:
-            >>> # Initialize from a pre-trained model
-            >>> model = OmniModelForSequenceClassification("model_path", tokenizer)
+            >>> # Pattern 1: Initialize from pre-trained model (recommended)
+            >>> from omnigenbench import OmniModelForSequenceClassification, OmniTokenizer
+            >>> tokenizer = OmniTokenizer.from_pretrained("yangheng/OmniGenome-186M")
+            >>> model = OmniModelForSequenceClassification(
+            ...     "yangheng/OmniGenome-186M",
+            ...     tokenizer=tokenizer,
+            ...     num_labels=2,
+            ...     problem_type="single_label_classification"
+            ... )
+            >>> print(f"Model has {count_parameters(model):,} trainable parameters")
 
-            >>> # Initialize from a configuration
-            >>> config = AutoConfig.from_pretrained("model_path")
+            >>> # Pattern 2: Initialize with label2id mapping
+            >>> label2id = {"background": 0, "promoter": 1, "enhancer": 2}
+            >>> model = OmniModelForSequenceClassification(
+            ...     "yangheng/OmniGenome-186M",
+            ...     tokenizer=tokenizer,
+            ...     label2id=label2id  # num_labels inferred automatically as 3
+            ... )
+
+            >>> # Pattern 3: Initialize from configuration (for custom models)
+            >>> from transformers import AutoConfig
+            >>> config = AutoConfig.from_pretrained("yangheng/OmniGenome-186M")
+            >>> config.num_labels = 10
             >>> model = OmniModelForSequenceClassification(config, tokenizer)
+
+            >>> # Pattern 4: Wrap existing PyTorch module
+            >>> from transformers import AutoModel
+            >>> base_model = AutoModel.from_pretrained("yangheng/OmniGenome-186M")
+            >>> model = OmniModelForSequenceClassification(
+            ...     base_model, tokenizer, num_labels=2
+            ... )
+            
+            >>> # Pattern 5: Initialize with dataset class for complex preprocessing
+            >>> from omnigenbench import OmniDatasetForSequenceClassification
+            >>> model = OmniModelForSequenceClassification(
+            ...     "yangheng/OmniGenome-186M",
+            ...     tokenizer=tokenizer,
+            ...     num_labels=2,
+            ...     dataset_class=OmniDatasetForSequenceClassification
+            ... )
+            >>> # Now model.inference() can use dataset's prepare_input method
         """
         self.loss_fn = None
 
@@ -148,8 +271,9 @@ class OmniModel(torch.nn.Module):
                     ).base_model
                 else:
                     raise ValueError(
-                        f"The model cannot be instantiated from {config_or_model}. "
-                        f"Please check the model configuration contains the architectures or auto_map."
+                        f"Model cannot be instantiated from '{config_or_model}'. "
+                        f"The configuration must contain either 'architectures' or 'auto_map' field. "
+                        f"Please verify the model path/ID is correct and config.json is properly formatted."
                     )
             elif hasattr(config, "architectures") and config.architectures:
                 model_cls_name = (
@@ -169,7 +293,8 @@ class OmniModel(torch.nn.Module):
                 ).base_model
             else:
                 raise ValueError(
-                    "Neither `architectures` nor `auto_map` is defined in the config."
+                    f"Model configuration from '{config_or_model}' is missing both 'architectures' and 'auto_map' fields. "
+                    f"Cannot determine the model architecture. Please ensure the model has a valid config.json file."
                 )
             self.model = model
             self.model.config = config
@@ -190,7 +315,9 @@ class OmniModel(torch.nn.Module):
             self.model.config = config
         else:
             raise ValueError(
-                "The config_or_model should be either a string, a torch.nn.Module or a AutoConfig object."
+                f"Invalid type for config_or_model: {type(config_or_model).__name__}. "
+                f"Expected one of: str (model path/ID), torch.nn.Module (model instance), "
+                f"or AutoConfig (configuration object)."
             )
 
         # Update the config

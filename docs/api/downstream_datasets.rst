@@ -1,14 +1,25 @@
 Downstream Datasets
 ----------------------------
 
-This module provides some templated dataset processing classes inherited from the abstract `OmniDataset` class, which is used to handle datasets in the OmniGenBench framework.
+.. note::
+   
+   **You are viewing the API reference documentation.**
+   
+   This page provides detailed API documentation for dataset classes. For a comprehensive feature guide with complete examples, see the :doc:`../OMNIDATASET_FEATURES`.
+   
+   - **Quick Reference**: See below for class signatures
+   - **Complete Guide**: :doc:`../OMNIDATASET_FEATURES` (87KB guide with 9 sections)
+   - **Design Philosophy**: :doc:`../design_principle` (understanding OmniDataset abstraction)
 
-**Categories:**
+This module provides templated dataset processing classes inherited from the abstract ``OmniDataset`` class, which handles datasets in the OmniGenBench framework.
 
-- OmniDatasetForSequenceClassification: A dataset class for sequence classification tasks.
-- OmniDatasetForRegression: A dataset class for sequence regression tasks.
-- OmniDatasetForTokenClassification: A dataset class for token (nucleotide) classification tasks.
-- OmniDatasetForTokenRegression: A dataset class for token (nucleotide) regression tasks.
+**Dataset Categories:**
+
+- **OmniDatasetForSequenceClassification**: Sequence classification tasks (e.g., promoter prediction)
+- **OmniDatasetForRegression**: Sequence regression tasks (e.g., translation efficiency)
+- **OmniDatasetForTokenClassification**: Token (nucleotide) classification tasks (e.g., TFB prediction)
+- **OmniDatasetForTokenRegression**: Token (nucleotide) regression tasks
+- **OmniDatasetForMultiLabelClassification**: Multi-label classification tasks
 
 OmniDataset
 ~~~~~~~~~~~~~~~~~

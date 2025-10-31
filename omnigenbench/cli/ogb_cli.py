@@ -12,10 +12,11 @@
 OmniGenBench (OGB) Command Line Interface
 
 This is the main entry point for all OmniGenBench CLI commands.
-It provides three main subcommands:
+It provides four main subcommands:
 - autobench: Automated benchmarking of genomic foundation models
 - autotrain: Automated training/fine-tuning of models
 - autoinfer: Automated inference with fine-tuned models
+- rna_design: RNA sequence design for target structures
 """
 
 import argparse
@@ -416,6 +417,103 @@ def run_autobench(args):
     bench_command(cmd_args)
 
 
+def create_rna_design_parser(subparsers):
+    """Create the parser for RNA design command."""
+    parser = subparsers.add_parser(
+        "rna_design",
+        help="Design RNA sequences for target secondary structures",
+        description="""
+Design RNA sequences that fold into specified secondary structures using
+a genetic algorithm guided by masked language modeling.
+
+The algorithm uses:
+- ViennaRNA for structure prediction and free energy calculation
+- Multi-objective optimization (structure similarity + energy stability)
+- MLM-guided mutations for biologically plausible sequences
+
+Examples:
+  # Simple hairpin design
+  ogb rna_design --structure "(((...)))"
+  
+  # Stem-loop with specific model
+  ogb rna_design --structure "(((((.....)))))(((...)))" --model yangheng/OmniGenome-186M
+  
+  # High mutation rate for diverse exploration
+  ogb rna_design --structure "((((....))))((((...))))" --mutation-ratio 0.3
+  
+  # Save results to file
+  ogb rna_design --structure "(((...)))" --output-file designs.txt
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    parser.add_argument(
+        "--structure",
+        type=str,
+        required=True,
+        help="Target RNA secondary structure in dot-bracket notation. "
+        "Use '(' for open base pairs, ')' for closing pairs, and '.' for unpaired bases. "
+        "Example: '(((...)))' represents a simple hairpin structure.",
+    )
+
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="yangheng/OmniGenome-186M",
+        help="Pre-trained model name or path for MLM-guided mutations. "
+        "Default: yangheng/OmniGenome-186M. Use larger models like OmniGenome-418M "
+        "for better biological plausibility.",
+    )
+
+    parser.add_argument(
+        "--mutation-ratio",
+        type=float,
+        default=0.1,
+        help="Fraction of nucleotides to mutate in each generation (0.0-1.0). "
+        "Default: 0.1 (10%%). Lower values (0.05) for conservative exploration, "
+        "higher values (0.2-0.3) for diverse exploration. Higher ratios may reduce "
+        "convergence speed.",
+    )
+
+    parser.add_argument(
+        "--num-population",
+        type=int,
+        default=100,
+        help="Population size for genetic algorithm. Default: 100. "
+        "Larger populations (200-500) explore more diversity but take longer. "
+        "Smaller populations (50) converge faster but may miss optimal solutions.",
+    )
+
+    parser.add_argument(
+        "--num-generation",
+        type=int,
+        default=100,
+        help="Maximum number of generations. Default: 100. "
+        "The algorithm terminates early if a perfect match is found. "
+        "Increase to 200-500 for complex structures or if no perfect match is found.",
+    )
+
+    parser.add_argument(
+        "--output-file",
+        type=str,
+        default=None,
+        help="Output file path to save designed sequences. "
+        "If not specified, sequences are printed to stdout. "
+        "Each line contains: sequence, predicted structure, normalized distance, free energy.",
+    )
+
+    parser.set_defaults(func=run_rna_design)
+    return parser
+
+
+def run_rna_design(args):
+    """Execute the RNA design command."""
+    from omnigenbench.cli.commands.rna.rna_design import RNADesignCommand
+
+    # Execute the command with args namespace
+    RNADesignCommand.execute(args)
+
+
 def main():
     """
     Main entry point for the OGB (OmniGenBench) CLI.
@@ -431,11 +529,13 @@ Available Commands:
   autoinfer   - Run inference with fine-tuned models
   autotrain   - Train or fine-tune genomic models
   autobench   - Benchmark models on standard datasets
+  rna_design  - Design RNA sequences for target secondary structures
 
 Examples:
   ogb autoinfer --model yangheng/ogb_tfb_finetuned --sequence "ATCGATCGATCG"
   ogb autotrain --dataset yangheng/tfb_promoters --model zhihan1996/DNABERT-2-117M
   ogb autobench --model yangheng/OmniGenome-186M --benchmark RGB
+  ogb rna_design --structure "(((...)))" --model yangheng/OmniGenome-186M
 
 For more information: https://github.com/yangheng95/OmniGenBench
         """,
@@ -444,7 +544,7 @@ For more information: https://github.com/yangheng95/OmniGenBench
     parser.add_argument(
         "--version",
         action="version",
-        version="OmniGenBench v0.3.20",
+        version="OmniGenBench v0.3.23alpha",
     )
 
     # Create subparsers for each command
@@ -460,6 +560,7 @@ For more information: https://github.com/yangheng95/OmniGenBench
     create_autoinfer_parser(subparsers)
     create_autotrain_parser(subparsers)
     create_autobench_parser(subparsers)
+    create_rna_design_parser(subparsers)
 
     # Parse arguments
     args = parser.parse_args()
@@ -468,7 +569,7 @@ For more information: https://github.com/yangheng95/OmniGenBench
     if hasattr(args, "func"):
         args.func(args)
     else:
-        parser.fprint_help()
+        parser.print_help()
         sys.exit(1)
 
 

@@ -5,21 +5,30 @@ OmniGenBench is a comprehensive toolkit for genomic foundation models. It provid
 
 .. tip::
 
-    How to Use This Reference:
+    **How to Use This Reference:**
 
     - Browse API documentation by functional category below.
     - Each section contains detailed classes, functions, usage examples, and extension guidelines.
-    - Start with Abstract Classes to understand the core interfaces, then explore Auto-Pipelines, CLI Commands, and Online Hubs as needed.
+    - Start with **Abstract Classes** to understand the core interfaces (OmniModel, OmniDataset, OmniTokenizer, OmniMetric).
+    - Explore **Auto-Pipelines**, **CLI Commands**, and **Online Hubs** for high-level workflows.
+    - Dive into **Low-level Modules** for detailed implementation and customization.
 
-    Main API Categories:
+    **Quick Links:**
+    
+    - :doc:`api/trainers` - Complete trainer documentation (Native, Accelerate, HuggingFace)
+    - :doc:`api/downstream_datasets` - Dataset classes and usage
+    - :doc:`api/downstream_models` - Model architectures
+    - :doc:`api/commands` - CLI command reference
 
-    - **Abstract Classes:**  Core interfaces for datasets, models, metrics, and tokenizers. Use these as base classes for custom extensions.
-    - **Auto-Pipelines:**  Automated benchmarking and training workflows, including AutoBench, AutoTrain, and related configuration classes.
-    - **CLI Commands:**  Command-line tools for running benchmarks, training, and managing resources.
-    - **Online Hubs:**  Access pre-trained models, datasets, and pipelines via hub utilities.
-    - **Low-level Modules:**  Detailed and fine-grained modules, for development reference.
+**Main API Categories:**
 
-    Refer to each section below for detailed documentation and usage instructions.
+- **Abstract Classes:**  Core interfaces (OmniModel, OmniDataset, OmniTokenizer, OmniMetric) - use as base classes for extensions
+- **Auto-Pipelines:**  Automated benchmarking (AutoBench) and training (AutoTrain) workflows
+- **CLI Commands:**  Command-line tools for codeless operations (ogb, autobench, autotrain, autoinfer)
+- **Online Hubs:**  Access pre-trained models, datasets, and pipelines from HuggingFace Hub
+- **Low-level Modules:**  Detailed modules for models, datasets, metrics, tokenizers, trainers, and utilities
+
+Refer to each section below for detailed documentation and usage instructions.
 
 .. Abstract Classes
 .. ----------------

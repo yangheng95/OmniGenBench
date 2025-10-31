@@ -1,14 +1,30 @@
 # -*- coding: utf-8 -*-
-# file: test.py
+# file: web_rna_design.py
 # time: 18:43 14/08/2024
 # author: YANG, HENG <hy345@exeter.ac.uk> (杨恒)
 # github: https://github.com/yangheng95
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
+
+"""
+⚠️  DEPRECATION WARNING:
+This file uses legacy HuggingFace Transformers API directly.
+For new projects, please use the unified OmniGenBench API:
+
+    from omnigenbench import OmniModelForRNADesign
+    
+    model = OmniModelForRNADesign(model="yangheng/OmniGenome-186M")
+    sequences = model.design(structure="(((...)))")
+
+See examples/rna_sequence_design/rna_design_examples.py for modern usage.
+This file is kept for backward compatibility and Gradio web interface.
+"""
+
 import os
 import random
 import tempfile
+import warnings
 
 import autocuda
 import numpy as np
@@ -16,6 +32,14 @@ import torch
 import gradio as gr
 
 from transformers import AutoModelForMaskedLM, AutoTokenizer
+
+# Show deprecation warning
+warnings.warn(
+    "web_rna_design.py uses legacy API. "
+    "Consider using OmniModelForRNADesign for new projects.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 from concurrent.futures import ThreadPoolExecutor
 import ViennaRNA as RNA

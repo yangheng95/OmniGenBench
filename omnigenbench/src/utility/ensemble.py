@@ -5,8 +5,8 @@
 # github: https://github.com/yangheng95
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
-# Copyright (C) 2019-2024. All Rights Reserved.
-from typing import List
+# Copyright (C) 2019-2025. All Rights Reserved.
+from typing import List, Union
 
 import numpy as np
 
@@ -44,8 +44,8 @@ class VoteEnsemblePredictor:
 
     def __init__(
         self,
-        predictors: [List, dict],
-        weights: [List, dict] = None,
+        predictors: Union[List, dict],
+        weights: Union[List, dict] = None,
         numeric_agg="average",
         str_agg="max_vote",
     ):

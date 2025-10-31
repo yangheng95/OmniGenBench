@@ -5,7 +5,7 @@
 # github: https://github.com/yangheng95
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
-# Copyright (C) 2019-2024. All Rights Reserved.
+# Copyright (C) 2019-2025. All Rights Reserved.
 """
 This module provides the Pipeline class for creating and managing complete
 machine learning workflows that combine models, tokenizers, datasets, and
@@ -460,7 +460,7 @@ class Pipeline:
         with open(f"{path}/datasets.pkl", "wb") as f:
             dill.dump(self.datasets, f)
         with open(f"{path}/metadata.json", "w") as f:
-            json.dump(self.metadata, f)
+            json.dump(self.metadata, f, indent=2)
         with open(f"{path}/tokenizer.pkl", "wb") as f:
             dill.dump(self.tokenizer, f)
         with open(f"{path}/trainer.pkl", "wb") as f:

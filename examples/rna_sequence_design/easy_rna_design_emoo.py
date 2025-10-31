@@ -1,21 +1,46 @@
 # -*- coding: utf-8 -*-
-# file: OmniGenomeRNADesign.py
+# file: easy_rna_design_emoo.py
 # time: 20:24 08/05/2024
 # author: YANG, HENG <hy345@exeter.ac.uk> (杨恒)
 # github: https://github.com/yangheng95
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2024. All Rights Reserved.
+
+"""
+⚠️  DEPRECATION WARNING:
+This file contains the original RNA design algorithm implementation.
+
+For new projects, please use the unified OmniGenBench API:
+
+    from omnigenbench import OmniModelForRNADesign
+    
+    model = OmniModelForRNADesign(model="yangheng/OmniGenome-186M")
+    sequences = model.design(structure="(((...)))")
+
+See rna_design_examples.py for modern usage patterns.
+This file is kept for algorithm reference and development.
+"""
+
 import argparse
 import json
 import os
 import random
+import warnings
 
 import autocuda
 import numpy as np
 import torch
 
 from transformers import AutoModelForMaskedLM, AutoTokenizer
+
+# Show deprecation warning
+warnings.warn(
+    "easy_rna_design_emoo.py uses legacy implementation. "
+    "Use OmniModelForRNADesign from omnigenbench for new projects.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 import ViennaRNA

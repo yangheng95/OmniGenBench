@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-# file: omnigenbench_wrapper.py
+# file: abstract_tokenizer.py
 # time: 18:37 06/04/2024
 # author: YANG, HENG <hy345@exeter.ac.uk> (杨恒)
 # github: https://github.com/yangheng95
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
-# Copyright (C) 2019-2024. All Rights Reserved.
+# Copyright (C) 2019-2025. All Rights Reserved.
 import os
 import warnings
 
@@ -16,41 +16,140 @@ from ..misc.utils import env_meta_info, load_module_from_path
 
 class OmniTokenizer:
     """
-    This class provides a unified interface for tokenizers in the OmniGenome framework.
-    It wraps underlying tokenizers (typically from Hugging Face) and provides
-    additional functionality for genomic sequence processing. It also supports custom tokenizer wrappers
-    for specialized genomic tasks.
+    Abstract base class providing a unified interface for tokenizers in the OmniGenBench
+    framework. This class wraps underlying tokenizers (typically from HuggingFace) and
+    provides genomic-specific preprocessing functionality for biological sequence analysis.
+
+    **Design Pattern**: This class implements the Wrapper pattern (also known as Adapter),
+    providing a consistent API while delegating core tokenization to specialized implementations.
+    It adds genomic-specific preprocessing (RNA-to-DNA conversion, whitespace insertion,
+    sequence normalization) while maintaining compatibility with HuggingFace's tokenizer ecosystem.
+
+    **Architecture**: The tokenizer stack consists of three layers:
+    
+    1. **Base Tokenizer**: HuggingFace AutoTokenizer or custom implementation providing
+       vocabulary, encoding/decoding primitives, and special token handling.
+       
+    2. **OmniTokenizer Wrapper** (this class): Adds genomic preprocessing, metadata tracking,
+       and unified API across different tokenizer types.
+       
+    3. **Custom Wrappers**: Optional task-specific wrappers (loaded from omnigenome_wrapper.py
+       if present in model directory) for specialized preprocessing logic.
+
+    **Genomic-Specific Features**:
+    
+    - **Sequence Normalization**: Automatic uppercase conversion and nucleotide standardization
+      (converts lowercase to uppercase, handles ambiguous nucleotide codes).
+      
+    - **RNA/DNA Conversion**: Bidirectional U↔T conversion via u2t and t2u flags. Essential
+      when applying models trained on one sequence type to another (e.g., using DNA models
+      for RNA data).
+      
+    - **Whitespace Injection**: Optional character separation for character-level models.
+      Converts "ATCG" → "A T C G" for models trained with spaced sequences.
+      
+    - **Special Token Handling**: Automatic insertion of [CLS], [SEP], [PAD], [MASK] tokens
+      according to model requirements. Handles both BERT-style (e.g., [CLS] seq [SEP]) and
+      GPT-style (seq [EOS]) conventions.
+      
+    - **K-mer Tokenization**: Support for overlapping k-mer segmentation (k=3,4,5,6) for
+      capturing local sequence patterns. Example: "ATCGATCG" with k=3 → "ATC TCG CGA GAT ATC TCG".
+      
+    - **Codon-Aware Tokenization**: Specialized handling for protein-coding sequences with
+      triplet nucleotide units, preserving reading frame information.
+      
+    - **Structure-Informed Tokenization**: Optional integration with RNA secondary structure
+      for structure-aware models (dot-bracket notation encoding).
+
+    **Integration with Model Loading**: When loading models via ModelHub or from_pretrained(),
+    the framework first checks for custom tokenizer wrappers (omnigenome_wrapper.py) in the
+    model directory, falling back to standard AutoTokenizer if not found. This enables
+    model-specific preprocessing without modifying core code.
+
+    **Common Tokenizer Types**:
+    
+    - **OmniSingleNucleotideTokenizer**: Character-level tokenization (vocab size ~10)
+    - **OmniKmersTokenizer**: K-mer based tokenization (vocab size 4^k, typically 64-4096)
+    - **OmniBPETokenizer**: Byte-Pair Encoding for learned subword units (vocab size 1000-50000)
 
     Attributes:
-        base_tokenizer: The underlying tokenizer instance (e.g., from Hugging Face).
-        max_length (int): The default maximum sequence length.
-        metadata (dict): Metadata about the tokenizer including version info.
-        u2t (bool): Whether to convert 'U' to 'T'.
-        t2u (bool): Whether to convert 'T' to 'U'.
-        add_whitespace (bool): Whether to add whitespace between characters.
+        base_tokenizer: Underlying tokenizer instance (e.g., from HuggingFace Transformers).
+            Provides vocabulary, encoding primitives, and special token definitions.
+            Can be any object implementing encode(), decode(), and __call__() methods.
+            
+        max_length (int): Default maximum sequence length for tokenization. Can be overridden
+            in individual tokenization calls. Sequences longer than this are truncated.
+            Typical values: 512 (short sequences), 2048 (medium), 10000+ (long genomic regions).
+            
+        metadata (dict): Framework metadata including version information and custom attributes.
+            Automatically populated with tokenizer type, version, timestamp, etc.
+            
+        u2t (bool): Whether to convert 'U' (uracil) to 'T' (thymine) for RNA→DNA conversion.
+            Useful when training DNA models on RNA data or applying DNA-trained models to
+            RNA sequences. Default False.
+            
+        t2u (bool): Whether to convert 'T' to 'U' for DNA→RNA conversion. Useful for RNA
+            structure prediction models trained on DNA sequences, or when applying RNA models
+            to DNA data. Default False.
+            
+        add_whitespace (bool): Whether to insert spaces between characters for character-level
+            tokenization. Required for some BERT-style models trained on spaced sequences.
+            Example: "ATCG" becomes "A T C G". Default False.
+            
+        trust_remote_code (bool): Whether to trust remote code when loading tokenizers from
+            HuggingFace Hub. Default True. Set to False in security-critical environments.
+
+    Note:
+        - Set u2t=True when using DNA models on RNA sequences
+        - Set t2u=True when using RNA models on DNA sequences  
+        - Never set both u2t=True and t2u=True simultaneously (results undefined)
+        - add_whitespace should match the training configuration of the model
     """
 
     def __init__(self, base_tokenizer=None, max_length=512, **kwargs):
         """
-        Initializes the tokenizer wrapper.
+        Initializes the tokenizer wrapper with genomic-specific preprocessing options.
 
         Args:
-            base_tokenizer: The underlying tokenizer instance (e.g., from Hugging Face).
-            max_length (int): The default maximum sequence length. Defaults to 512.
-            **kwargs: Additional keyword arguments.
-                - u2t (bool): Whether to convert 'U' to 'T'. Defaults to False.
-                - t2u (bool): Whether to convert 'T' to 'U'. Defaults to False.
-                - add_whitespace (bool): Whether to add whitespace between characters.
-                  Defaults to False.
+            base_tokenizer: Underlying tokenizer instance providing vocabulary and encoding.
+                Typically a HuggingFace AutoTokenizer, but can be any object implementing
+                encode(), decode(), and __call__() methods. If None, a minimal tokenizer
+                will be created (for custom implementations).
+            max_length (int): Default maximum sequence length for tokenization. Individual
+                tokenization calls can override this value. Sequences longer than this
+                length are truncated. Defaults to 512.
+            **kwargs: Additional keyword arguments for genomic preprocessing:
+                - u2t (bool): Convert RNA sequences to DNA (U→T). Useful when applying
+                  DNA-trained models to RNA sequences. Defaults to False.
+                - t2u (bool): Convert DNA sequences to RNA (T→U). Useful when applying
+                  RNA-trained models to DNA sequences. Defaults to False.
+                - add_whitespace (bool): Insert spaces between characters for character-level
+                  models trained on spaced sequences (e.g., "ATCG" → "A T C G"). Defaults
+                  to False. Required for some BERT variants.
+                - trust_remote_code (bool): Whether to trust remote code when loading from
+                  HuggingFace Hub. Defaults to True. Set to False in security-sensitive
+                  environments.
+                
+                Additional custom attributes are stored in metadata for access by
+                downstream components.
 
         Example:
-            >>> # Initialize with a Hugging Face tokenizer
+            >>> # Pattern 1: Initialize with a HuggingFace tokenizer
             >>> from transformers import AutoTokenizer
-            >>> base_tokenizer = AutoTokenizer.from_pretrained("model_name")
+            >>> base_tokenizer = AutoTokenizer.from_pretrained("yangheng/OmniGenome-186M")
             >>> tokenizer = OmniTokenizer(base_tokenizer, max_length=512)
 
-            >>> # Initialize with sequence conversion
+            >>> # Pattern 2: Initialize with RNA-to-DNA conversion
             >>> tokenizer = OmniTokenizer(base_tokenizer, u2t=True)
+            >>> # RNA sequences like "AUGC" will be converted to "ATGC" before tokenization
+
+            >>> # Pattern 3: Initialize with whitespace insertion for character-level models
+            >>> tokenizer = OmniTokenizer(base_tokenizer, add_whitespace=True)
+            >>> # "ATCG" → "A T C G" before tokenization
+
+            >>> # Pattern 4: Initialize with custom max_length
+            >>> tokenizer = OmniTokenizer(base_tokenizer, max_length=1024)
+            >>> # Suitable for long genomic sequences (e.g., whole genes)
         """
         self.metadata = env_meta_info()
 

@@ -9,7 +9,6 @@
 # Copyright (C) 2019-2025. All Rights Reserved.
 import json
 import argparse
-from pathlib import Path
 from omnigenbench import OmniModelForRNADesign
 from ..base import BaseCommand
 
@@ -28,7 +27,7 @@ class RNADesignCommand(BaseCommand):
     4. Saving results to file (optional)
 
     Attributes:
-        model_path (str): Path to the pre-trained RNA design model
+        model (str): Path or name of the pre-trained RNA design model
         structure (str): Target RNA secondary structure in dot-bracket notation
         mutation_ratio (float): Genetic algorithm mutation rate
         num_population (int): Population size for genetic algorithm
@@ -36,15 +35,15 @@ class RNADesignCommand(BaseCommand):
 
     Example:
         >>> # Basic RNA design
-        >>> python -m omnigenbench.cli design --structure "(((...)))"
+        >>> python -m omnigenbench.cli.omnigenome_cli rna_design --structure "(((...)))"
         >>> # Design with custom parameters
-        >>> python -m omnigenbench.cli design
-        ...     --structure "(((...)))"
-        ...     --model-path "yangheng/OmniGenome-186M"
-        ...     --mutation-ratio 0.3
-        ...     --num-population 200
-        ...     --num-generation 150
-        ...     --output "results.json"
+        >>> python -m omnigenbench.cli.omnigenome_cli rna_design \\
+        ...     --structure "(((...)))" \\
+        ...     --model "yangheng/OmniGenome-186M" \\
+        ...     --mutation-ratio 0.3 \\
+        ...     --num-population 200 \\
+        ...     --num-generation 150 \\
+        ...     --output-file "results.json"
     """
 
     @classmethod
@@ -62,7 +61,7 @@ class RNADesignCommand(BaseCommand):
             >>> RNADesignCommand.register_command(subparsers)
         """
         parser: argparse.ArgumentParser = subparsers.add_parser(
-            "design",
+            "rna_design",
             help="RNA Sequence Design based on Secondary Structure, Using Genetic Algorithm by OmniGenome",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
@@ -72,9 +71,9 @@ class RNADesignCommand(BaseCommand):
             help="The target RNA structure in dot-bracket notation (e.g., '(((...)))')",
         )
         parser.add_argument(
-            "--model-path",
+            "--model",
             default="yangheng/OmniGenome-186M",
-            help="Model path to the pre-trained model (default: yangheng/OmniGenome-186M)",
+            help="Model name or path to the pre-trained model (default: yangheng/OmniGenome-186M)",
         )
         parser.add_argument(
             "--mutation-ratio",
@@ -95,7 +94,7 @@ class RNADesignCommand(BaseCommand):
             help="Number of generations to evolve (default: 100)",
         )
         parser.add_argument(
-            "--output", type=Path, help="Output JSON file to save results"
+            "--output-file", type=str, help="Output JSON file to save results"
         )
         cls.add_common_arguments(parser)
         parser.set_defaults(func=cls.execute)
@@ -123,7 +122,7 @@ class RNADesignCommand(BaseCommand):
             raise ValueError("--mutation-ratio should be between 0.0 and 1.0")
 
         # 核心业务逻辑
-        model = OmniModelForRNADesign(model_path=args.model_path)
+        model = OmniModelForRNADesign(model=args.model)
         best_sequences = model.design(
             structure=args.structure,
             mutation_ratio=args.mutation_ratio,
@@ -133,23 +132,32 @@ class RNADesignCommand(BaseCommand):
 
         # 结果输出
         print(f"The best RNA sequences for {args.structure}:")
-        for seq in best_sequences:
-            print(f"- {seq}")
+        if isinstance(best_sequences, list):
+            for seq in best_sequences:
+                print(f"- {seq}")
+        else:
+            # Fallback for single sequence (shouldn't happen with updated model)
+            print(f"- {best_sequences}")
+            best_sequences = [best_sequences]
 
         # 结果保存
-        if args.output:
-            args.output.parent.mkdir(parents=True, exist_ok=True)
-            with open(args.output, "w") as f:
+        if args.output_file:
+            with open(args.output_file, "w") as f:
                 json.dump(
                     {
                         "structure": args.structure,
-                        "parameters": vars(args),
+                        "parameters": {
+                            "model": args.model,
+                            "mutation_ratio": args.mutation_ratio,
+                            "num_population": args.num_population,
+                            "num_generation": args.num_generation,
+                        },
                         "best_sequences": best_sequences,
                     },
                     f,
                     indent=2,
                 )
-            print(f"\nResults saved to {args.output}")
+            print(f"\nResults saved to {args.output_file}")
 
 
 def register_command(subparsers):

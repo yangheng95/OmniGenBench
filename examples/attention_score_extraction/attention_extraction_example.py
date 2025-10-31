@@ -3,7 +3,14 @@
 Attention Score Extraction Example
 
 This example demonstrates how to use the attention extraction functionality
-added to the OmniModelForEmbedding class.
+that is now available in ALL OmniModel classes through EmbeddingMixin.
+
+Key Feature: ALL OmniModel types support embedding and attention extraction!
+   - OmniModelForEmbedding
+   - OmniModelForSequenceClassification  
+   - OmniModelForSequenceRegression
+   - OmniModelForTokenClassification
+   - And all other OmniModel variants!
 """
 
 import torch
@@ -13,21 +20,52 @@ import sys
 # Add the omnigenbench to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from omnigenbench.src.model.embedding.model import OmniModelForEmbedding
+from omnigenbench import (
+    OmniModelForEmbedding,
+    OmniModelForSequenceClassification,
+    OmniModelForSequenceRegression,
+)
 
 
 def main():
     """Main function demonstrating attention extraction capabilities."""
 
-    print("🧬 OmniGenome Attention Extraction Demo")
+    print("OmniGenome Attention Extraction Demo")
+    print("=" * 50)
+    print("Note: ALL OmniModel types support embedding and attention extraction!")
     print("=" * 50)
 
     # Initialize model (using a smaller model for demo)
-    print("📁 Loading model...")
-    model_name = "anonymous8/OmniGenome-186M"  # You can change this to any supported model
+    print("\n[INFO] Loading model...")
+    model_name = "yangheng/OmniGenome-186M"  # Standard OmniGenBench model
+    
+    print("[INFO] You can use ANY OmniModel type for embedding and attention extraction:")
+    print("  - OmniModelForEmbedding (dedicated)")
+    print("  - OmniModelForSequenceClassification (classification + embeddings)")
+    print("  - OmniModelForSequenceRegression (regression + embeddings)")
+    print("  - OmniModelForTokenClassification (token classification + embeddings)")
+    print("  - And all other OmniModel variants!")
+    
     try:
+        # Option 1: Use dedicated embedding model (Recommended for embedding-focused tasks)
         model = OmniModelForEmbedding(model_name, trust_remote_code=True)
+        
+        # Option 2: Use classification model (also supports attention extraction!)
+        # Note: Use the constructor directly, not .from_pretrained()
+        # model = OmniModelForSequenceClassification(
+        #     model=model_name,
+        #     num_labels=2,  # Specify task parameters
+        #     trust_remote_code=True
+        # )
+        
+        # Option 3: Use regression model (also supports attention extraction!)
+        # model = OmniModelForSequenceRegression(
+        #     model=model_name,
+        #     trust_remote_code=True
+        # )
+        
         print(f"✅ Model loaded successfully: {model_name}")
+        print(f"✅ Model type: {type(model).__name__}")
     except Exception as e:
         print(f"❌ Error loading model: {e}")
         print("💡 Make sure you have internet connection and the model exists")
@@ -190,17 +228,32 @@ def main():
     print("\n" + "="*50)
     print("🎉 Demo completed!")
     print("="*50)
-    print("\n📝 Summary of new attention extraction features:")
+    print("\n📝 Summary of embedding and attention features:")
     print("  1. extract_attention_scores() - Extract attention from single sequence")
     print("  2. batch_extract_attention_scores() - Batch processing")
     print("  3. get_attention_statistics() - Compute attention statistics")
     print("  4. visualize_attention_pattern() - Create attention heatmaps")
-    print("\n💡 These functions support:")
-    print("  - Filtering specific layers and attention heads")
-    print("  - Batch processing for efficiency")
-    print("  - GPU/CPU memory management")
-    print("  - Statistical analysis of attention patterns")
-    print("  - Visualization capabilities")
+    print("  5. encode() - Generate sequence embeddings")
+    print("  6. batch_encode() - Batch embedding generation")
+    print("  7. encode_tokens() - Token-level embeddings")
+    print("  8. compute_similarity() - Compute embedding similarity")
+    print("\n💡 These functions are available in ALL OmniModel types:")
+    print("  ✅ OmniModelForEmbedding")
+    print("  ✅ OmniModelForSequenceClassification")
+    print("  ✅ OmniModelForSequenceRegression")
+    print("  ✅ OmniModelForTokenClassification")
+    print("  ✅ OmniModelForMLM")
+    print("  ✅ All other OmniModel variants!")
+    print("\n🎯 This means you can:")
+    print("  - Do classification AND extract embeddings from the same model")
+    print("  - Do regression AND analyze attention patterns from the same model")
+    print("  - Use any fine-tuned model for embedding extraction")
+    print("  - Supports:")
+    print("    - Filtering specific layers and attention heads")
+    print("    - Batch processing for efficiency")
+    print("    - GPU/CPU memory management")
+    print("    - Statistical analysis of attention patterns")
+    print("    - Visualization capabilities")
 
 
 if __name__ == "__main__":

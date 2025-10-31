@@ -1,160 +1,100 @@
-"""
-Pytest configuration and shared fixtures for OmniGenBench tests.
-"""
-import pytest
-import sys
-import os
-from pathlib import Path
+# -*- coding: utf-8 -*-
+# file: conftest.py
+# time: 18:05 31/10/2025
+# author: YANG, HENG <hy345@exeter.ac.uk> (杨恒)
+# Homepage: https://yangheng95.github.io
+# github: https://github.com/yangheng95
+# Copyright (C) 2019-2025. All Rights Reserved.
 
-# Add the project root to Python path
-ROOT_DIR = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT_DIR))
+"""
+Pytest configuration and shared fixtures.
+"""
+
+import pytest
+import warnings
 
 
 def pytest_configure(config):
-    """Configure pytest with custom markers."""
+    """Configure pytest with custom markers"""
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
     config.addinivalue_line(
-        "markers", "gpu: marks tests that require GPU (deselect with '-m \"not gpu\"')"
-    )
-    config.addinivalue_line(
         "markers", "integration: marks tests as integration tests"
     )
-
-
-def pytest_collection_modifyitems(config, items):
-    """Auto-mark slow tests and skip GPU tests if CUDA not available."""
-    try:
-        import torch
-        cuda_available = torch.cuda.is_available()
-    except ImportError:
-        cuda_available = False
-    
-    for item in items:
-        # Auto-mark slow tests
-        if "slow" in item.nodeid or "model_loading" in item.nodeid:
-            item.add_marker(pytest.mark.slow)
-        
-        # Skip GPU tests if CUDA not available
-        if item.get_closest_marker("gpu") and not cuda_available:
-            item.add_marker(pytest.mark.skip(reason="CUDA not available"))
-
-
-@pytest.fixture
-def sample_rna_sequences():
-    """Sample RNA sequences for testing."""
-    return [
-        "AUGGCUACG",
-        "CGGAUACGGC", 
-        "UGGCCAAGUC",
-        "AUGCUGCUAUGCUA"
-    ]
-
-
-@pytest.fixture
-def sample_rna_structures():
-    """Sample RNA secondary structures for testing."""
-    return [
-        "(((())))",
-        "(((...)))",
-        "........",
-        "((..))"
-    ]
-
-
-@pytest.fixture
-def sample_dataset_entries():
-    """Sample dataset entries in the format used by examples."""
-    return [
-        {"seq": "AUCG", "label": "(..)"},
-        {"seq": "AUGC", "label": "().."},
-        {"seq": "CGAU", "label": "(())"},
-        {"seq": "GAUC", "label": "...."}
-    ]
-
-
-@pytest.fixture
-def mock_model_config():
-    """Mock model configuration for testing."""
-    from unittest.mock import MagicMock
-    config = MagicMock()
-    config.hidden_size = 768
-    config.num_labels = 2
-    config.vocab_size = 32
-    config.max_position_embeddings = 512
-    return config
-
-
-@pytest.fixture
-def mock_tokenizer():
-    """Mock tokenizer for testing."""
-    from unittest.mock import MagicMock
-    tokenizer = MagicMock()
-    tokenizer.encode.return_value = [1, 2, 3, 4, 5]
-    tokenizer.decode.return_value = "AUGC"
-    tokenizer.convert_ids_to_tokens.return_value = ["A", "U", "G", "C"]
-    tokenizer.vocab_size = 32
-    tokenizer.pad_token_id = 0
-    tokenizer.eos_token_id = 2
-    return tokenizer
-
-
-@pytest.fixture
-def temp_data_dir(tmp_path):
-    """Create temporary directory with sample data files."""
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    
-    # Create sample train.json
-    train_file = data_dir / "train.json"
-    train_data = [
-        '{"seq": "AUCG", "label": "(..)"}',
-        '{"seq": "AUGC", "label": "().."}',
-        '{"seq": "CGAU", "label": "(())"}'
-    ]
-    train_file.write_text("\n".join(train_data))
-    
-    # Create sample test.json
-    test_file = data_dir / "test.json"
-    test_data = [
-        '{"seq": "GAUC", "label": "...."}',
-        '{"seq": "UCGA", "label": "(.)"}'
-    ]
-    test_file.write_text("\n".join(test_data))
-    
-    # Create sample config.py
-    config_file = data_dir / "config.py"
-    config_content = '''
-# Dataset configuration
-max_length = 512
-num_labels = 4
-task_type = "classification"
-'''
-    config_file.write_text(config_content)
-    
-    return data_dir
+    config.addinivalue_line(
+        "markers", "unit: marks tests as unit tests"
+    )
+    config.addinivalue_line(
+        "markers", "gpu: marks tests that require GPU"
+    )
+    config.addinivalue_line(
+        "markers", "cpu: marks tests that run on CPU only"
+    )
 
 
 @pytest.fixture(scope="session")
-def examples_dir():
-    """Path to examples directory."""
-    return ROOT_DIR / "examples"
+def test_model_name():
+    """Default model name for testing"""
+    return "yangheng/OmniGenome-186M"
+
+
+@pytest.fixture(scope="session")
+def test_sequences():
+    """Common test sequences for genomic tasks"""
+    return [
+        "ATCGATCGATCGATCGATCGATCGATCGATCG",
+        "GCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGC",
+        "TATATATATATATATATATATATATATATATAT",
+        "AGAGAGAGAGAGAGAGAGAGAGAGAGAGAGAG",
+        "CTCTCTCTCTCTCTCTCTCTCTCTCTCTCTCT"
+    ]
+
+
+@pytest.fixture(scope="session")
+def test_rna_sequences():
+    """Common RNA sequences for testing"""
+    return [
+        "GGCCUUAGCUCAGCGGUUAGAGCGCACCCCUGAUAAGGGUGAGGUCGCUGAUUCGAUCCAGCUAAGGCCACCA",
+        "GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA",
+        "AGAGUGGUUGACUCGUGUGCGCGCGAGCGAGUAGCAAAGCGAGGUCGCUGGUUCGAUUCCGGCACCUCUCU"
+    ]
+
+
+@pytest.fixture(autouse=True)
+def setup_warnings():
+    """Configure warnings for tests"""
+    # Ignore deprecation warnings from dependencies
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
+    warnings.filterwarnings("ignore", category=UserWarning, module="transformers")
+    
+    yield
+    
+    # Reset warnings after test
+    warnings.resetwarnings()
 
 
 @pytest.fixture
-def skip_if_no_omnigenome():
-    """Skip test if omnigenbench package is not available."""
-    try:
-        import omnigenbench
-        return False
-    except ImportError:
-        pytest.skip("omnigenome package not available")
+def temp_test_data(tmp_path):
+    """Create temporary test data directory"""
+    data_dir = tmp_path / "test_data"
+    data_dir.mkdir()
+    return data_dir
 
 
-# Custom pytest markers
-pytestmark = [
-    pytest.mark.filterwarnings("ignore:.*:DeprecationWarning"),
-    pytest.mark.filterwarnings("ignore:.*:UserWarning"),
-] 
+def pytest_collection_modifyitems(config, items):
+    """Modify test collection"""
+    # Automatically mark tests based on their names
+    for item in items:
+        # Mark slow tests
+        if "slow" in item.nodeid or "performance" in item.nodeid.lower():
+            item.add_marker(pytest.mark.slow)
+        
+        # Mark integration tests
+        if "integration" in item.nodeid.lower() or "pipeline" in item.nodeid.lower():
+            item.add_marker(pytest.mark.integration)
+        
+        # Mark unit tests
+        if "unit" in item.nodeid.lower() or item.parent.name.startswith("Test"):
+            item.add_marker(pytest.mark.unit)
