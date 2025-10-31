@@ -362,15 +362,28 @@ class AccelerateTrainer(BaseTrainer):
                 if self.accelerator.is_main_process:
                     gathered_predictions = gathered_predictions.float().cpu().numpy()
                     gathered_labels = gathered_labels.float().cpu().numpy()
-                    
+
                     # Flatten the first dimension if it exists (from multi-process gathering)
                     # This handles the case where gather adds an extra dimension
-                    if gathered_predictions.ndim > 1 and gathered_predictions.shape[0] > 0:
+                    if (
+                        gathered_predictions.ndim > 1
+                        and gathered_predictions.shape[0] > 0
+                    ):
                         # Reshape to (batch_size, ...) by flattening the first dimension
-                        gathered_predictions = gathered_predictions.reshape(-1, *gathered_predictions.shape[2:]) if gathered_predictions.ndim > 2 else gathered_predictions.reshape(-1)
+                        gathered_predictions = (
+                            gathered_predictions.reshape(
+                                -1, *gathered_predictions.shape[2:]
+                            )
+                            if gathered_predictions.ndim > 2
+                            else gathered_predictions.reshape(-1)
+                        )
                     if gathered_labels.ndim > 1 and gathered_labels.shape[0] > 0:
-                        gathered_labels = gathered_labels.reshape(-1, *gathered_labels.shape[2:]) if gathered_labels.ndim > 2 else gathered_labels.reshape(-1)
-                    
+                        gathered_labels = (
+                            gathered_labels.reshape(-1, *gathered_labels.shape[2:])
+                            if gathered_labels.ndim > 2
+                            else gathered_labels.reshape(-1)
+                        )
+
                     all_preds.append(gathered_predictions)
                     all_truth.append(gathered_labels)
 
@@ -437,15 +450,28 @@ class AccelerateTrainer(BaseTrainer):
                 if self.accelerator.is_main_process:
                     gathered_predictions = gathered_predictions.float().cpu().numpy()
                     gathered_labels = gathered_labels.float().cpu().numpy()
-                    
+
                     # Flatten the first dimension if it exists (from multi-process gathering)
                     # This handles the case where gather adds an extra dimension
-                    if gathered_predictions.ndim > 1 and gathered_predictions.shape[0] > 0:
+                    if (
+                        gathered_predictions.ndim > 1
+                        and gathered_predictions.shape[0] > 0
+                    ):
                         # Reshape to (batch_size, ...) by flattening the first dimension
-                        gathered_predictions = gathered_predictions.reshape(-1, *gathered_predictions.shape[2:]) if gathered_predictions.ndim > 2 else gathered_predictions.reshape(-1)
+                        gathered_predictions = (
+                            gathered_predictions.reshape(
+                                -1, *gathered_predictions.shape[2:]
+                            )
+                            if gathered_predictions.ndim > 2
+                            else gathered_predictions.reshape(-1)
+                        )
                     if gathered_labels.ndim > 1 and gathered_labels.shape[0] > 0:
-                        gathered_labels = gathered_labels.reshape(-1, *gathered_labels.shape[2:]) if gathered_labels.ndim > 2 else gathered_labels.reshape(-1)
-                    
+                        gathered_labels = (
+                            gathered_labels.reshape(-1, *gathered_labels.shape[2:])
+                            if gathered_labels.ndim > 2
+                            else gathered_labels.reshape(-1)
+                        )
+
                     all_preds.append(gathered_predictions)
                     all_truth.append(gathered_labels)
 
