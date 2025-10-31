@@ -22,12 +22,234 @@ from ..hub_utils import query_models_info, download_model
 from omnigenbench.src.misc.utils import env_meta_info, fprint
 from omnigenbench.src.abc.abstract_tokenizer import OmniTokenizer
 
+# Import new HF Hub downloader (with fallback)
+try:
+    from .hf_download import download_from_hf_hub, verify_download_integrity
+
+    HF_DOWNLOAD_AVAILABLE = True
+except ImportError:
+    HF_DOWNLOAD_AVAILABLE = False
+
+
+class GenericOmniModelWrapper(torch.nn.Module):
+    """
+    Wrapper for standard Transformers models to provide OmniModel-like interface.
+
+    This wrapper adds inference capabilities to standard AutoModel instances
+    loaded from HuggingFace Hub, enabling them to work with the OmniGenBench
+    inference API even when they weren't originally saved with OmniGenBench.
+
+    Note: This model returns raw logits and hidden states. For task-specific
+    inference (e.g., classification with label mapping), use the appropriate
+    OmniModelFor* class after fine-tuning on a downstream task.
+
+    Args:
+        base_model (torch.nn.Module): The underlying transformer model
+        tokenizer (OmniTokenizer): Tokenizer for sequence encoding
+    """
+
+    def __init__(self, base_model, tokenizer):
+        super().__init__()
+        self.base_model = base_model
+        self.tokenizer = tokenizer
+        self.config = base_model.config
+
+    def forward(self, **inputs):
+        """Forward pass through the base model."""
+        return self.base_model(**inputs)
+
+    def __call__(self, **inputs):
+        """Allow calling the model directly."""
+        return self.forward(**inputs)
+
+    def inference(self, sequence_or_inputs, **kwargs):
+        """
+        Perform inference on genomic sequences.
+
+        This method provides a basic inference interface for pre-trained models
+        that haven't been fine-tuned on a downstream task. It returns raw model
+        outputs including logits and hidden states.
+
+        Warning: For meaningful predictions on specific tasks (e.g., classification,
+        regression), you should fine-tune the model using AutoTrain or manually
+        train with task-specific labels, then load with the appropriate
+        OmniModelFor* class.
+
+        Args:
+            sequence_or_inputs: Can be:
+                - str: Single DNA/RNA sequence
+                - list: List of sequences
+                - dict: Dictionary with tokenized inputs
+            **kwargs: Additional tokenization arguments
+
+        Returns:
+            dict: Dictionary containing:
+                - 'logits': Raw model outputs (if available)
+                - 'last_hidden_state': Final hidden states
+                - 'predictions': Same as logits (for API compatibility)
+                - 'warning': Message about using pre-trained model
+
+        Example:
+            >>> model = ModelHub.load("yangheng/OmniGenome-186M")
+            >>> result = model.inference("ATCGATCG")
+            >>> print(result.keys())  # ['logits', 'last_hidden_state', 'predictions', 'warning']
+        """
+        # Tokenize input if needed
+        if isinstance(sequence_or_inputs, str):
+            inputs = self.tokenizer(
+                sequence_or_inputs,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                **kwargs,
+            )
+        elif isinstance(sequence_or_inputs, list):
+            inputs = self.tokenizer(
+                sequence_or_inputs,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                **kwargs,
+            )
+        elif isinstance(sequence_or_inputs, dict):
+            if "input_ids" in sequence_or_inputs:
+                # Already tokenized
+                inputs = sequence_or_inputs
+            else:
+                # Assume it's a data dict with 'sequence' field
+                seq = sequence_or_inputs.get("sequence") or sequence_or_inputs.get(
+                    "seq"
+                )
+                if seq is None:
+                    raise ValueError(
+                        "Input dict must contain 'sequence' or 'seq' field"
+                    )
+                inputs = self.tokenizer(
+                    seq, return_tensors="pt", padding=True, truncation=True, **kwargs
+                )
+        else:
+            raise TypeError(f"Unsupported input type: {type(sequence_or_inputs)}")
+
+        # Move to same device as model
+        device = next(self.base_model.parameters()).device
+        inputs = {
+            k: v.to(device) if isinstance(v, torch.Tensor) else v
+            for k, v in inputs.items()
+        }
+
+        # Run inference
+        self.eval()
+        with torch.no_grad():
+            outputs = self.base_model(**inputs)
+
+        # Build result dictionary
+        result = {
+            "warning": (
+                "You are using a pre-trained model without task-specific fine-tuning. "
+                "The outputs are raw logits/embeddings. For meaningful predictions, "
+                "please fine-tune this model on a downstream task using AutoTrain or "
+                "load a fine-tuned model with the appropriate OmniModelFor* class."
+            )
+        }
+
+        # Extract logits if available
+        if hasattr(outputs, "logits"):
+            result["logits"] = outputs.logits
+            result["predictions"] = outputs.logits
+
+        # Extract hidden states
+        if hasattr(outputs, "last_hidden_state"):
+            result["last_hidden_state"] = outputs.last_hidden_state
+            # If no logits, use hidden states as predictions for API compatibility
+            if "predictions" not in result:
+                result["predictions"] = outputs.last_hidden_state
+
+        return result
+
+    def predict(self, sequence_or_inputs, **kwargs):
+        """Alias for inference method for API compatibility."""
+        return self.inference(sequence_or_inputs, **kwargs)
+
+    def to(self, *args, **kwargs):
+        """Move model to device/dtype."""
+        self.base_model = self.base_model.to(*args, **kwargs)
+        return self
+
+    def eval(self):
+        """Set model to evaluation mode."""
+        self.base_model.eval()
+        return self
+
+    def train(self, mode=True):
+        """Set model to training mode."""
+        self.base_model.train(mode)
+        return self
+
+
+def download_hf_model(
+    model_id,
+    cache_dir="__OMNIGENOME_DATA__/models/",
+    force_download=False,
+    use_hf_api=True,
+):
+    """
+    Download a model from Hugging Face Hub to local directory.
+
+    This function provides two download strategies:
+    1. HuggingFace Hub API (default, recommended) - No git-lfs required
+    2. Git clone (fallback) - Requires git and git-lfs for large files
+
+    Args:
+        model_id (str): Hugging Face model identifier (e.g., "yangheng/OmniGenome-186M")
+        cache_dir (str): Local directory to store downloaded models
+        force_download (bool): Whether to re-download if model already exists locally
+        use_hf_api (bool): Whether to use HF Hub API (True) or git clone (False). Defaults to True
+
+    Returns:
+        str: Path to the locally downloaded model directory
+
+    Raises:
+        subprocess.CalledProcessError: If git clone fails (when use_hf_api=False)
+        FileNotFoundError: If git is not available (when use_hf_api=False)
+        OSError: If HF Hub download fails (when use_hf_api=True)
+    """
+    # Strategy 1: Use HuggingFace Hub API (no git-lfs required)
+    if use_hf_api and HF_DOWNLOAD_AVAILABLE:
+        try:
+            fprint(f"[INFO] Using HuggingFace Hub API to download {model_id}")
+            path = download_from_hf_hub(
+                repo_id=model_id,
+                cache_dir=cache_dir,
+                force_download=force_download,
+                repo_type="model",
+            )
+            # Verify download integrity
+            if verify_download_integrity(path):
+                return path
+            else:
+                fprint("Download verification failed, will retry with git clone")
+                use_hf_api = False  # Fall back to git clone
+        except Exception as e:
+            fprint(f"HF Hub API download failed: {e}")
+            fprint("Falling back to git clone method")
+            use_hf_api = False
+
+    # Strategy 2: Use git clone (original method)
+    if not use_hf_api or not HF_DOWNLOAD_AVAILABLE:
+        if not HF_DOWNLOAD_AVAILABLE:
+            fprint("HuggingFace Hub API not available, using git clone")
+
+        return clone_hf_model(model_id, cache_dir, force_download)
+
 
 def clone_hf_model(
     model_id, cache_dir="__OMNIGENOME_DATA__/models/", force_download=False
 ):
     """
     Clone a model from Hugging Face Hub to local directory using git.
+
+    Note: This method requires git and git-lfs to be installed for large files.
+    Consider using download_hf_model(use_hf_api=True) for a more robust approach.
 
     Args:
         model_id (str): Hugging Face model identifier (e.g., "yangheng/OmniGenome-186M")
@@ -281,16 +503,24 @@ class ModelHub:
                 "roberta-base",
                 "distilbert-base-uncased",
             ]:
-                # Clone from Hugging Face Hub to local directory
+                # Download from Hugging Face Hub to local directory
+                # Prioritize HF Hub API (no git-lfs) over git clone
                 try:
                     cache_dir = kwargs.get("cache_dir", "__OMNIGENOME_DATA__/models/")
                     force_download = kwargs.get("force_download", False)
-                    path = clone_hf_model(model_name_or_path, cache_dir, force_download)
-                    fprint(f"Cloned model from Hugging Face Hub to: {path}")
+                    use_hf_api = kwargs.get("use_hf_api", True)  # Default to HF API
+
+                    path = download_hf_model(
+                        model_name_or_path,
+                        cache_dir,
+                        force_download,
+                        use_hf_api=use_hf_api,
+                    )
+                    fprint(f"Downloaded model from Hugging Face Hub to: {path}")
                 except Exception as hf_error:
                     # Fallback to OmniGenome hub download
                     fprint(
-                        f"Failed to clone from HF Hub ({hf_error}), trying OmniGenome hub..."
+                        f"Failed to download from HF Hub ({hf_error}), trying OmniGenome hub..."
                     )
                     try:
                         path = download_model(
@@ -450,25 +680,28 @@ class ModelHub:
                 fprint(
                     f"Could not load custom model class {metadata['model_cls']}, falling back to standard model"
                 )
-                model = AutoModel.from_pretrained(
+                base_model = AutoModel.from_pretrained(
                     path,
                     config=config,
                     trust_remote_code=True,
                     local_files_only=True,
                     **kwargs,
                 )
+                # Wrap with GenericOmniModelWrapper to provide inference interface
+                model = GenericOmniModelWrapper(base_model, tokenizer)
                 model.tokenizer = tokenizer
         else:
             # Standard Transformers model - load from local path
             fprint("Loading as standard Transformers model from local path")
-            model = AutoModel.from_pretrained(
+            base_model = AutoModel.from_pretrained(
                 path,
                 config=config,
                 trust_remote_code=True,
                 local_files_only=True,  # Force local files only
                 **kwargs,
             )
-            # Attach tokenizer for compatibility
+            # Wrap with GenericOmniModelWrapper to provide inference interface
+            model = GenericOmniModelWrapper(base_model, tokenizer)
             model.tokenizer = tokenizer
 
         model.to(dtype)

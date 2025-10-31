@@ -33,17 +33,23 @@ class OmniModelForEmbedding(torch.nn.Module):
         torch.Size([2, 768])
     """
 
-    def __init__(self, model_name_or_path, *args, **kwargs):
+    def __init__(self, model_name_or_path, tokenizer=None, *args, **kwargs):
         """
         Initialize the embedding model.
 
         Args:
             model_name_or_path (str): Name or path of the pre-trained model to load
+            tokenizer (optional): Pre-loaded tokenizer. If None, loads from model_name_or_path
             *args: Additional positional arguments passed to AutoModel.from_pretrained
             **kwargs: Additional keyword arguments passed to AutoModel.from_pretrained
         """
         super().__init__()
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+        # Use provided tokenizer or load from model path
+        self.tokenizer = (
+            tokenizer
+            if tokenizer is not None
+            else AutoTokenizer.from_pretrained(model_name_or_path)
+        )
         self.model = AutoModel.from_pretrained(model_name_or_path, *args, **kwargs)
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self._device)
@@ -85,6 +91,12 @@ class OmniModelForEmbedding(torch.nn.Module):
             >>> print(embeddings.shape)
             torch.Size([2, 768])
         """
+        # Handle empty sequence list
+        if not sequences:
+            # Return empty tensor with correct shape (0, hidden_size)
+            hidden_size = self.model.config.hidden_size
+            return torch.empty(0, hidden_size, dtype=torch.float32)
+
         embeds = []
         device = self.device
         is_cuda = isinstance(device, torch.device) and device.type == "cuda"
@@ -368,8 +380,8 @@ class OmniModelForEmbedding(torch.nn.Module):
         Compute cosine similarity between two embeddings.
 
         Args:
-            embedding1 (torch.Tensor): The first embedding
-            embedding2 (torch.Tensor): The second embedding
+            embedding1 (torch.Tensor or np.ndarray): The first embedding
+            embedding2 (torch.Tensor or np.ndarray): The second embedding
             dim (int, optional): Dimension along which to compute cosine similarity. Defaults to 0
 
         Returns:
@@ -382,6 +394,14 @@ class OmniModelForEmbedding(torch.nn.Module):
             >>> print(f"Cosine similarity: {similarity:.4f}")
             0.8234
         """
+        # Convert numpy arrays to tensors if needed
+        import numpy as np
+
+        if isinstance(embedding1, np.ndarray):
+            embedding1 = torch.from_numpy(embedding1)
+        if isinstance(embedding2, np.ndarray):
+            embedding2 = torch.from_numpy(embedding2)
+
         similarity = torch.nn.functional.cosine_similarity(
             embedding1, embedding2, dim=dim
         )

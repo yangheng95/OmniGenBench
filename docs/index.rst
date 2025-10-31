@@ -9,7 +9,7 @@ OmniGenBench is a comprehensive toolkit for developing, evaluating, and deployin
 **Documentation Structure**
 
 * :doc:`installation` - System requirements and installation procedures
-* :doc:`usage` - Core workflows and API usage patterns
+* :doc:`usage` - Core workflows, model downloading, and API usage patterns
 * :doc:`cli` - Command-line interface reference
 * :doc:`design_principle` - Architectural principles and extension mechanisms
 * :doc:`troubleshooting` - Common issues and solutions
@@ -36,8 +36,8 @@ OmniGenBench is a comprehensive toolkit for developing, evaluating, and deployin
            <p class="nav-card-description">Start your journey by setting up OmniGenBench on your system.</p>
        </a>
        <a href="usage.html" class="nav-card">
-           <h4 class="nav-card-title">📖 Basic Usage</h4>
-           <p class="nav-card-description">Learn the fundamental workflows and how to run your first task.</p>
+           <h4 class="nav-card-title">📖 User Guide</h4>
+           <p class="nav-card-description">Learn workflows, model downloading, and API usage patterns.</p>
        </a>
        <a href="cli.html" class="nav-card">
            <h4 class="nav-card-title">🛠️ CLI Commands</h4>

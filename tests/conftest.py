@@ -10,6 +10,16 @@
 Pytest configuration and shared fixtures.
 """
 
+# Ensure local workspace package takes precedence over any installed version
+import os
+import sys
+
+# Insert repo root (parent of tests/) to sys.path before imports of omnigenbench
+_THIS_DIR = os.path.dirname(__file__)
+_REPO_ROOT = os.path.abspath(os.path.join(_THIS_DIR, os.pardir))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
 import pytest
 import warnings
 

@@ -13,7 +13,7 @@ Based on examples/rna_secondary_structure_prediction/
 
 import pytest
 
-from omnigenbench import ModelHub
+from omnigenbench import ModelHub, OmniModelForTokenClassification, OmniTokenizer
 
 
 @pytest.fixture(scope="module")
@@ -78,9 +78,9 @@ class TestStructureValidation:
         
         # Test invalid structures (unbalanced)
         invalid_structures = [
-            "(((...",     # Unclosed
-            "...)))",     # Extra closing
-            "((.))",      # Unbalanced
+            "(((...",     # Unclosed opening brackets
+            "...)))",     # Extra closing brackets
+            "(.((",       # Mismatched - 2 opening, 0 closing
         ]
         
         for struct in invalid_structures:
@@ -158,7 +158,8 @@ class TestBasePairExtraction:
         # Complex structure
         structure = "((..((...)).))"
         pairs = get_base_pairs(structure)
-        assert len(pairs) == 7, "Should extract all 7 base pairs"
+        # This structure has 4 pairs: (0,13), (1,12), (5,11), (6,10)
+        assert len(pairs) == 4, f"Should extract all 4 base pairs, got {len(pairs)}"
 
     def test_base_pair_count(self):
         """Test counting base pairs in structures"""
@@ -205,7 +206,7 @@ class TestStructureMetrics:
         
         # Partially matching
         struct1 = "(((...)))"
-        struct2 = "((.(...)))"
+        struct2 = "((.(...))"  # Same length, slightly different
         accuracy = calculate_accuracy(struct1, struct2)
         assert 0 < accuracy < 1, "Partially matching should be between 0 and 1"
 
@@ -246,9 +247,9 @@ class TestStructureMetrics:
         assert metrics['recall'] == 1.0, "Perfect prediction should have recall 1.0"
         assert metrics['f1'] == 1.0, "Perfect prediction should have F1 1.0"
         
-        # Partial match
-        pred = "(((...)))"
-        true = "((.(...)))"
+        # Partial match - pred has subset of true base pairs
+        pred = "(((...)))"  # Has pairs: (0,8), (1,7), (2,6)
+        true = "((((.))))"  # Has pairs: (0,8), (1,7), (2,6), (3,5) - same first 3 pairs
         metrics = calculate_bp_metrics(pred, true)
         assert 0 < metrics['precision'] <= 1.0, "Precision should be between 0 and 1"
         assert 0 < metrics['recall'] <= 1.0, "Recall should be between 0 and 1"
@@ -281,7 +282,21 @@ class TestModelInference:
         Load model for structure prediction.
         Using base model - in practice would use fine-tuned SSP model.
         """
-        model = ModelHub.load("yangheng/OmniGenome-186M", device="cpu")
+        # Load tokenizer
+        tokenizer = OmniTokenizer.from_pretrained(
+            "yangheng/OmniGenome-186M",
+            trust_remote_code=True
+        )
+        
+        # Load model with token classification head for structure prediction
+        # 3 labels: '(' = paired-left, ')' = paired-right, '.' = unpaired
+        model = OmniModelForTokenClassification(
+            "yangheng/OmniGenome-186M",
+            tokenizer=tokenizer,
+            num_labels=3,
+            trust_remote_code=True
+        )
+        model.eval()
         return model
 
     def test_single_sequence_prediction(self, model, test_rna_sequences):
@@ -346,7 +361,20 @@ class TestViennaRNAComparison:
         
         import ViennaRNA as RNA
         
-        model = ModelHub.load("yangheng/OmniGenome-186M", device="cpu")
+        # Load tokenizer
+        tokenizer = OmniTokenizer.from_pretrained(
+            "yangheng/OmniGenome-186M",
+            trust_remote_code=True
+        )
+        
+        # Load model with token classification head
+        model = OmniModelForTokenClassification(
+            "yangheng/OmniGenome-186M",
+            tokenizer=tokenizer,
+            num_labels=3,
+            trust_remote_code=True
+        )
+        model.eval()
         
         sequence = test_rna_sequences[0]
         
@@ -370,7 +398,21 @@ class TestEdgeCases:
         """Test structure prediction on very short sequence"""
         sequence = "AUCG"
         
-        model = ModelHub.load("yangheng/OmniGenome-186M", device="cpu")
+        # Load tokenizer
+        tokenizer = OmniTokenizer.from_pretrained(
+            "yangheng/OmniGenome-186M",
+            trust_remote_code=True
+        )
+        
+        # Load model with token classification head
+        model = OmniModelForTokenClassification(
+            "yangheng/OmniGenome-186M",
+            tokenizer=tokenizer,
+            num_labels=3,
+            trust_remote_code=True
+        )
+        model.eval()
+        
         result = model.inference(sequence)
         
         assert result is not None, "Should handle short sequences"
@@ -425,7 +467,21 @@ class TestStructurePredictionPerformance:
         # tRNA-like sequence (76 bases)
         long_sequence = "GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA"
         
-        model = ModelHub.load("yangheng/OmniGenome-186M", device="cpu")
+        # Load tokenizer
+        tokenizer = OmniTokenizer.from_pretrained(
+            "yangheng/OmniGenome-186M",
+            trust_remote_code=True
+        )
+        
+        # Load model with token classification head
+        model = OmniModelForTokenClassification(
+            "yangheng/OmniGenome-186M",
+            tokenizer=tokenizer,
+            num_labels=3,
+            trust_remote_code=True
+        )
+        model.eval()
+        
         result = model.inference(long_sequence)
         
         assert result is not None, "Should handle longer sequences"
@@ -435,7 +491,21 @@ class TestStructurePredictionPerformance:
         # Create larger batch
         sequences = test_rna_sequences * 5  # 15 sequences
         
-        model = ModelHub.load("yangheng/OmniGenome-186M", device="cpu")
+        # Load tokenizer
+        tokenizer = OmniTokenizer.from_pretrained(
+            "yangheng/OmniGenome-186M",
+            trust_remote_code=True
+        )
+        
+        # Load model with token classification head
+        model = OmniModelForTokenClassification(
+            "yangheng/OmniGenome-186M",
+            tokenizer=tokenizer,
+            num_labels=3,
+            trust_remote_code=True
+        )
+        model.eval()
+        
         results = [model.inference(seq) for seq in sequences]
         
         assert len(results) == len(sequences), \

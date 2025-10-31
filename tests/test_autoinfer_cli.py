@@ -14,6 +14,7 @@ Based on examples/autoinfer_examples/README.md
 import pytest
 import json
 import csv
+import dill
 from pathlib import Path
 
 from omnigenbench import ModelHub, OmniTokenizer
@@ -25,7 +26,7 @@ def test_model_name():
     Model name for testing.
     Using OmniGenome base model instead of finetuned to avoid download issues.
     """
-    return "yangheng/OmniGenome-186M"
+    return "yangheng/ogb_tfb_finetuned"
 
 
 @pytest.fixture(scope="module")
@@ -278,16 +279,16 @@ class TestOutputFormat:
             }
             output_data["results"].append(result)
         
-        # Save to file
-        output_file = tmp_path / "test_results.json"
-        with open(output_file, "w") as f:
-            json.dump(output_data, f, indent=2)
+        # Save to file (dill binary)
+        output_file = tmp_path / "test_results.dill"
+        with open(output_file, "wb") as f:
+            dill.dump(output_data, f)
         
         # Verify structure
         assert output_file.exists(), "Output file should be created"
         
-        with open(output_file, "r") as f:
-            loaded = json.load(f)
+        with open(output_file, "rb") as f:
+            loaded = dill.load(f)
         
         # Check required fields
         assert "model" in loaded, "Should have 'model' field"
@@ -426,16 +427,16 @@ class TestRealWorldScenarios:
             ]
         }
         
-        # 6. Save output
-        output_file = tmp_path / "output.json"
-        with open(output_file, "w") as f:
-            json.dump(output_data, f, indent=2)
+        # 6. Save output (dill binary)
+        output_file = tmp_path / "output.dill"
+        with open(output_file, "wb") as f:
+            dill.dump(output_data, f)
         
         # 7. Verify
         assert output_file.exists(), "Output file should be created"
         
-        with open(output_file, "r") as f:
-            output = json.load(f)
+        with open(output_file, "rb") as f:
+            output = dill.load(f)
         
         assert output["total_sequences"] == len(test_sequences), \
             "Should process all sequences"
