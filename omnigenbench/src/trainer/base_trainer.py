@@ -141,6 +141,13 @@ def _infer_optimization_direction(
     Returns:
         str: Either 'larger_is_better' or 'smaller_is_better'
     """
+    # Check if metrics is empty
+    if not metrics or len(metrics) == 0:
+        fprint(
+            "Warning: Cannot infer optimization direction from empty metrics. Defaulting to 'smaller_is_better'."
+        )
+        return "smaller_is_better"
+
     larger_is_better_metrics = [
         "accuracy",
         "f1",
@@ -187,6 +194,15 @@ def _infer_optimization_direction(
         )
 
         try:
+            # Check if prev_metrics have non-empty values
+            if (
+                not list(metrics.values())
+                or not list(prev_metrics[-1].values())
+                or not list(prev_metrics[0].values())
+            ):
+                fprint("Warning: Empty metric values found. Cannot infer from trends.")
+                return "smaller_is_better"
+
             # Get the first metric value for trend analysis
             first_metric_key = list(metrics.keys())[0]
             current_value = np.mean(
@@ -453,6 +469,16 @@ class BaseTrainer(ABC):
             "test",
         ], "The metrics stage should be either 'valid' or 'test'."
 
+        # Check if metrics is empty
+        if not metrics or len(metrics) == 0:
+            fprint("Warning: Empty metrics dictionary received. Skipping comparison.")
+            # Still store the empty metrics for tracking
+            if stage not in self.metrics:
+                self.metrics[stage] = [metrics]
+            else:
+                self.metrics[stage].append(metrics)
+            return False
+
         # Store current metrics
         prev_metrics = self.metrics.get(stage, None)
         if stage not in self.metrics:
@@ -460,13 +486,15 @@ class BaseTrainer(ABC):
         else:
             self.metrics[stage].append(metrics)
 
-        # Initialize best metrics if not present
+        # Initialize best metrics if not present (only with non-empty metrics)
         if "best_valid" not in self.metrics:
             self.metrics["best_valid"] = metrics
             return True
 
-        if prev_metrics is None:
-            return False
+        # If we have best_valid but prev_metrics is None, this is the second call
+        # We should still compare against best_valid
+        if prev_metrics is None or len(prev_metrics) == 0:
+            prev_metrics = [self.metrics.get("best_valid", {})]
 
         # Determine optimization direction
         if self._optimization_direction is None:
@@ -476,11 +504,26 @@ class BaseTrainer(ABC):
 
         # Compare metrics based on optimization direction
         try:
+            # Check if metrics has values before accessing
+            if not list(metrics.values()):
+                fprint(
+                    "Warning: Metrics dictionary has no values. Skipping comparison."
+                )
+                return False
+
             current_value = np.mean(
                 list(metrics.values())[0]
                 if isinstance(list(metrics.values())[0], (list, tuple, np.ndarray))
                 else [list(metrics.values())[0]]
             )
+
+            # Check if best_valid has values
+            if not list(self.metrics["best_valid"].values()):
+                fprint(
+                    "Warning: Best metrics dictionary has no values. Skipping comparison."
+                )
+                return False
+
             best_value = np.mean(
                 list(self.metrics["best_valid"].values())[0]
                 if isinstance(

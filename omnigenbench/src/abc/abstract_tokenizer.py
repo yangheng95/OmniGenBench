@@ -154,6 +154,10 @@ class OmniTokenizer:
         self.metadata = env_meta_info()
 
         self.base_tokenizer = base_tokenizer
+        if self.base_tokenizer is None:
+            warnings.warn(
+                "Base tokenizer is None. Please ensure to implement tokenizer with encode(), decode() and __call__() methods in subclasses."
+            )
         self.max_length = max_length
 
         for key, value in kwargs.items():
