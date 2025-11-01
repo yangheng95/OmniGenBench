@@ -117,7 +117,7 @@ datasets = OmniDatasetForMultiLabelClassification.from_hub(
     dataset_name_or_path=dataset_name,
     tokenizer=tokenizer,
     max_length=200,
-    max_examples=10000000,  # For quick testing; set to None for full dataset 440M examples
+    max_examples=1000000,  # For quick testing; set to None for full dataset 440M examples
     force_padding=False  # The sequence length is fixed, so no need to pad sequence and labels
 )
 

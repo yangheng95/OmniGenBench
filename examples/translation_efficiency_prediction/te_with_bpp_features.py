@@ -217,6 +217,9 @@ class TEModelWithBPPFusion(OmniModelForSequenceClassification):
         """
         super().__init__(config_or_model, tokenizer, num_labels=num_labels, **kwargs)
         
+        # Explicitly set num_labels to ensure it's available
+        self.num_labels = num_labels
+        
         # Get hidden size from the base model
         hidden_size = self.model.config.hidden_size
         
@@ -346,7 +349,7 @@ def main():
     
     # Step 1: Initialize tokenizer
     print(f"\n🔧 Step 1: Loading tokenizer...")
-    tokenizer = OmniTokenizer(config_or_model)
+    tokenizer = OmniTokenizer.from_pretrained(config_or_model)
     print(f"  ✅ Tokenizer loaded")
     
     # Step 2: Load datasets with BPP computation
@@ -355,74 +358,13 @@ def main():
     # Define label mapping
     label2id = {"0": 0, "1": 1}
     
-    try:
-        # Try to load from local directory
-        train_dataset = TEDatasetWithBPP(
-            dataset_name_or_path=f"{dataset_name}/train.json",
-            tokenizer=tokenizer,
-            max_length=max_length,
-            label2id=label2id,
-        )
-        
-        valid_dataset = TEDatasetWithBPP(
-            dataset_name_or_path=f"{dataset_name}/valid.json",
-            tokenizer=tokenizer,
-            max_length=max_length,
-            label2id=label2id,
-        )
-        
-        test_dataset = TEDatasetWithBPP(
-            dataset_name_or_path=f"{dataset_name}/test.json",
-            tokenizer=tokenizer,
-            max_length=max_length,
-            label2id=label2id,
-        )
-        
-        print(f"  ✅ Loaded datasets:")
-        print(f"     Train: {len(train_dataset)} samples")
-        print(f"     Valid: {len(valid_dataset)} samples")
-        print(f"     Test: {len(test_dataset)} samples")
-        
-    except Exception as e:
-        print(f"  ⚠️  Warning: Could not load dataset: {e}")
-        print(f"  💡 Tip: Make sure dataset files exist in '{dataset_name}/' directory")
-        print(f"  Creating demo with synthetic data for illustration...")
-        
-        # Create synthetic demo data
-        demo_data = []
-        for i in range(10):
-            seq = "AUGCAUGCAUGC" * 40  # ~480 nucleotides
-            label = i % 2
-            demo_data.append({"sequence": seq, "label": label})
-        
-        # Save to temp files
-        import json
-        os.makedirs(dataset_name, exist_ok=True)
-        for split, data in [("train", demo_data[:6]), ("valid", demo_data[6:8]), ("test", demo_data[8:])]:
-            with open(f"{dataset_name}/{split}.json", "w") as f:
-                for item in data:
-                    f.write(json.dumps(item) + "\n")
-        
-        # Reload datasets
-        train_dataset = TEDatasetWithBPP(
-            dataset_name_or_path=f"{dataset_name}/train.json",
-            tokenizer=tokenizer,
-            max_length=max_length,
-            label2id=label2id,
-        )
-        valid_dataset = TEDatasetWithBPP(
-            dataset_name_or_path=f"{dataset_name}/valid.json",
-            tokenizer=tokenizer,
-            max_length=max_length,
-            label2id=label2id,
-        )
-        test_dataset = TEDatasetWithBPP(
-            dataset_name_or_path=f"{dataset_name}/test.json",
-            tokenizer=tokenizer,
-            max_length=max_length,
-            label2id=label2id,
-        )
-        print(f"  ✅ Demo datasets created")
+    # Try to load from local directory
+    datasets = TEDatasetWithBPP.from_hub(
+        dataset_name_or_path='./',
+        tokenizer=tokenizer,
+        max_length=max_length,
+        label2id=label2id,
+    )
     
     # Step 3: Initialize model with BPP fusion
     print(f"\n🤖 Step 3: Initializing model with BPP fusion...")
@@ -441,16 +383,16 @@ def main():
     
     metric_functions = [
         ClassificationMetric().f1_score,
-        ClassificationMetric().accuracy,
-        ClassificationMetric().precision,
-        ClassificationMetric().recall,
+        ClassificationMetric().accuracy_score,
+        ClassificationMetric().precision_score,
+        ClassificationMetric().recall_score,
     ]
     
     trainer = AccelerateTrainer(
         model=model,
-        train_dataset=train_dataset,
-        valid_dataset=valid_dataset,
-        test_dataset=test_dataset,
+        train_dataset=datasets["train"],
+        valid_dataset=datasets['valid'],
+        test_dataset=datasets['test'],
         metric_functions=metric_functions,
         model_save_path="te_bpp_finetuned",
         batch_size=batch_size,
@@ -465,22 +407,17 @@ def main():
     print(f"\n🚀 Step 5: Training model...")
     print(f"  This may take a while depending on your hardware...")
     
-    trainer.train()
+    test_results = trainer.train()
     
     print(f"\n✅ Training completed!")
     print(f"   Model saved to: te_bpp_finetuned/")
     
-    # Step 6: Evaluate on test set
-    print(f"\n📈 Step 6: Evaluating on test set...")
-    test_results = trainer.evaluate(test_dataset)
-    
     print(f"\n📊 Test Results:")
-    for metric_name, value in test_results.items():
-        print(f"   {metric_name}: {value:.4f}")
-    
-    # Step 7: Demo inference
-    print(f"\n🔮 Step 7: Demo inference with BPP features...")
-    
+    print(test_results)
+
+    # Step 6: Demo inference
+    print(f"\n🔮 Step 6: Demo inference with BPP features...")
+
     model.eval()
     sample_seq = "AUGCAUGCAUGCAUGCAUGC" * 20  # Sample sequence
     
