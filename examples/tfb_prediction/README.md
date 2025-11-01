@@ -386,7 +386,7 @@ from omnigenbench import AutoTrain
 
 trainer = AutoTrain(
     dataset="deepsea_tfb_prediction",
-    model_name_or_path="yangheng/PlantRNA-FM",
+    config_or_model="yangheng/PlantRNA-FM",
     trainer="accelerate"
 )
 
@@ -452,7 +452,7 @@ config = AutoConfig({
 # Initialize trainer
 trainer = AutoTrain(
     dataset="deepsea_tfb_prediction",
-    model_name_or_path="yangheng/PlantRNA-FM",
+    config_or_model="yangheng/PlantRNA-FM",
     trainer="accelerate",
     overwrite=False  # Don't overwrite existing results
 )

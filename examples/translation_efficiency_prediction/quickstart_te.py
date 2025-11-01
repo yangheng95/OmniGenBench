@@ -115,7 +115,7 @@ dataset_name = "translation_efficiency_prediction"
 label2id = {"0": 0, "1": 1}  # 0: Low TE, 1: High TE
 
 # Initialize tokenizer
-tokenizer = OmniTokenizer.from_pretrained(model_name_or_path)
+tokenizer = OmniTokenizer.from_pretrained(config_or_model)
 
 datasets = OmniDatasetForSequenceClassification.from_hub(
     dataset_name_or_path="translation_efficiency_prediction",
@@ -156,7 +156,7 @@ for split, dataset in datasets.items():
 # Using PlantRNA-FM for plant-specific translation efficiency prediction
 
 model = OmniModelForSequenceClassification(
-    model_name_or_path,  # PlantRNA-FM
+    config_or_model,  # PlantRNA-FM
     tokenizer,
     num_labels=len(list(label2id.keys())),  # Binary classification: Low TE vs High TE
 )

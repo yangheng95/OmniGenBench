@@ -40,7 +40,7 @@ class OmniModelForAugmentation(torch.nn.Module):
 
     def __init__(
         self,
-        model_name_or_path=None,
+        config_or_model=None,
         noise_ratio=0.15,
         max_length=1026,
         instance_num=1,
@@ -53,7 +53,7 @@ class OmniModelForAugmentation(torch.nn.Module):
         Initialize the augmentation model.
 
         Args:
-            model_name_or_path (str): Path or model name for loading the pre-trained model
+            config_or_model (str): Path or model name for loading the pre-trained model
             noise_ratio (float): The proportion of tokens to mask in each sequence for augmentation (default: 0.15)
             max_length (int): The maximum sequence length for tokenization (default: 1026)
             instance_num (int): Number of augmented instances to generate per sequence (default: 1)
@@ -64,15 +64,15 @@ class OmniModelForAugmentation(torch.nn.Module):
         """
         super().__init__()
         try:
-            self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+            self.tokenizer = AutoTokenizer.from_pretrained(config_or_model)
         except Exception as e:
             if "RnaTokenizer" in str(e):
                 from multimolecule import RnaTokenizer
 
-                self.tokenizer = RnaTokenizer.from_pretrained(model_name_or_path)
+                self.tokenizer = RnaTokenizer.from_pretrained(config_or_model)
 
         self.model = AutoModelForMaskedLM.from_pretrained(
-            model_name_or_path, trust_remote_code=True
+            config_or_model, trust_remote_code=True
         )
         self.device = autocuda.auto_cuda()
         self.model.to(self.device)
@@ -278,7 +278,7 @@ class OmniModelForAugmentation(torch.nn.Module):
 # Example usage
 if __name__ == "__main__":
     model = OmniModelForAugmentation(
-        model_name_or_path="anonymous8/OmniGenome-186M",
+        config_or_model="anonymous8/OmniGenome-186M",
         noise_ratio=0.2,  # Example noise ratio
         max_length=1026,  # Maximum token length
         instance_num=3,  # Number of augmented instances per sequence

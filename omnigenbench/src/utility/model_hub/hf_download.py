@@ -107,18 +107,16 @@ def download_from_hf_hub(
 
     # Check if already downloaded and not forcing re-download
     if local_model_path.exists() and not force_download:
-        fprint(f"[INFO] Repository {repo_id} already exists at {local_model_path}")
+        fprint(f"Repository {repo_id} already exists at {local_model_path}")
         return str(local_model_path)
 
     # Remove existing directory if force_download
     if local_model_path.exists() and force_download:
-        fprint(
-            f"[INFO] Removing existing directory for re-download: {local_model_path}"
-        )
+        fprint(f"Removing existing directory for re-download: {local_model_path}")
         shutil.rmtree(local_model_path)
 
-    fprint(f"[INFO] Downloading {repo_type} '{repo_id}' from HuggingFace Hub...")
-    fprint("[INFO] This may take a while for large models (no git-lfs required)")
+    fprint(f"Downloading {repo_type} '{repo_id}' from HuggingFace Hub...")
+    fprint("This may take a while for large models (no git-lfs required)")
 
     try:
         # Use snapshot_download with custom cache location
@@ -134,14 +132,14 @@ def download_from_hf_hub(
             token=token,
         )
 
-        fprint(f"[SUCCESS] Successfully downloaded {repo_id} to {downloaded_path}")
+        fprint(f"Successfully downloaded {repo_id} to {downloaded_path}")
         return str(downloaded_path)
 
     except Exception as e:
-        fprint(f"[ERROR] Failed to download {repo_id}: {str(e)}")
+        fprint(f"Failed to download {repo_id}: {str(e)}")
         # Clean up partial download
         if local_model_path.exists():
-            fprint(f"[INFO] Cleaning up partial download at {local_model_path}")
+            fprint(f"Cleaning up partial download at {local_model_path}")
             shutil.rmtree(local_model_path)
         raise
 
@@ -183,7 +181,7 @@ def download_file_from_hf_hub(
     cache_path = Path(cache_dir)
     cache_path.mkdir(parents=True, exist_ok=True)
 
-    fprint(f"[INFO] Downloading {filename} from {repo_id}...")
+    fprint(f"Downloading {filename} from {repo_id}...")
 
     try:
         downloaded_path = hf_hub_download(
@@ -195,11 +193,11 @@ def download_file_from_hf_hub(
             token=token,
         )
 
-        fprint(f"[SUCCESS] Downloaded {filename} to {downloaded_path}")
+        fprint(f"Downloaded {filename} to {downloaded_path}")
         return downloaded_path
 
     except Exception as e:
-        fprint(f"[ERROR] Failed to download {filename}: {str(e)}")
+        fprint(f"Failed to download {filename}: {str(e)}")
         raise
 
 
@@ -234,7 +232,7 @@ def list_hf_repo_files(
         files = list_repo_files(repo_id=repo_id, repo_type=repo_type, token=token)
         return files
     except Exception as e:
-        fprint(f"[ERROR] Failed to list files in {repo_id}: {str(e)}")
+        fprint(f"Failed to list files in {repo_id}: {str(e)}")
         raise
 
 
@@ -261,7 +259,7 @@ def verify_download_integrity(
     local_path = Path(local_path)
 
     if not local_path.exists():
-        fprint(f"[ERROR] Path does not exist: {local_path}")
+        fprint(f"Path does not exist: {local_path}")
         return False
 
     # Default required files for models
@@ -285,14 +283,12 @@ def verify_download_integrity(
                 first_line = f.readline()
                 if "version https://git-lfs" in first_line:
                     fprint(
-                        f"[ERROR] Detected git-lfs pointer file (incomplete download): {file_path}"
+                        f"Detected git-lfs pointer file (incomplete download): {file_path}"
                     )
-                    fprint(
-                        "[ERROR] Please use download_from_hf_hub() to download properly"
-                    )
+                    fprint("Please use download_from_hf_hub() to download properly")
                     return False
 
-    fprint(f"[SUCCESS] All required files present in {local_path}")
+    fprint(f"All required files present in {local_path}")
     return True
 
 
@@ -334,5 +330,5 @@ def get_model_info(repo_id: str, token: Optional[str] = None) -> dict:
             ),
         }
     except Exception as e:
-        fprint(f"[ERROR] Failed to get info for {repo_id}: {str(e)}")
+        fprint(f"Failed to get info for {repo_id}: {str(e)}")
         raise

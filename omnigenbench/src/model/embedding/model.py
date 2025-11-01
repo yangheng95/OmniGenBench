@@ -33,13 +33,13 @@ class OmniModelForEmbedding(torch.nn.Module):
         torch.Size([2, 768])
     """
 
-    def __init__(self, model_name_or_path, tokenizer=None, *args, **kwargs):
+    def __init__(self, config_or_model, tokenizer=None, *args, **kwargs):
         """
         Initialize the embedding model.
 
         Args:
-            model_name_or_path (str): Name or path of the pre-trained model to load
-            tokenizer (optional): Pre-loaded tokenizer. If None, loads from model_name_or_path
+            config_or_model (str): Name or path of the pre-trained model to load
+            tokenizer (optional): Pre-loaded tokenizer. If None, loads from config_or_model
             *args: Additional positional arguments passed to AutoModel.from_pretrained
             **kwargs: Additional keyword arguments passed to AutoModel.from_pretrained
         """
@@ -48,9 +48,9 @@ class OmniModelForEmbedding(torch.nn.Module):
         self.tokenizer = (
             tokenizer
             if tokenizer is not None
-            else AutoTokenizer.from_pretrained(model_name_or_path)
+            else AutoTokenizer.from_pretrained(config_or_model)
         )
-        self.model = AutoModel.from_pretrained(model_name_or_path, *args, **kwargs)
+        self.model = AutoModel.from_pretrained(config_or_model, *args, **kwargs)
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self._device)
         self.model.eval()  # Set model to evaluation mode

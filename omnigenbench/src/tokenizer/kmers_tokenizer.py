@@ -123,12 +123,12 @@ class OmniKmersTokenizer(OmniTokenizer):
         return tokenized_inputs
 
     @staticmethod
-    def from_pretrained(model_name_or_path, **kwargs):
+    def from_pretrained(config_or_model, **kwargs):
         """
         Create a k-mers tokenizer from a pre-trained model.
 
         Args:
-            model_name_or_path (str): Name or path of the pre-trained model
+            config_or_model (str): Name or path of the pre-trained model
             **kwargs: Additional keyword arguments
 
         Returns:
@@ -142,7 +142,7 @@ class OmniKmersTokenizer(OmniTokenizer):
         from transformers import AutoTokenizer
 
         self = OmniKmersTokenizer(
-            AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
+            AutoTokenizer.from_pretrained(config_or_model, **kwargs)
         )
         return self
 

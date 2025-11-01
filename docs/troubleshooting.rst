@@ -446,7 +446,7 @@ Runtime Errors
       
       trainer = AutoTrain(
           dataset="data",
-          model_name_or_path="model",
+          config_or_model="model",
           gradient_checkpointing=True  # Trades compute for memory
       )
 
@@ -717,7 +717,7 @@ Model Loading Issues
       from omnigenbench import OmniModelForSequenceClassification
       
       model = OmniModelForSequenceClassification(
-          model_name_or_path="yangheng/ogb_tfb_finetuned",
+          config_or_model="yangheng/ogb_tfb_finetuned",
           num_labels=919  # Match training configuration
       )
 
@@ -775,7 +775,7 @@ Training & Evaluation Issues
    
       trainer = AutoTrain(
           dataset="data",
-          model_name_or_path="model",
+          config_or_model="model",
           learning_rate=1e-5  # Instead of default 2e-5
       )
 
@@ -785,7 +785,7 @@ Training & Evaluation Issues
    
       trainer = AutoTrain(
           dataset="data",
-          model_name_or_path="model",
+          config_or_model="model",
           max_grad_norm=1.0  # Clip gradients
       )
 
@@ -831,7 +831,7 @@ Training & Evaluation Issues
       for lr in [1e-6, 5e-6, 1e-5, 5e-5, 1e-4]:
           trainer = AutoTrain(
               dataset="data",
-              model_name_or_path="model",
+              config_or_model="model",
               learning_rate=lr
           )
           trainer.run()
@@ -842,7 +842,7 @@ Training & Evaluation Issues
    
       bench = AutoBench(
           benchmark="RGB",
-          model_name_or_path="model"
+          config_or_model="model"
       )
       bench.run(seeds=[0, 1, 2, 3, 4])  # Average over 5 runs
 
@@ -900,7 +900,7 @@ Training & Evaluation Issues
    
       trainer = AutoTrain(
           dataset="data",
-          model_name_or_path="model",
+          config_or_model="model",
           num_workers=4  # Parallel data loading
       )
 

@@ -60,7 +60,7 @@ class TestAutoBenchAPI:
         # Basic initialization
         bench = AutoBench(
             benchmark="RGB",
-            model_name_or_path="yangheng/OmniGenome-186M",
+            config_or_model="yangheng/OmniGenome-186M",
             overwrite=False
         )
         
@@ -72,7 +72,7 @@ class TestAutoBenchAPI:
         for benchmark in benchmark_names:
             bench = AutoBench(
                 benchmark=benchmark,
-                model_name_or_path="yangheng/OmniGenome-186M",
+                config_or_model="yangheng/OmniGenome-186M",
             )
             assert bench is not None
     
@@ -80,7 +80,7 @@ class TestAutoBenchAPI:
         """Test AutoBench accepts various configuration options"""
         bench = AutoBench(
             benchmark="RGB",
-            model_name_or_path="yangheng/OmniGenome-186M",
+            config_or_model="yangheng/OmniGenome-186M",
             tokenizer_name_or_path="yangheng/OmniGenome-186M",
             trainer="accelerate",
             overwrite=True,
@@ -98,7 +98,7 @@ class TestAutoBenchAPI:
         # Use smallest model and single seed for speed
         bench = AutoBench(
             benchmark="RGB",
-            model_name_or_path="yangheng/OmniGenome-52M",
+            config_or_model="yangheng/OmniGenome-52M",
             overwrite=True,
         )
         
@@ -121,7 +121,7 @@ class TestAutoBenchAPI:
         """Test AutoBench supports multi-seed evaluation"""
         bench = AutoBench(
             benchmark="RGB",
-            model_name_or_path="yangheng/OmniGenome-186M",
+            config_or_model="yangheng/OmniGenome-186M",
         )
         
         # Configuration with multiple seeds (as in examples)
@@ -147,7 +147,7 @@ class TestAutoTrainAPI:
         """Test AutoTrain can be initialized"""
         trainer = AutoTrain(
             dataset_name_or_path="translation_efficiency_prediction",
-            model_name_or_path="yangheng/PlantRNA-FM",
+            config_or_model="yangheng/PlantRNA-FM",
         )
         
         assert trainer is not None
@@ -159,7 +159,7 @@ class TestAutoTrainAPI:
         
         trainer = AutoTrain(
             dataset_name_or_path="translation_efficiency_prediction",
-            model_name_or_path="yangheng/PlantRNA-FM",
+            config_or_model="yangheng/PlantRNA-FM",
             output_dir=str(output_dir),
             num_labels=2,
             max_length=512,
@@ -188,7 +188,7 @@ class TestAutoTrainAPI:
         for config in task_configs:
             trainer = AutoTrain(
                 dataset_name_or_path=config["dataset"],
-                model_name_or_path="yangheng/OmniGenome-52M",
+                config_or_model="yangheng/OmniGenome-52M",
                 num_labels=config["num_labels"],
             )
             assert trainer is not None
@@ -204,7 +204,7 @@ class TestAutoTrainAPI:
         
         trainer = AutoTrain(
             dataset_name_or_path="translation_efficiency_prediction",
-            model_name_or_path="yangheng/PlantRNA-FM",
+            config_or_model="yangheng/PlantRNA-FM",
             output_dir=str(output_dir),
             epochs=1,
             batch_size=4,
@@ -387,7 +387,7 @@ class TestAutoWorkflowIntegration:
         # Step 1: Train a custom model
         trainer = AutoTrain(
             dataset_name_or_path="translation_efficiency_prediction",
-            model_name_or_path="yangheng/PlantRNA-FM",
+            config_or_model="yangheng/PlantRNA-FM",
             output_dir=str(output_dir),
             epochs=1,
             batch_size=4,
@@ -396,7 +396,7 @@ class TestAutoWorkflowIntegration:
         # Step 2: Benchmark the trained model
         bench = AutoBench(
             benchmark="RGB",
-            model_name_or_path=str(output_dir),
+            config_or_model=str(output_dir),
             overwrite=True,
         )
         
@@ -420,7 +420,7 @@ class TestAutoWorkflowIntegration:
         for model in models:
             bench = AutoBench(
                 benchmark=benchmark,
-                model_name_or_path=model,
+                config_or_model=model,
             )
             benches.append(bench)
         
@@ -448,7 +448,7 @@ class TestRealWorldBenchmarks:
         
         bench = AutoBench(
             benchmark="RGB",
-            model_name_or_path="yangheng/OmniGenome-52M",
+            config_or_model="yangheng/OmniGenome-52M",
             overwrite=True,
         )
         

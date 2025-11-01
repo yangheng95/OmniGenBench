@@ -78,7 +78,7 @@ class AutoBench:
 
     Attributes:
         benchmark (str): Name or local path of the benchmark suite to evaluate on.
-        model_name_or_path (str): HuggingFace Hub identifier or local path to the model.
+        config_or_model (str): HuggingFace Hub identifier or local path to the model.
         tokenizer: Tokenizer instance for sequence preprocessing. Auto-loaded if None.
         autocast (str): Mixed precision mode ('fp16', 'bf16', 'fp32') for memory efficiency.
         overwrite (bool): Whether to overwrite existing evaluation results or resume from cache.
@@ -91,7 +91,7 @@ class AutoBench:
     def __init__(
         self,
         benchmark,
-        model_name_or_path,
+        config_or_model,
         tokenizer=None,
         **kwargs,
     ):
@@ -100,7 +100,7 @@ class AutoBench:
 
         Args:
             benchmark (str): The name or path of the benchmark to use.
-            model_name_or_path (str): The name or path of the model to evaluate.
+            config_or_model (str): The name or path of the model to evaluate.
             tokenizer: The tokenizer to use. If None, it will be loaded from the model path.
             **kwargs: Additional keyword arguments.
                 - autocast (str): The autocast precision to use ('fp16', 'bf16', etc.).
@@ -123,13 +123,13 @@ class AutoBench:
         self.overwrite = kwargs.pop("overwrite", False)
         self.trainer = kwargs.pop("trainer", "native")
 
-        self.model_name_or_path = model_name_or_path
+        self.model_name_or_path = config_or_model
         self.tokenizer = tokenizer
-        if isinstance(self.model_name_or_path, str):
-            self.model_name_or_path = self.model_name_or_path.rstrip("/")
-            self.model_name = self.model_name_or_path.split("/")[-1]
+        if isinstance(config_or_model, str):
+            self.model_name_or_path = config_or_model.rstrip("/")
+            self.model_name = config_or_model.split("/")[-1]
         else:
-            self.model_name = self.model_name_or_path.__class__.__name__
+            self.model_name = config_or_model.__class__.__name__
         if isinstance(tokenizer, str):
             self.tokenizer = tokenizer.rstrip("/")
         os.makedirs("./autobench_evaluations", exist_ok=True)
@@ -245,7 +245,7 @@ class AutoBench:
             # Init Tokenizer and Model
             if not self.tokenizer:
                 tokenizer = OmniTokenizer.from_pretrained(
-                    self.model_name_or_path,
+                    self.config_or_model,
                     trust_remote_code=bench_config.get("trust_remote_code", True),
                     **bench_config,
                 )
@@ -294,10 +294,10 @@ class AutoBench:
                     continue
 
                 seed_everything(seed)
-                if self.model_name_or_path:
+                if self.config_or_model:
                     model_cls = bench_config["model_cls"]
                     model = model_cls(
-                        self.model_name_or_path,
+                        self.config_or_model,
                         tokenizer=tokenizer,
                         label2id=bench_config.label2id,
                         num_labels=bench_config["num_labels"],
@@ -306,7 +306,7 @@ class AutoBench:
                     )
                 else:
                     raise ValueError(
-                        "model_name_or_path is not specified. Please provide a valid model name or path."
+                        "config_or_model is not specified. Please provide a valid model name or path."
                     )
 
                 fprint(f"\n{model}")

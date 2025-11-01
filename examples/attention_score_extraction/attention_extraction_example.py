@@ -36,10 +36,10 @@ def main():
     print("=" * 50)
 
     # Initialize model (using a smaller model for demo)
-    print("\n[INFO] Loading model...")
+    print("\nLoading model...")
     model_name = "yangheng/OmniGenome-186M"  # Standard OmniGenBench model
     
-    print("[INFO] You can use ANY OmniModel type for embedding and attention extraction:")
+    print("You can use ANY OmniModel type for embedding and attention extraction:")
     print("  - OmniModelForEmbedding (dedicated)")
     print("  - OmniModelForSequenceClassification (classification + embeddings)")
     print("  - OmniModelForSequenceRegression (regression + embeddings)")

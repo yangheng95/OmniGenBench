@@ -46,7 +46,7 @@ class AutoTrain:
 
     Attributes:
         dataset (str): The name or path of the dataset to use for training.
-        model_name_or_path (str): The name or path of the model to train.
+        config_or_model (str): The name or path of the model to train.
         tokenizer: The tokenizer to use for training.
         autocast (str): The autocast precision to use ('fp16', 'bf16', etc.).
         overwrite (bool): Whether to overwrite existing training results.
@@ -58,7 +58,7 @@ class AutoTrain:
     def __init__(
         self,
         dataset,
-        model_name_or_path,
+        config_or_model,
         tokenizer=None,
         **kwargs,
     ):
@@ -67,7 +67,7 @@ class AutoTrain:
 
         Args:
             dataset (str): The name or path of the dataset to use for training.
-            model_name_or_path (str): The model instance, model name or model path of the model to train.
+            config_or_model (str): The model instance, model name or model path of the model to train.
             tokenizer: The tokenizer to use. If None, it will be loaded from the model path.
             **kwargs: Additional keyword arguments.
                 - autocast (str): The autocast precision to use ('fp16', 'bf16', etc.).
@@ -90,13 +90,13 @@ class AutoTrain:
         self.overwrite = kwargs.pop("overwrite", False)
         self.trainer = kwargs.pop("trainer", "accelerate")
 
-        self.model_name_or_path = model_name_or_path
+        self.model_name_or_path = config_or_model
         self.tokenizer = tokenizer
-        if isinstance(self.model_name_or_path, str):
-            self.model_name_or_path = self.model_name_or_path.rstrip("/")
-            self.model_name = self.model_name_or_path.split("/")[-1]
+        if isinstance(config_or_model, str):
+            self.model_name_or_path = config_or_model.rstrip("/")
+            self.model_name = config_or_model.split("/")[-1]
         else:
-            self.model_name = self.model_name_or_path.__class__.__name__
+            self.model_name = config_or_model.__class__.__name__
         if isinstance(tokenizer, str):
             self.tokenizer = tokenizer.rstrip("/")
         os.makedirs(autotrain_evaluations, exist_ok=True)
@@ -174,7 +174,7 @@ class AutoTrain:
         # Init Tokenizer and Model
         if not self.tokenizer:
             tokenizer = OmniTokenizer.from_pretrained(
-                self.model_name_or_path, trust_remote_code=True
+                self.config_or_model, trust_remote_code=True
             )
         else:
             tokenizer = self.tokenizer
@@ -218,10 +218,10 @@ class AutoTrain:
                 continue
 
             seed_everything(seed)
-            if self.model_name_or_path:
+            if self.config_or_model:
                 model_cls = train_config["model_cls"]
                 model = model_cls(
-                    self.model_name_or_path,
+                    self.config_or_model,
                     tokenizer=tokenizer,
                     label2id=train_config.label2id,
                     num_labels=train_config["num_labels"],
@@ -230,7 +230,7 @@ class AutoTrain:
                 )
             else:
                 raise ValueError(
-                    "model_name_or_path is not specified. Please provide a valid model name or path."
+                    "config_or_model is not specified. Please provide a valid model name or path."
                 )
 
             if kwargs.get("lora_config", None) is not None:

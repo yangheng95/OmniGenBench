@@ -131,7 +131,7 @@ class OmniSingleNucleotideTokenizer(OmniTokenizer):
         return tokenized_inputs
 
     @staticmethod
-    def from_pretrained(model_name_or_path, **kwargs):
+    def from_pretrained(config_or_model, **kwargs):
         """
         Loads a single nucleotide tokenizer from a pre-trained model.
 
@@ -139,7 +139,7 @@ class OmniSingleNucleotideTokenizer(OmniTokenizer):
         a Hugging Face tokenizer loaded from a pre-trained model.
 
         Args:
-            model_name_or_path (str): The name or path of the pre-trained model.
+            config_or_model (str): The name or path of the pre-trained model.
             **kwargs: Additional arguments for the tokenizer.
 
         Returns:
@@ -149,7 +149,7 @@ class OmniSingleNucleotideTokenizer(OmniTokenizer):
             >>> tokenizer = OmniSingleNucleotideTokenizer.from_pretrained("model_name")
         """
         self = OmniSingleNucleotideTokenizer(
-            AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
+            AutoTokenizer.from_pretrained(config_or_model, **kwargs)
         )
         return self
 

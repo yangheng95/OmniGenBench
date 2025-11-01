@@ -64,7 +64,7 @@ The ``ogb autoinfer`` command allows you to run inference with fine-tuned models
 
 .. code-block:: bash
 
-   ogb autoinfer --model <model_name_or_path> --sequence <sequence> --output-file <output.json>
+   ogb autoinfer --model <config_or_model> --sequence <sequence> --output-file <output.json>
 
 **Example 1: Single Sequence Inference**
 
@@ -285,7 +285,7 @@ The ``ogb autobench`` command is your primary tool for evaluating a model's perf
 
 .. code-block:: bash
 
-   ogb autobench --model <model_name_or_path> --benchmark <benchmark_name>
+   ogb autobench --model <config_or_model> --benchmark <benchmark_name>
 
 **Example**
 
@@ -299,7 +299,7 @@ Here's how to evaluate the ``yangheng/OmniGenome-186M`` model on the ``RGB`` ben
 
 .. code-block:: bash
 
-   autobench --model_name_or_path yangheng/OmniGenome-186M --benchmark RGB
+   autobench --config_or_model yangheng/OmniGenome-186M --benchmark RGB
 
 **Arguments**
 

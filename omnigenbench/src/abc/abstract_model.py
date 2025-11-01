@@ -386,6 +386,13 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
         self.dropout = torch.nn.Dropout(kwargs.get("dropout", 0.0))
         self.activation = torch.nn.Tanh()
 
+        # Device management: track device but don't move yet (subclass layers not created)
+        # Let device movement happen explicitly via .to() or automatically during forward pass
+        try:
+            self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        except Exception:
+            self._device = torch.device("cpu")
+
     def last_hidden_state_forward(self, **inputs):
         """
         Performs a forward pass to get the last hidden state from the base model. It also handles compatibility with different
@@ -1481,8 +1488,10 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
             if isinstance(value, torch.Tensor) and value.dim() == 1:
                 inputs[key] = value.unsqueeze(0)
 
+        # Move tensors to the model's device
+        target_device = self.device
         inputs = {
-            k: v.to(self.model.device) if isinstance(v, torch.Tensor) else v
+            k: v.to(target_device) if isinstance(v, torch.Tensor) else v
             for k, v in inputs.items()
         }
 
@@ -1491,12 +1500,57 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
             raw_outputs["inputs"] = inputs
         return raw_outputs
 
+    @property
+    def device(self):
+        """Return the actual device of model parameters, not cached value."""
+        # Always infer from actual parameters to handle subclass layers correctly
+        try:
+            return next(self.parameters()).device
+        except StopIteration:
+            return torch.device("cpu")
+
+    def to(self, *args, **kwargs):
+        """Move model to specified device/dtype and keep device tracking in sync."""
+        super().to(*args, **kwargs)
+        self.model.to(*args, **kwargs)
+
+        # Update internal device tracking if a device/dtype is specified
+        # Try to derive device from args/kwargs or model parameters
+        updated_device = None
+        for arg in args:
+            if isinstance(arg, torch.device):
+                updated_device = arg
+            elif isinstance(arg, str) and ("cuda" in arg or "cpu" in arg):
+                updated_device = torch.device(arg)
+        if "device" in kwargs:
+            dev = kwargs.get("device")
+            updated_device = dev if isinstance(dev, torch.device) else torch.device(dev)
+        if updated_device is None:
+            try:
+                updated_device = next(self.model.parameters()).device
+            except StopIteration:
+                updated_device = self.device
+
+        self._device = updated_device
+        # Mirror `.device` for compatibility with existing call sites
+        try:
+            self.model.device = updated_device
+            for module in self.model.modules():
+                try:
+                    module.device = updated_device
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        return self
+
     @staticmethod
-    def from_pretrained(model_name_or_path, tokenizer, *args, **kwargs):
+    def from_pretrained(config_or_model, tokenizer, *args, **kwargs):
         """
         Loads a pre-trained model and tokenizer.
 
-        :param model_name_or_path: The name or path of the pre-trained model.
+        :param config_or_model: The name or path of the pre-trained model.
         :param tokenizer: The tokenizer to use.
         :param args: Additional positional arguments.
         :param kwargs: Additional keyword arguments.
@@ -1504,8 +1558,8 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
         """
         config = kwargs.pop("config", None)
         if config is None:
-            config = AutoConfig.from_pretrained(model_name_or_path, **kwargs)
-        base_model = AutoModel.from_pretrained(model_name_or_path, **kwargs)
+            config = AutoConfig.from_pretrained(config_or_model, **kwargs)
+        base_model = AutoModel.from_pretrained(config_or_model, **kwargs)
         if tokenizer is None:
             tokenizer = AutoTokenizer.from_pretrained(base_model, **kwargs)
         return OmniModel(config, base_model, tokenizer, *args, **kwargs)

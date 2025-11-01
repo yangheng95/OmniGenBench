@@ -549,11 +549,11 @@ import torch.nn as nn
 class HybridGenomicModel(OmniModel):
     """CNN for local motifs + Transformer for long-range interactions."""
     
-    def __init__(self, model_name_or_path, tokenizer, num_labels):
-        super().__init__(model_name_or_path, tokenizer)
+    def __init__(self, config_or_model, tokenizer, num_labels):
+        super().__init__(config_or_model, tokenizer)
         
         # Load pre-trained transformer backbone
-        self.transformer = self.load_pretrained_encoder(model_name_or_path)
+        self.transformer = self.load_pretrained_encoder(config_or_model)
         hidden_size = self.transformer.config.hidden_size
         
         # Custom CNN branch for motif detection

@@ -128,7 +128,7 @@ ogb autobench \
     --trainer accelerate
 
 # Legacy command (still supported for backward compatibility)
-# autobench --model_name_or_path "yangheng/OmniGenome-186M" --benchmark "RGB"
+# autobench --config_or_model "yangheng/OmniGenome-186M" --benchmark "RGB"
 ```
 **Output**: Results include mean ± standard deviation for each metric (e.g., MCC: 0.742 ± 0.015, F1: 0.863 ± 0.009)
 
@@ -148,7 +148,7 @@ seeds = [0, 1, 2, 3, 4]  # Multi-seed for statistical rigor
 # Run automated evaluation
 bench = AutoBench(
     benchmark=benchmark,
-    model_name_or_path=gfm,
+    config_or_model=gfm,
     overwrite=False  # Skip completed tasks
 )
 bench.run(autocast=False, batch_size=bench_size, seeds=seeds)

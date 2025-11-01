@@ -29,7 +29,7 @@ from omnigenbench import OmniModelForAugmentation
 
 # Initialize augmentation model (uses a masked language model under the hood)
 augmentor = OmniModelForAugmentation(
-    model_name_or_path="yangheng/OmniGenome-186M",
+    config_or_model="yangheng/OmniGenome-186M",
     noise_ratio=0.15,     # Proportion of tokens to mask per sequence
     instance_num=5,       # Number of augmented variants per input sequence
     batch_size=32         # Batched decoding for speed
@@ -64,7 +64,7 @@ The augmentation process applies random masking followed by MLM prediction:
 ```python
 # Configure noise ratio (proportion of tokens to mask)
 augmentor = OmniModelForAugmentation(
-    model_name_or_path="yangheng/OmniGenome-186M",
+    config_or_model="yangheng/OmniGenome-186M",
     noise_ratio=0.2,     # Mask 20% of tokens
     instance_num=3       # Generate 3 variants per input
 )
@@ -79,7 +79,7 @@ Efficiently augment multiple sequences:
 from omnigenbench import OmniModelForAugmentation
 
 augmentor = OmniModelForAugmentation(
-    model_name_or_path="yangheng/OmniGenome-186M",
+    config_or_model="yangheng/OmniGenome-186M",
     batch_size=32,   # Process 32 masked instances at once
     noise_ratio=0.15,
     instance_num=5
@@ -118,7 +118,7 @@ with open("toy_datasets/train.json", "r") as f:
 
 # Initialize augmentor
 augmentor = OmniModelForAugmentation(
-    model_name_or_path="yangheng/OmniGenome-186M",
+    config_or_model="yangheng/OmniGenome-186M",
     noise_ratio=0.15,
     instance_num=3  # Generate 3 variants per original sequence
 )

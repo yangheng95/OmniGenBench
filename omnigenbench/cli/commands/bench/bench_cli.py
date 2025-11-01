@@ -153,7 +153,7 @@ class BenchCommand(BaseCommand):
 
         autobench = AutoBench(
             benchmark=args.benchmark,
-            model_name_or_path=model,
+            config_or_model=model,
             tokenizer=tokenizer,
             overwrite=args.overwrite,
             trainer=args.trainer,

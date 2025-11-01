@@ -46,7 +46,7 @@ class TestAttentionExtractionEmbeddingModel:
     @pytest.fixture(scope="class")
     def embedding_model(self, model_name):
         """Load embedding model for attention extraction"""
-        # OmniModelForEmbedding takes model_name_or_path as first positional argument
+        # OmniModelForEmbedding takes config_or_model as first positional argument
         model = OmniModelForEmbedding(model_name, trust_remote_code=True)
         return model
 

@@ -164,12 +164,12 @@ class OmniTokenizer:
         self.add_whitespace = kwargs.get("add_whitespace", False)
 
     @staticmethod
-    def from_pretrained(model_name_or_path, **kwargs):
+    def from_pretrained(config_or_model, **kwargs):
         """
         Loads a tokenizer from a pre-trained model path.
 
         Args:
-            model_name_or_path (str): The name or path of the pre-trained model.
+            config_or_model (str): The name or path of the pre-trained model.
             **kwargs: Additional arguments for the tokenizer.
 
         Returns:
@@ -183,21 +183,21 @@ class OmniTokenizer:
         """
         kwargs.pop("num_labels", None)  # Seems we don't need num_labels here
 
-        wrapper_path = f"{model_name_or_path.rstrip('/')}/omnigenome_wrapper.py"
+        wrapper_path = f"{config_or_model.rstrip('/')}/omnigenome_wrapper.py"
         if os.path.exists(wrapper_path):
             tokenizer_cls = load_module_from_path(
                 "OmniTokenizerWrapper", wrapper_path
             ).Tokenizer
             tokenizer = tokenizer_cls(
-                AutoTokenizer.from_pretrained(model_name_or_path, **kwargs), **kwargs
+                AutoTokenizer.from_pretrained(config_or_model, **kwargs), **kwargs
             )
         else:
-            if "multimolecule" in model_name_or_path:
+            if "multimolecule" in config_or_model:
                 from multimolecule import RnaTokenizer
 
-                tokenizer = RnaTokenizer.from_pretrained(model_name_or_path, **kwargs)
+                tokenizer = RnaTokenizer.from_pretrained(config_or_model, **kwargs)
             else:
-                tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, **kwargs)
+                tokenizer = AutoTokenizer.from_pretrained(config_or_model, **kwargs)
 
         return tokenizer
 

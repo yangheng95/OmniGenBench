@@ -401,7 +401,7 @@ def run_autobench(args):
 
     # Convert args namespace to list format expected by bench_command
     cmd_args = [
-        "--model_name_or_path",
+        "--config_or_model",
         args.model,
         "--benchmark",
         args.benchmark,

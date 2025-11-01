@@ -216,7 +216,7 @@ def download_hf_model(
     # Strategy 1: Use HuggingFace Hub API (no git-lfs required)
     if use_hf_api and HF_DOWNLOAD_AVAILABLE:
         try:
-            fprint(f"[INFO] Using HuggingFace Hub API to download {model_id}")
+            fprint(f"Using HuggingFace Hub API to download {model_id}")
             path = download_from_hf_hub(
                 repo_id=model_id,
                 cache_dir=cache_dir,
@@ -397,7 +397,7 @@ class ModelHub:
 
     @staticmethod
     def load_model_and_tokenizer(
-        model_name_or_path,
+        config_or_model,
         local_only=False,
         device=None,
         dtype=torch.float16,
@@ -411,7 +411,7 @@ class ModelHub:
         device selection if none is specified.
 
         Args:
-            model_name_or_path (str): Name or path of the model to load.
+            config_or_model (str): Name or path of the model to load.
                 Can be a local path, Hugging Face model identifier (e.g., "yangheng/OmniGenome-186M"),
                 or a model name from the OmniGenome hub (fallback).
             local_only (bool, optional): Whether to use only local cache. Defaults to False
@@ -434,18 +434,18 @@ class ModelHub:
             ... )
         """
         model = ModelHub.load(
-            model_name_or_path,
+            config_or_model,
             local_only=local_only,
             device=device,
             dtype=dtype,
             **kwargs,
         )
-        fprint(f"The model and tokenizer has been loaded from {model_name_or_path}.")
+        fprint(f"The model and tokenizer has been loaded from {config_or_model}.")
         return model, model.tokenizer
 
     @staticmethod
     def load(
-        model_name_or_path,
+        config_or_model,
         local_only=False,
         device=None,
         dtype=torch.float16,
@@ -460,7 +460,7 @@ class ModelHub:
         loading is performed using local files only.
 
         Args:
-            model_name_or_path (str): Name or path of the model to load.
+            config_or_model (str): Name or path of the model to load.
                 Can be a local path, Hugging Face model identifier (e.g., "yangheng/OmniGenome-186M"),
                 or a model name from the OmniGenome hub (fallback).
             local_only (bool, optional): Whether to use only local cache. Defaults to False
@@ -474,7 +474,7 @@ class ModelHub:
             torch.nn.Module: The loaded model
 
         Raises:
-            ValueError: If model_name_or_path is not a string
+            ValueError: If config_or_model is not a string
             FileNotFoundError: If the model cannot be found locally or remotely
             subprocess.CalledProcessError: If git clone fails
 
@@ -487,17 +487,17 @@ class ModelHub:
             >>> model = ModelHub.load("yangheng/OmniGenome-186M", force_download=True)
             >>> print(f"Model type: {type(model)}")
         """
-        if not isinstance(model_name_or_path, str):
-            raise ValueError("model_name_or_path must be a string.")
+        if not isinstance(config_or_model, str):
+            raise ValueError("config_or_model must be a string.")
 
         # Determine the model path - always ensure we have a local path
-        if os.path.exists(model_name_or_path):
+        if os.path.exists(config_or_model):
             # Local path exists
-            path = model_name_or_path
+            path = config_or_model
             fprint(f"Using existing local model path: {path}")
         else:
             # Check if it looks like a Hugging Face model identifier (contains "/" or is a known model name)
-            if "/" in model_name_or_path or model_name_or_path in [
+            if "/" in config_or_model or config_or_model in [
                 "bert-base-uncased",
                 "gpt2",
                 "roberta-base",
@@ -506,12 +506,12 @@ class ModelHub:
                 # Download from Hugging Face Hub to local directory
                 # Prioritize HF Hub API (no git-lfs) over git clone
                 try:
-                    cache_dir = kwargs.get("cache_dir", "__OMNIGENOME_DATA__/models/")
-                    force_download = kwargs.get("force_download", False)
-                    use_hf_api = kwargs.get("use_hf_api", True)  # Default to HF API
+                    cache_dir = kwargs.pop("cache_dir", "__OMNIGENOME_DATA__/models/")
+                    force_download = kwargs.pop("force_download", False)
+                    use_hf_api = kwargs.pop("use_hf_api", True)  # Default to HF API
 
                     path = download_hf_model(
-                        model_name_or_path,
+                        config_or_model,
                         cache_dir,
                         force_download,
                         use_hf_api=use_hf_api,
@@ -524,11 +524,11 @@ class ModelHub:
                     )
                     try:
                         path = download_model(
-                            model_name_or_path, local_only=local_only, **kwargs
+                            config_or_model, local_only=local_only, **kwargs
                         )
                     except Exception as og_error:
                         raise FileNotFoundError(
-                            f"Could not load model '{model_name_or_path}' from either "
+                            f"Could not load model '{config_or_model}' from either "
                             f"Hugging Face Hub or OmniGenome hub. "
                             f"HF error: {hf_error}. OG error: {og_error}"
                         )
@@ -536,12 +536,12 @@ class ModelHub:
                 # Try OmniGenome hub first for non-HF identifiers
                 try:
                     path = download_model(
-                        model_name_or_path, local_only=local_only, **kwargs
+                        config_or_model, local_only=local_only, **kwargs
                     )
                     fprint(f"Downloaded model from OmniGenome hub to: {path}")
                 except Exception as og_error:
                     raise FileNotFoundError(
-                        f"Could not find model '{model_name_or_path}' in OmniGenome hub. "
+                        f"Could not find model '{config_or_model}' in OmniGenome hub. "
                         f"Error: {og_error}"
                     )
 
@@ -717,7 +717,7 @@ class ModelHub:
         return model
 
     def available_models(
-        self, model_name_or_path=None, local_only=False, repo="", **kwargs
+        self, config_or_model=None, local_only=False, repo="", **kwargs
     ):
         """
         Get information about available models in the hub.
@@ -727,7 +727,7 @@ class ModelHub:
         local and remote queries.
 
         Args:
-            model_name_or_path (str, optional): Filter models by name. Defaults to None
+            config_or_model (str, optional): Filter models by name. Defaults to None
             local_only (bool, optional): Whether to use only local cache. Defaults to False
             repo (str, optional): Repository URL to query. Defaults to ""
             **kwargs: Additional keyword arguments
@@ -745,7 +745,7 @@ class ModelHub:
             >>> print(f"DNA models: {list(dna_models.keys())}")
         """
         models_info = query_models_info(
-            model_name_or_path, local_only=local_only, repo=repo, **kwargs
+            config_or_model, local_only=local_only, repo=repo, **kwargs
         )
         return models_info
 

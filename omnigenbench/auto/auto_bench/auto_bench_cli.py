@@ -57,7 +57,7 @@ def bench_command(args: Optional[list] = None):
     # Initialize benchmark
     autobench = AutoBench(
         benchmark=parsed_args.benchmark,
-        model_name_or_path=model,
+        config_or_model=model,
         tokenizer=tokenizer,
         overwrite=parsed_args.overwrite,
         trainer=parsed_args.trainer,

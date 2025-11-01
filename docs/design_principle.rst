@@ -829,7 +829,7 @@ Pure PyTorch training loop with explicit control over every step.
    # Native trainer for explicit control
    trainer = AutoTrain(
        dataset="my_promoters",
-       model_name_or_path="yangheng/OmniGenome-186M",
+       config_or_model="yangheng/OmniGenome-186M",
        trainer="native",  # Explicit single-GPU training
        device="cuda:0"
    )
@@ -859,7 +859,7 @@ Leverages HuggingFace Accelerate for transparent distributed training.
    # Accelerate trainer for distributed evaluation
    bench = AutoBench(
        benchmark="RGB",
-       model_name_or_path="yangheng/OmniGenome-186M",
+       config_or_model="yangheng/OmniGenome-186M",
        trainer="accelerate"  # Multi-GPU if available
    )
    bench.run(seeds=[0, 1, 2, 3, 4])
@@ -911,7 +911,7 @@ Full integration with HuggingFace Trainer API and ecosystem.
    
    trainer = AutoTrain(
        dataset="my_dataset",
-       model_name_or_path="yangheng/OmniGenome-186M",
+       config_or_model="yangheng/OmniGenome-186M",
        trainer="hf_trainer",
        training_args=training_args
    )
@@ -963,7 +963,7 @@ Full integration with HuggingFace Trainer API and ecosystem.
 .. code-block:: bash
 
    # OLD: Legacy standalone commands
-   autobench --model_name_or_path "model" --benchmark "RGB"
+   autobench --config_or_model "model" --benchmark "RGB"
    autotrain --dataset "data" --model "model"
    
    # NEW: Unified ogb command (recommended)

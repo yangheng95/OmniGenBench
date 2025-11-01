@@ -121,7 +121,7 @@ def example_3_batch_design():
     # Design each structure
     results = {}
     for name, structure in structures.items():
-        print(f"[INFO] Designing '{name}': {structure}")
+        print(f"Designing '{name}': {structure}")
         sequences = model.design(
             structure=structure,
             mutation_ratio=0.5,
@@ -140,7 +140,7 @@ def example_3_batch_design():
     with open(output_file, "w") as f:
         json.dump(results, f, indent=2)
     
-    print(f"[INFO] All results saved to: {output_file}\n")
+    print(f"All results saved to: {output_file}\n")
     
     return results
 
@@ -246,7 +246,7 @@ def example_5_save_and_load():
     with open(output_file, "r") as f:
         loaded = json.load(f)
     
-    print(f"\n[INFO] Loaded results:")
+    print(f"\nLoaded results:")
     print(f"   Structure: {loaded['metadata']['structure']}")
     print(f"   Sequences found: {loaded['results']['num_sequences']}")
     print(f"   Top sequence: {loaded['results']['top_5'][0]}")
@@ -282,7 +282,7 @@ def main():
         print("=" * 70 + "\n")
         
     except Exception as e:
-        print(f"\n[ERROR] Error running examples: {e}")
+        print(f"\nError running examples: {e}")
         import traceback
         traceback.print_exc()
 

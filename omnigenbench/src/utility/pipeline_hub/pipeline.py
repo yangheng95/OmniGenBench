@@ -46,7 +46,7 @@ class Pipeline:
         >>> from omnigenbench import Pipeline, OmniModelForSequenceClassification
         >>> # Create pipeline from model
         >>> model = OmniModelForSequenceClassification("model_path", tokenizer)
-        >>> pipeline = Pipeline("my_pipeline", model_name_or_path=model)
+        >>> pipeline = Pipeline("my_pipeline", config_or_model=model)
         >>> # Use for inference
         >>> predictions = pipeline("ATCGATCG")
         >>> # Train the model
@@ -70,7 +70,7 @@ class Pipeline:
         self,
         name,
         *,
-        model_name_or_path,
+        config_or_model,
         tokenizer=None,
         datasets=None,
         trainer=None,
@@ -81,7 +81,7 @@ class Pipeline:
 
         Args:
             name (str): Name identifier for the pipeline.
-            model_name_or_path (Union[str, OmniModel]): Model to use in the pipeline.
+            config_or_model (Union[str, OmniModel]): Model to use in the pipeline.
                 Can be a string path/identifier or an OmniModel instance.
             tokenizer (optional): Tokenizer for preprocessing. If None, will be
                 loaded from the model or model path. Defaults to None.
@@ -102,10 +102,10 @@ class Pipeline:
         Example:
             >>> # Create from model path
             >>> pipeline = Pipeline("rna_classification",
-            ...                    model_name_or_path="yangheng/OmniGenome-186M")
+            ...                    config_or_model="yangheng/OmniGenome-186M")
             >>> # Create from model instance
             >>> model = OmniModelForSequenceClassification("model_path", tokenizer)
-            >>> pipeline = Pipeline("custom_pipeline", model_name_or_path=model)
+            >>> pipeline = Pipeline("custom_pipeline", config_or_model=model)
 
         Note:
             - The pipeline automatically handles model loading and device placement
@@ -122,13 +122,13 @@ class Pipeline:
             if kwargs.get("device") is None
             else kwargs.get("device")
         )
-        if not isinstance(model_name_or_path, str):
-            self.model = model_name_or_path
+        if not isinstance(config_or_model, str):
+            self.model = config_or_model
             self.tokenizer = self.model.tokenizer
             self.metadata = self.model.metadata
         else:
             self.init_pipeline(
-                model_name_or_path=model_name_or_path, tokenizer=tokenizer, **kwargs
+                config_or_model=config_or_model, tokenizer=tokenizer, **kwargs
             )
 
         self.model.to(self.device)
@@ -149,7 +149,7 @@ class Pipeline:
             dict: Inference results including predictions and confidence scores.
 
         Example:
-            >>> pipeline = Pipeline("my_pipeline", model_name_or_path=model)
+            >>> pipeline = Pipeline("my_pipeline", config_or_model=model)
             >>> results = pipeline("ATCGATCG")
             >>> print(results['predictions'])
         """
@@ -166,7 +166,7 @@ class Pipeline:
             Pipeline: Self for method chaining.
 
         Example:
-            >>> pipeline = Pipeline("my_pipeline", model_name_or_path=model)
+            >>> pipeline = Pipeline("my_pipeline", config_or_model=model)
             >>> pipeline.to("cuda:0")  # Move to GPU
             >>> pipeline.to("cpu")     # Move to CPU
         """
@@ -174,14 +174,14 @@ class Pipeline:
         self.device = device
         return self
 
-    def init_pipeline(self, *, model_name_or_path, tokenizer=None, **kwargs):
+    def init_pipeline(self, *, config_or_model, tokenizer=None, **kwargs):
         """
         This method handles loading the model, tokenizer, and configuration
         from a model path or identifier. It tries to load from the ModelHub
         first, then falls back to HuggingFace transformers.
 
         Args:
-            model_name_or_path (str): Path or identifier of the model to load.
+            config_or_model (str): Path or identifier of the model to load.
             tokenizer (optional): Tokenizer instance. If None, will be loaded
                 from the model path. Defaults to None.
             **kwargs: Additional keyword arguments for model loading including:
@@ -199,7 +199,7 @@ class Pipeline:
 
         Example:
             >>> pipeline = Pipeline("my_pipeline")
-            >>> pipeline.init_pipeline(model_name_or_path="yangheng/OmniGenome-186M")
+            >>> pipeline.init_pipeline(config_or_model="yangheng/OmniGenome-186M")
 
         Note:
             - First attempts to load from OmniGenome ModelHub
@@ -208,21 +208,21 @@ class Pipeline:
         """
         trust_remote_code = kwargs.get("trust_remote_code", True)
         try:  # for the models saved by OmniGenome and served by the model hub
-            self.model = ModelHub.load(model_name_or_path, **kwargs)
+            self.model = ModelHub.load(config_or_model, **kwargs)
             self.tokenizer = self.model.tokenizer
             self.metadata.update(self.model.metadata)
         except Exception as e:
             fprint(f"Fail to load the model from the model hub, the error is: {e}")
 
             config = AutoConfig.from_pretrained(
-                model_name_or_path, trust_remote_code=trust_remote_code
+                config_or_model, trust_remote_code=trust_remote_code
             )
             if tokenizer is None:
                 tokenizer = AutoTokenizer.from_pretrained(
-                    model_name_or_path, trust_remote_code=trust_remote_code
+                    config_or_model, trust_remote_code=trust_remote_code
                 )
             self.model = OmniModel.from_pretrained(
-                model_name_or_path,
+                config_or_model,
                 config=config,
                 tokenizer=tokenizer,
                 trust_remote_code=trust_remote_code,
@@ -230,7 +230,7 @@ class Pipeline:
             )
             self.tokenizer = self.model.tokenizer
             self.metadata.update(self.model.metadata)
-        fprint(f"The pipeline has been initialized from {model_name_or_path}.")
+        fprint(f"The pipeline has been initialized from {config_or_model}.")
         return self
 
     def train(self, datasets: dict = None, trainer=None, **kwargs):
@@ -252,7 +252,7 @@ class Pipeline:
             RuntimeError: If training fails.
 
         Example:
-            >>> pipeline = Pipeline("my_pipeline", model_name_or_path=model)
+            >>> pipeline = Pipeline("my_pipeline", config_or_model=model)
             >>> # Train with existing datasets
             >>> pipeline.train()
             >>> # Train with custom datasets
@@ -295,7 +295,7 @@ class Pipeline:
                 - logits: Raw model outputs (if requested)
 
         Example:
-            >>> pipeline = Pipeline("my_pipeline", model_name_or_path=model)
+            >>> pipeline = Pipeline("my_pipeline", config_or_model=model)
             >>> # Single prediction
             >>> result = pipeline.predict("ATCGATCG")
             >>> print(result['predictions'])
@@ -334,7 +334,7 @@ class Pipeline:
                 - hidden_states: Hidden states (if requested)
 
         Example:
-            >>> pipeline = Pipeline("my_pipeline", model_name_or_path=model)
+            >>> pipeline = Pipeline("my_pipeline", config_or_model=model)
             >>> # Basic inference
             >>> results = pipeline.inference("ATCGATCG")
             >>> print(results['predictions'])
@@ -407,7 +407,7 @@ class Pipeline:
                 if kwargs.get("name") is None
                 else kwargs.get("name")
             ),
-            model_name_or_path=model,
+            config_or_model=model,
             tokenizer=tokenizer,
             datasets=datasets,
             trainer=trainer,
@@ -433,7 +433,7 @@ class Pipeline:
             RuntimeError: If saving fails due to model or data issues.
 
         Example:
-            >>> pipeline = Pipeline("my_pipeline", model_name_or_path=model)
+            >>> pipeline = Pipeline("my_pipeline", config_or_model=model)
             >>> # Train the pipeline
             >>> pipeline.train(datasets)
             >>> # Save the trained pipeline

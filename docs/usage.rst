@@ -123,6 +123,46 @@ Usage Patterns
        ignore_patterns=["*.msgpack", "*.h5"],
    )
 
+**Downloading Benchmarks and Datasets**
+
+The same robust API works for benchmark datasets:
+
+.. code-block:: python
+
+   from omnigenbench.src.utility.hub_utils import download_benchmark
+
+   # Download benchmark with HF Hub API (recommended)
+   benchmark_path = download_benchmark(
+       "RGB",  # Short name
+       use_hf_api=True
+   )
+   
+   # Or specify full HuggingFace dataset repository
+   benchmark_path = download_benchmark(
+       "yangheng/OmniGenBench_RGB",
+       use_hf_api=True
+   )
+   
+   # Force re-download to update cached benchmark
+   benchmark_path = download_benchmark(
+       "RGB",
+       force_download=True,
+       use_hf_api=True
+   )
+
+**Automatic Method Selection in AutoBench**:
+
+.. code-block:: python
+
+   from omnigenbench import AutoBench
+
+   # AutoBench automatically uses robust HF Hub API for benchmark downloads
+   bench = AutoBench(
+       benchmark="RGB",  # Automatically downloaded via HF Hub API
+       model_name_or_path="yangheng/OmniGenome-186M"
+   )
+   bench.run()
+
 Download Integrity Verification
 ================================
 
@@ -264,7 +304,7 @@ Evaluate `yangheng/OmniGenome-186M <https://huggingface.co/yangheng/OmniGenome-1
    # Initialize benchmarking pipeline
    bench = AutoBench(
        benchmark="RGB",                              # Benchmark identifier (RGB, BEACON, PGB, GUE, GB)
-       model_name_or_path="yangheng/OmniGenome-186M" # HF Hub model ID or local path
+       config_or_model="yangheng/OmniGenome-186M" # HF Hub model ID or local path
    )
 
    # Execute evaluation workflow
@@ -284,7 +324,7 @@ For publication-quality results, evaluate with multiple random seeds to quantify
 
    bench = AutoBench(
        benchmark="RGB",
-       model_name_or_path="yangheng/OmniGenome-186M"
+       config_or_model="yangheng/OmniGenome-186M"
    )
    
    # Run with 5 independent initializations
@@ -320,12 +360,12 @@ For publication-quality results, evaluate with multiple random seeds to quantify
    .. code-block:: python
    
       # Single-GPU native trainer (Python API default)
-      bench = AutoBench(benchmark="RGB", model_name_or_path="model")
+      bench = AutoBench(benchmark="RGB", config_or_model="model")
       
       # Multi-GPU distributed evaluation (override default)
       bench = AutoBench(
           benchmark="RGB", 
-          model_name_or_path="model", 
+          config_or_model="model", 
           trainer="accelerate"
       )
    
@@ -348,7 +388,7 @@ In this example, we'll fine-tune the `yangheng/OmniGenome-186M` model on a custo
    from omnigenbench import AutoTrain
 
    # Initialize the trainer with your dataset and a base model
-   trainer = AutoTrain(dataset="MyCustomDataset", model_name_or_path="yangheng/OmniGenome-186M")
+   trainer = AutoTrain(dataset="MyCustomDataset", config_or_model="yangheng/OmniGenome-186M")
 
    # Start the training process
    trainer.run()
@@ -370,12 +410,12 @@ In this example, we'll fine-tune the `yangheng/OmniGenome-186M` model on a custo
    .. code-block:: python
    
       # Multi-GPU distributed training (default for AutoTrain)
-      trainer = AutoTrain(dataset="MyData", model_name_or_path="model")
+      trainer = AutoTrain(dataset="MyData", config_or_model="model")
       
       # Single-GPU training with explicit control (for debugging)
       trainer = AutoTrain(
           dataset="MyData", 
-          model_name_or_path="model", 
+          config_or_model="model", 
           trainer="native"
       )
    
@@ -686,7 +726,7 @@ Use direct class instantiation when you need custom configuration or when the HF
    # For training or custom configuration
    from omnigenbench import OmniModelForSequenceClassification
    model = OmniModelForSequenceClassification(
-       model_name_or_path="yangheng/OmniGenome-186M",
+       config_or_model="yangheng/OmniGenome-186M",
        num_labels=919,  # Custom number of labels
        problem_type="multi_label_classification"
    )
@@ -716,7 +756,7 @@ For large models or long sequences:
 .. code-block:: python
 
    # Reduce batch size
-   bench = AutoBench(benchmark="RGB", model_name_or_path="large_model")
+   bench = AutoBench(benchmark="RGB", config_or_model="large_model")
    bench.run(batch_size=4)  # Default is often 8-32
    
    # Use gradient checkpointing
@@ -724,7 +764,7 @@ For large models or long sequences:
    model = OmniModelForSequenceClassification("model", gradient_checkpointing=True)
    
    # Use mixed precision
-   bench = AutoBench(benchmark="RGB", model_name_or_path="model", autocast="bf16")
+   bench = AutoBench(benchmark="RGB", config_or_model="model", autocast="bf16")
 
 ***************
 What's Next?
@@ -755,7 +795,7 @@ You've now seen the basic workflows in OmniGenBench! To dive deeper, explore the
    
    # Automated Training (Recommended)
    from omnigenbench import AutoTrain
-   trainer = AutoTrain(dataset="./my_dataset", model_name_or_path="yangheng/OmniGenome-186M")
+   trainer = AutoTrain(dataset="./my_dataset", config_or_model="yangheng/OmniGenome-186M")
    trainer.run()
    
    # Dataset Loading
