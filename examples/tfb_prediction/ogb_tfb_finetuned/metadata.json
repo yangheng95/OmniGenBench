@@ -1,0 +1,17 @@
+{
+  "library_name": "omnigenbench",
+  "omnigenbench_version": "0.3.27alpha",
+  "torch_version": "2.8.0+cu128+cu12.8+gita1cb3cc05d46d198467bebbb6e8fba50a325d4e7",
+  "transformers_version": "4.57.1",
+  "model_cls": "OmniModelForMultiLabelSequenceClassification",
+  "dataset_cls": null,
+  "dataset_module": null,
+  "tokenizer_cls": "EsmTokenizer",
+  "model_name": "OmniModelForMultiLabelSequenceClassification",
+  "loss_fn_class": "BCELoss",
+  "loss_fn_module": "torch.nn.modules.loss",
+  "model_module": "omnigenbench.src.model.classification.model",
+  "custom_attrs": {
+    "threshold": 0.5
+  }
+}

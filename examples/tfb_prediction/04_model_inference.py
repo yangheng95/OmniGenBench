@@ -44,7 +44,7 @@
 from omnigenbench import ModelHub
 
 # Load the trained model
-inference_model = ModelHub.load("ogb_tfb_finetuned_epoch_1_seed_42_roc_auc_score_0.9022")
+inference_model = ModelHub.load("yangheng/ogb_tfb_finetuned")
 
 # Define sample sequences for testing - matches complete tutorial style
 sample_sequences = {

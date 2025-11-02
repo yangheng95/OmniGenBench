@@ -16,7 +16,7 @@ All imports are redirected to the omnigenbench package.
 
 For backward compatibility, this package maintains the same API as omnigenbench.
 """
-from omnigenbench import __version__
+from omnigenbench import __version__, load_benchmark_datasets, Pipeline, VoteEnsemblePredictor
 
 # Package metadata (define locally to avoid circular imports)
 __name__ = "omnigenome"

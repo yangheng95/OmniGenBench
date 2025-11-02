@@ -225,6 +225,7 @@ OmniGenomeModelForAugmentation = OmniModelForAugmentation
 # ------------------------------------------------------------------------------
 
 __all__ = [
+    "__version__",
     "load_benchmark_datasets",
     "OmniDataset",
     "OmniModel",
@@ -265,6 +266,7 @@ __all__ = [
     "OmniDatasetForSequenceRegression",
     "OmniDatasetForTokenClassification",
     "OmniDatasetForTokenRegression",
+    "OmniDatasetForMultiLabelClassification",
     "OmniTokenizer",
     "OmniKmersTokenizer",
     "OmniSingleNucleotideTokenizer",
