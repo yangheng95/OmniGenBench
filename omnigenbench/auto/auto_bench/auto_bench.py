@@ -123,10 +123,10 @@ class AutoBench:
         self.overwrite = kwargs.pop("overwrite", False)
         self.trainer = kwargs.pop("trainer", "native")
 
-        self.model_name_or_path = config_or_model
+        self.config_or_model = config_or_model
         self.tokenizer = tokenizer
         if isinstance(config_or_model, str):
-            self.model_name_or_path = config_or_model.rstrip("/")
+            self.config_or_model = config_or_model.rstrip("/")
             self.model_name = config_or_model.split("/")[-1]
         else:
             self.model_name = config_or_model.__class__.__name__
@@ -351,17 +351,20 @@ class AutoBench:
                     drop_long_seq=bench_config.get("drop_long_seq", False),
                     **_kwargs,
                 )
-                valid_set = dataset_cls(
-                    dataset_name_or_path=bench_config["valid_file"],
-                    tokenizer=tokenizer,
-                    label2id=bench_config["label2id"],
-                    max_length=max_length,
-                    structure_in=bench_config.get("structure_in", False),
-                    max_examples=bench_config.get("max_examples", None),
-                    shuffle=False,
-                    drop_long_seq=bench_config.get("drop_long_seq", False),
-                    **_kwargs,
-                )
+                if "valid_file" in bench_config and bench_config["valid_file"]:
+                    valid_set = dataset_cls(
+                        dataset_name_or_path=bench_config["valid_file"],
+                        tokenizer=tokenizer,
+                        label2id=bench_config["label2id"],
+                        max_length=max_length,
+                        structure_in=bench_config.get("structure_in", False),
+                        max_examples=bench_config.get("max_examples", None),
+                        shuffle=False,
+                        drop_long_seq=bench_config.get("drop_long_seq", False),
+                        **_kwargs,
+                    )
+                else:
+                    valid_set = None
 
                 if self.trainer == "hf_trainer":
                     # Set up HuggingFace Trainer

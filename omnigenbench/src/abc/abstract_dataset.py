@@ -671,7 +671,7 @@ class OmniDataset(torch.utils.data.Dataset):
         label_shape = first_labels.shape
         if len(label_shape) >= 1:
             max_length = max(max_length, self.data[0]["labels"].shape[0])
-            label_padding_length = min(max_label_length, max_length)
+            label_padding_length = max(max_label_length, max_length)
             max_length = max(max_length, label_padding_length)
         else:
             label_padding_length = 0

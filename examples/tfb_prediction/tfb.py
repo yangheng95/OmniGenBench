@@ -181,7 +181,7 @@ trainer = AccelerateTrainer(
 )
 print("🎓 Starting training...")
 
-metrics = trainer.train()
+metrics = trainer.train(path_to_save="ogb_tfb_finetuned")
 trainer.save_model("ogb_tfb_finetuned")
 
 print('Metrics:', metrics)

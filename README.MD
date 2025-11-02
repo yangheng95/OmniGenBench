@@ -273,7 +273,7 @@ RNA secondary structure prediction is a fundamental problem in computational bio
 where the goal is to predict the secondary structure of an RNA sequence.
 In this demo, we show how to use OmniGenBench to predict the secondary structure of RNA sequences using a pre-trained model.
 The tutorials of RNA Secondary Structure Prediction can be found in
-[Secondary_Structure_Prediction_Tutorial.ipynb](examples/rna_secondary_structure_prediction/Secondary_Structure_Prediction_Tutorial.ipynb).
+[Secondary_Structure_Prediction_Tutorial.ipynb](examples/rna_secondary_structure_prediction/00_quickstart_rna_ssp.ipynb)(examples/rna_secondary_structure_prediction/00.ipynb).
 
 You can find a visual example of RNA Secondary Structure Prediction [here](asset/RNASSP-Demo.gif).
 

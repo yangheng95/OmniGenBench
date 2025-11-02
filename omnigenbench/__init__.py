@@ -15,17 +15,6 @@ A comprehensive toolkit for developing, evaluating, and deploying genomic founda
 across diverse biological sequence analysis tasks. Built on principled software architecture
 with four core abstract base classes (OmniModel, OmniDataset, OmniTokenizer, OmniMetric).
 
-Quick Start
------------
->>> from omnigenbench import ModelHub
->>>
->>> # Load fine-tuned model for transcription factor binding prediction
->>> model = ModelHub.load("yangheng/ogb_tfb_finetuned")
->>>
->>> # Run inference on genomic sequence
->>> predictions = model.inference("ATCGATCGATCGATCG")
->>> print(predictions)  # {'predictions': array([...]), 'probabilities': array([...])}
-
 Core API Components
 -------------------
 
@@ -85,7 +74,7 @@ https://omnigenbenchdoc.readthedocs.io/
 """
 
 __name__ = "omnigenbench"
-__version__ = "0.3.27alpha"
+__version__ = "0.3.28alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "Apache-2.0"
