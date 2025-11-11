@@ -188,7 +188,7 @@ class GenericOmniModelWrapper(torch.nn.Module):
 
 def download_hf_model(
     model_id,
-    cache_dir="__OMNIGENOME_DATA__/models/",
+    cache_dir="__OMNIGENBENCH_DATA__/models/",
     force_download=False,
     use_hf_api=True,
 ):
@@ -243,7 +243,7 @@ def download_hf_model(
 
 
 def clone_hf_model(
-    model_id, cache_dir="__OMNIGENOME_DATA__/models/", force_download=False
+    model_id, cache_dir="__OMNIGENBENCH_DATA__/models/", force_download=False
 ):
     """
     Clone a model from Hugging Face Hub to local directory using git.
@@ -336,7 +336,7 @@ class ModelHub:
     **Architecture**: The ModelHub implements a three-tier loading strategy:
 
     1. **HuggingFace Hub Cloning** (Primary): Uses git to clone model repositories to
-       ``__OMNIGENOME_DATA__/models/`` directory, preserving full git history and metadata
+       ``__OMNIGENBENCH_DATA__/models/`` directory, preserving full git history and metadata
     2. **OmniGenome Hub Fallback** (Secondary): Legacy download mechanism for models not
        on HuggingFace Hub (deprecated, maintained for backward compatibility)
     3. **Local-Only Loading** (Always): After cloning, all model loading uses ``local_files_only=True``
@@ -352,7 +352,7 @@ class ModelHub:
 
     **Cache Management**: Models are cached with HuggingFace Hub naming convention:
 
-    - ``yangheng/OmniGenome-186M`` → ``__OMNIGENOME_DATA__/models/yangheng--OmniGenome-186M/``
+    - ``yangheng/OmniGenome-186M`` → ``__OMNIGENBENCH_DATA__/models/yangheng--OmniGenome-186M/``
     - Supports ``force_download=True`` to re-clone updated versions
     - No automatic cache cleanup; manual management required for disk space constraints
 
@@ -467,7 +467,7 @@ class ModelHub:
             device (str, optional): Device to load the model on. If None, uses auto-detection
             dtype (torch.dtype, optional): Data type for the model. Defaults to torch.float16
             **kwargs: Additional keyword arguments:
-                - cache_dir (str): Directory to store cloned models. Defaults to "__OMNIGENOME_DATA__/models/"
+                - cache_dir (str): Directory to store cloned models. Defaults to "__OMNIGENBENCH_DATA__/models/"
                 - force_download (bool): Whether to re-clone even if model exists locally. Defaults to False
 
         Returns:
@@ -506,7 +506,7 @@ class ModelHub:
                 # Download from Hugging Face Hub to local directory
                 # Prioritize HF Hub API (no git-lfs) over git clone
                 try:
-                    cache_dir = kwargs.pop("cache_dir", "__OMNIGENOME_DATA__/models/")
+                    cache_dir = kwargs.pop("cache_dir", "__OMNIGENBENCH_DATA__/models/")
                     force_download = kwargs.pop("force_download", False)
                     use_hf_api = kwargs.pop("use_hf_api", True)  # Default to HF API
 

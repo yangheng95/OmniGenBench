@@ -106,8 +106,7 @@ def create_parser() -> argparse.ArgumentParser:
     # Optional arguments
     parser.add_argument(
         "--overwrite",
-        type=bool,
-        default=False,
+        action="store_true",
         help="Overwrite existing bench results, otherwise resume from benchmark checkpoint.",
     )
     parser.add_argument(
@@ -136,8 +135,7 @@ def create_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--lora",
-        default=False,
-        type=bool,
+        action="store_true",
         help="Use LoRA fine-tuning if this flag is set.",
     )
     return parser

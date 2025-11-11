@@ -100,6 +100,8 @@ class AutoBench:
 
         Args:
             benchmark (str): The name or path of the benchmark to use.
+                            Can be a local path or a HuggingFace Hub benchmark name.
+                            For hub benchmarks, it will be automatically downloaded.
             config_or_model (str): The name or path of the model to evaluate.
             tokenizer: The tokenizer to use. If None, it will be loaded from the model path.
             **kwargs: Additional keyword arguments.
@@ -109,19 +111,45 @@ class AutoBench:
                   Defaults to False.
                 - trainer (str): The trainer to use ('native', 'accelerate', 'hf_trainer').
                   Defaults to 'native'.
+                - cache_dir (str): Directory to cache downloaded benchmarks from hub.
+                  Defaults to './__OMNIGENBENCH_DATA__/benchmarks/'.
 
         Example:
-            >>> # Initialize with a benchmark and model
-            >>> bench = AutoBench("RGB", "model_name")
+            >>> # Initialize with a local benchmark path
+            >>> bench = AutoBench("/path/to/benchmark", "yangheng/OmniGenome-186M")
+
+            >>> # Initialize with a HuggingFace Hub benchmark name (auto-downloads)
+            >>> bench = AutoBench("RGB", "yangheng/OmniGenome-186M")
 
             >>> # Initialize with custom settings
             >>> bench = AutoBench("RGB", "model_name",
             ...                   autocast="bf16", trainer="accelerate")
         """
-        self.benchmark = benchmark.rstrip("/")
+        self.benchmark_name_or_path = benchmark.rstrip("/") if isinstance(benchmark, str) else benchmark
         self.autocast = kwargs.pop("autocast", "fp16")
         self.overwrite = kwargs.pop("overwrite", False)
         self.trainer = kwargs.pop("trainer", "native")
+        self.cache_dir = kwargs.pop("cache_dir", None)
+
+        # Check if benchmark is a hub name or local path
+        self.is_hub_benchmark = not os.path.exists(self.benchmark_name_or_path)
+        
+        if self.is_hub_benchmark:
+            fprint(f"Detected HuggingFace Hub benchmark: {self.benchmark_name_or_path}")
+            fprint("Downloading benchmark from hub...")
+            
+            # Download benchmark from hub using the unified download logic
+            self.benchmark = download_benchmark(
+                self.benchmark_name_or_path,
+                cache_dir=self.cache_dir,
+                use_hf_api=True,  # Use robust HF Hub API
+                force_download=self.overwrite,
+            )
+            self.benchmark = os.path.dirname(findfile.find_file(self.benchmark, "metadata.py"))
+            fprint(f"Benchmark downloaded to: {self.benchmark}")
+        else:
+            self.benchmark = self.benchmark_name_or_path
+            fprint(f"Using local benchmark: {self.benchmark}")
 
         self.config_or_model = config_or_model
         self.tokenizer = tokenizer
@@ -132,22 +160,24 @@ class AutoBench:
             self.model_name = config_or_model.__class__.__name__
         if isinstance(tokenizer, str):
             self.tokenizer = tokenizer.rstrip("/")
+            
         os.makedirs("./autobench_evaluations", exist_ok=True)
         time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-        mv_name = f"{benchmark}-{self.model_name}"
+        
+        # Use benchmark name for mv_name (not full path)
+        benchmark_name = os.path.basename(self.benchmark_name_or_path)
+        mv_name = f"{benchmark_name}-{self.model_name}"
         self.mv_path = f"./autobench_evaluations/{mv_name}-{time_str}.mv"
 
         mv_paths = findfile.find_files(
             "./autobench_evaluations",
-            and_key=[benchmark, self.model_name, ".mv"],
+            and_key=[benchmark_name, self.model_name, ".mv"],
         )
         if mv_paths and not self.overwrite:
             self.mv = MetricVisualizer.load(mv_paths[-1])
             self.mv.summary(round=4)
         else:
             self.mv = MetricVisualizer(self.mv_path)
-
-        self.benchmark = download_benchmark(self.benchmark)
 
         # Import benchmark list
         self.bench_metadata = load_module_from_path(

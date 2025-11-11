@@ -69,7 +69,7 @@ Primary Method: HuggingFace Hub API (Recommended)
    # Download entire model repository via HTTPS
    local_path = snapshot_download(
        repo_id="yangheng/OmniGenome-186M",
-       cache_dir="__OMNIGENOME_DATA__/models/",
+       cache_dir="__OMNIGENBENCH_DATA__/models/",
        local_dir_use_symlinks=False,  # Use actual files, not symlinks
        resume_download=True,           # Enable resume for interrupted transfers
    )
@@ -218,7 +218,7 @@ For advanced use cases requiring custom download behavior:
    path = download_from_hf_hub(
        repo_id="yangheng/OmniGenBench_RGB",
        repo_type="dataset",  # Specify repository type
-       cache_dir="__OMNIGENOME_DATA__/datasets/",
+       cache_dir="__OMNIGENBENCH_DATA__/datasets/",
    )
 
 **********************************
@@ -263,7 +263,7 @@ Specify custom file requirements for domain-specific validation:
 
    # Verify specific files present
    is_valid = verify_download_integrity(
-       "__OMNIGENOME_DATA__/models/yangheng--OmniGenome-186M",
+       "__OMNIGENBENCH_DATA__/models/yangheng--OmniGenome-186M",
        required_files=[
            "config.json",
            "pytorch_model.bin",
@@ -371,7 +371,7 @@ Problem: Model Weights Not Loading Correctly
 
    # Check model integrity
    is_valid = verify_download_integrity(
-       "__OMNIGENOME_DATA__/models/yangheng--ogb_tfb_finetuned"
+       "__OMNIGENBENCH_DATA__/models/yangheng--ogb_tfb_finetuned"
    )
    
    if not is_valid:
@@ -398,7 +398,7 @@ Problem: Model Weights Not Loading Correctly
    git lfs install
    
    # Navigate to cached model
-   cd __OMNIGENOME_DATA__/models/yangheng--ogb_tfb_finetuned
+   cd __OMNIGENBENCH_DATA__/models/yangheng--ogb_tfb_finetuned
    
    # Pull actual LFS files
    git lfs pull
@@ -583,7 +583,7 @@ After migration, verify all cached models are valid:
    from omnigenbench.src.utility.model_hub.hf_download import verify_download_integrity
 
    # Scan cache directory
-   cache_dir = Path("__OMNIGENOME_DATA__/models/")
+   cache_dir = Path("__OMNIGENBENCH_DATA__/models/")
    
    for model_dir in cache_dir.iterdir():
        if model_dir.is_dir():
@@ -670,7 +670,7 @@ Practices to Avoid
    .. code-block:: bash
    
       # Clean corrupted Git clone
-      rm -rf __OMNIGENOME_DATA__/models/yangheng--OmniGenome-186M
+      rm -rf __OMNIGENBENCH_DATA__/models/yangheng--OmniGenome-186M
       
       # Re-download with HF Hub API
       python -c "
@@ -719,7 +719,7 @@ API Reference Summary
 Core Functions
 ==============
 
-.. py:function:: download_from_hf_hub(repo_id, cache_dir="__OMNIGENOME_DATA__/models/", force_download=False, repo_type="model", allow_patterns=None, ignore_patterns=None, token=None)
+.. py:function:: download_from_hf_hub(repo_id, cache_dir="__OMNIGENBENCH_DATA__/models/", force_download=False, repo_type="model", allow_patterns=None, ignore_patterns=None, token=None)
 
    Download model or dataset from HuggingFace Hub via HTTPS API.
    

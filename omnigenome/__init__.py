@@ -29,7 +29,7 @@ import warnings
 
 warnings.warn(
     "The 'omnigenome' package is deprecated, please use omnigenbench package instead. "
-    "e.g., from omnigenome import *  ->  from omnigenbench import *\n"
+    "e.g., from omnigenbench import *  ->  from omnigenbench import *\n"
     "All imports from omnigenome will be redirected to omnigenbench. ",
     DeprecationWarning,
 )
@@ -59,6 +59,7 @@ try:
         OmniDatasetForSequenceRegression,
         OmniDatasetForTokenClassification,
         OmniDatasetForTokenRegression,
+        OmniDatasetForMultiLabelClassification,
     )
 
     # Import metric classes
@@ -99,6 +100,15 @@ try:
         OmniModelForAugmentation,
     )
 
+    from omnigenbench.src.model.baselines import (
+        OmniCNNBaseline,
+        OmniRNNBaseline,
+        OmniBPNetBaseline,
+        OmniBasenjiBaseline,
+        OmniDeepSTARRBaseline,
+        OmniGenericBaseline,
+    )
+
     # Import LoRA model
     from omnigenbench.src.lora.lora_model import OmniLoraModel
 
@@ -125,16 +135,26 @@ try:
 
     # Import hub classes
     from omnigenbench.src.utility.model_hub.model_hub import ModelHub
-    from omnigenbench.src.utility.dataset_hub import load_benchmark_datasets
-    from omnigenbench.src.utility.pipeline_hub import Pipeline
+    from omnigenbench.src.utility.dataset_hub.dataset_hub import load_benchmark_datasets
+    from omnigenbench.src.utility.pipeline_hub.pipeline import Pipeline
     from omnigenbench.src.utility.pipeline_hub.pipeline_hub import PipelineHub
 
     # Import module utilities
     from omnigenbench.src.model.module_utils import OmniPooling
-    from omnigenbench.src.utility import VoteEnsemblePredictor
+    from omnigenbench.src.utility.ensemble import VoteEnsemblePredictor
 
     # For backward compatibility version 0.2.7alpha and earlier
     from omnigenbench.auto.config.auto_config import AutoBenchConfig
+
+    # Import explainer classes
+    from omnigenbench.src.explainability.epistasis.explainer import EpistasisExplainer
+    from omnigenbench.src.explainability.sequence_logo.explainer import (
+        SequenceLogoExplainer,
+    )
+    from omnigenbench.src.explainability.visualization_2d.explainer import (
+        Visualization2DExplainer,
+    )
+    from omnigenbench.src.explainability.attention.explainer import AttentionExplainer
 
     # Create backward compatibility aliases
     OmniGenomeTokenizer = OmniTokenizer
@@ -167,6 +187,7 @@ try:
 
     # Define __all__ for explicit exports
     __all__ = [
+        "__version__",
         "load_benchmark_datasets",
         "OmniDataset",
         "OmniModel",
@@ -203,6 +224,44 @@ try:
         "print_args",
         "env_meta_info",
         "RNA2StructureCache",
+        "OmniDatasetForSequenceClassification",
+        "OmniDatasetForSequenceRegression",
+        "OmniDatasetForTokenClassification",
+        "OmniDatasetForTokenRegression",
+        "OmniDatasetForMultiLabelClassification",
+        "OmniTokenizer",
+        "OmniKmersTokenizer",
+        "OmniSingleNucleotideTokenizer",
+        "OmniBPETokenizer",
+        "OmniDataset",
+        "OmniMetric",
+        "OmniModel",
+        "OmniLoraModel",
+        "OmniModelForSequenceClassification",
+        "OmniModelForMultiLabelSequenceClassification",
+        "OmniModelForTokenClassification",
+        "OmniModelForSequenceRegression",
+        "OmniModelForTokenRegression",
+        "OmniModelForStructuralImputation",
+        "OmniModelForMatrixRegression",
+        "OmniModelForMatrixClassification",
+        "OmniModelForMLM",
+        "OmniModelForSeq2Seq",
+        "OmniModelForRNADesign",
+        "OmniModelForEmbedding",
+        "OmniModelForAugmentation",
+        "OmniPooling",
+        "download_benchmark",
+        "download_model",
+        "download_pipeline",
+        "query_models_info",
+        "hub_utils",
+        "OmniCNNBaseline",
+        "OmniRNNBaseline",
+        "OmniBPNetBaseline",
+        "OmniBasenjiBaseline",
+        "OmniDeepSTARRBaseline",
+        "OmniGenericBaseline",
         # OmniGenome* aliases for backward compatibility
         "OmniGenomeTokenizer",
         "OmniGenomeKmersTokenizer",
@@ -234,19 +293,12 @@ try:
         "bench_command",
         "run_train",
         "train_command",
+        "EpistasisExplainer",
+        "SequenceLogoExplainer",
+        "Visualization2DExplainer",
+        "AttentionExplainer",
     ]
 
 except ImportError as e:
-    import warnings
-
-    warnings.warn(
-        f"Failed to import omnigenbench modules: {e}. "
-        "Please ensure omnigenbench is properly installed.\n"
-        "You can install it with: pip install omnigenbench\n"
-        "and replace all 'omnigenome' with 'omnigenbench' in your code.\n"
-        "e.g., from omnigenome import *  ->  from omnigenbench import *",
-        ImportWarning,
-    )
-
     # Minimal fallback to prevent complete failure
     __all__ = []

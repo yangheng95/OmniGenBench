@@ -92,7 +92,7 @@ metrics = trainer.train()
 test_sequence = "AUGCGAUCUCGAGCUACGUCGAUG"
 inputs = tokenizer(test_sequence, return_tensors="pt", max_length=512, truncation=True)
 outputs = model(**inputs)
-prediction = outputs.logits.argmax(dim=-1)
+prediction = outputs['logits'].argmax(dim=-1)
 print(f"Predicted TE: {'High' if prediction == 1 else 'Low'}")
 ```
 

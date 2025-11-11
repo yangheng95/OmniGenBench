@@ -52,7 +52,7 @@ Direct HTTPS downloads using ``huggingface_hub.snapshot_download()``, bypassing 
    # Download entire model repository via HTTPS
    local_path = snapshot_download(
        repo_id="yangheng/OmniGenome-186M",
-       cache_dir="__OMNIGENOME_DATA__/models/",
+       cache_dir="__OMNIGENBENCH_DATA__/models/",
        local_dir_use_symlinks=False,
        resume_download=True,
    )
@@ -202,7 +202,7 @@ Troubleshooting Common Issues
    from omnigenbench.src.utility.model_hub.hf_download import verify_download_integrity
 
    is_valid = verify_download_integrity(
-       "__OMNIGENOME_DATA__/models/yangheng--ogb_tfb_finetuned"
+       "__OMNIGENBENCH_DATA__/models/yangheng--ogb_tfb_finetuned"
    )
    
    if not is_valid:
@@ -521,7 +521,7 @@ Once you have a trained model, running inference is straightforward. There are t
    result = model.inference("ATCGATCGATCG")  # Works when metadata.json is present
    
 .. note::
-   ``ModelHub.load()`` clones models from HuggingFace Hub to local cache (``__OMNIGENOME_DATA__/models/``)
+   ``ModelHub.load()`` clones models from HuggingFace Hub to local cache (``__OMNIGENBENCH_DATA__/models/``)
    on first use, then loads from local files only. It returns a fully-configured task-specific model
    when ``metadata.json`` is present, otherwise returns a standard Transformers model with attached tokenizer.
    

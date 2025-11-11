@@ -207,7 +207,7 @@ outputs = model(**inputs)
 
 # Get binding probabilities
 import torch
-probs = torch.sigmoid(outputs.logits)
+probs = torch.sigmoid(outputs['logits'])
 predicted_labels = (probs > 0.5).int()  # Threshold at 0.5
 
 print(f"Number of predicted binding sites: {predicted_labels.sum().item()}")

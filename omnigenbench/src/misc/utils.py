@@ -17,9 +17,10 @@ import warnings
 import ViennaRNA as RNA
 import findfile
 
-default_omnigenome_repo = (
-    "https://huggingface.co/spaces/yangheng/OmniGenomeLeaderboard/"
-)
+# New unified HuggingFace Hub repository for all OmniGenBench resources
+default_omnigenbench_hub_repo = "https://huggingface.co/datasets/yangheng/OmniGenBench_Hub/"
+
+
 
 
 def seed_everything(seed=42):
@@ -367,7 +368,7 @@ def print_args(config, logger=None):
 
 
 def fprint(*objects, sep=" ", end="\n", file=sys.stdout, flush=False):
-    """
+    r"""
     Enhanced print function with automatic flushing. It provides a print-like interface with automatic flushing
     to ensure output is displayed immediately. It's useful for real-time
     logging and progress tracking.

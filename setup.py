@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# file: setup.py
+# file: setup_omnigenbench.py
 # time: 14:54 06/04/2024
 # author: YANG, HENG <hy345@exeter.ac.uk> (杨恒)
 # github: https://github.com/yangheng95
@@ -35,12 +35,10 @@ extras = {
     ]
 }
 
-# This is the main setup.py - it will build omnigenbench by default
-# Use setup_omnigenome.py and setup_omnigenbench.py for separate builds
 setup(
     name="omnigenbench",
     version=read_version_from_init(),
-    description="OmniGenoBench: A comprehensive toolkit for genome analysis.",
+    description="OmniGenBench: A comprehensive toolkit for genome analysis benchmarking.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/yangheng95/OmniGenBench",
@@ -51,14 +49,12 @@ setup(
     include_package_data=True,
     exclude_package_data={"": [".gitignore"]},
     license="Apache-2.0",
-    packages=find_packages(include=["omnigenbench", "omnigenbench.*", "omnigenome", "omnigenome.*"]),
+    packages=find_packages(include=["omnigenbench", "omnigenbench.*"]),
     entry_points={
         "console_scripts": [
-            "ogb=omnigenbench.cli.ogb_cli:main",
-            # Legacy commands for backward compatibility
             "autobench=omnigenbench.auto.auto_bench.auto_bench_cli:run_bench",
             "autotrain=omnigenbench.auto.auto_train.auto_train_cli:run_train",
-            "autoinfer=omnigenbench.cli.autoinfer_cli:main",
+            "ogb=omnigenbench.cli.ogb_cli:main",
         ],
     },
     install_requires=[
@@ -76,7 +72,6 @@ setup(
         "packaging",
         "peft",
         "dill",
-        "accelerate",
         "plotly",
         "logomaker",
         "matplotlib",

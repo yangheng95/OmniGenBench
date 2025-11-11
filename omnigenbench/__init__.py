@@ -74,7 +74,7 @@ https://omnigenbenchdoc.readthedocs.io/
 """
 
 __name__ = "omnigenbench"
-__version__ = "0.3.28alpha"
+__version__ = "0.4.0alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "Apache-2.0"
@@ -167,6 +167,7 @@ from .src.trainer.accelerate_trainer import AccelerateTrainer
 # Import hub utilities
 from .src.utility.hub_utils import (
     download_benchmark,
+    download_dataset,
     download_model,
     download_pipeline,
     query_models_info,
@@ -225,6 +226,7 @@ OmniGenomeModelForAugmentation = OmniModelForAugmentation
 # ------------------------------------------------------------------------------
 
 __all__ = [
+    "__version__",
     "load_benchmark_datasets",
     "OmniDataset",
     "OmniModel",
@@ -248,6 +250,7 @@ __all__ = [
     "AccelerateTrainer",
     "AutoBenchConfig",
     "download_benchmark",
+    "download_dataset",
     "download_model",
     "download_pipeline",
     "VoteEnsemblePredictor",
@@ -265,6 +268,7 @@ __all__ = [
     "OmniDatasetForSequenceRegression",
     "OmniDatasetForTokenClassification",
     "OmniDatasetForTokenRegression",
+    "OmniDatasetForMultiLabelClassification",
     "OmniTokenizer",
     "OmniKmersTokenizer",
     "OmniSingleNucleotideTokenizer",
@@ -288,6 +292,7 @@ __all__ = [
     "OmniModelForAugmentation",
     "OmniPooling",
     "download_benchmark",
+    "download_dataset",
     "download_model",
     "download_pipeline",
     "query_models_info",

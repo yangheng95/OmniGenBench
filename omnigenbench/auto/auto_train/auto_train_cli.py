@@ -130,8 +130,7 @@ def create_parser() -> argparse.ArgumentParser:
     # Optional arguments
     parser.add_argument(
         "--overwrite",
-        type=bool,
-        default=False,
+        action="store_true",
         help="Overwrite existing training results, otherwise resume from checkpoint.",
     )
     parser.add_argument(

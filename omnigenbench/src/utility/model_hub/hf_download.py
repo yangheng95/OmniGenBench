@@ -38,7 +38,7 @@ from omnigenbench.src.misc.utils import fprint
 
 def download_from_hf_hub(
     repo_id: str,
-    cache_dir: str = "__OMNIGENOME_DATA__/models/",
+    cache_dir: str = "__OMNIGENBENCH_DATA__/models/",
     force_download: bool = False,
     repo_type: str = "model",
     allow_patterns: Optional[Union[str, List[str]]] = None,
@@ -53,7 +53,7 @@ def download_from_hf_hub(
 
     Args:
         repo_id (str): HuggingFace repository identifier (e.g., "yangheng/OmniGenome-186M")
-        cache_dir (str): Local directory to cache downloads. Defaults to "__OMNIGENOME_DATA__/models/"
+        cache_dir (str): Local directory to cache downloads. Defaults to "__OMNIGENBENCH_DATA__/models/"
         force_download (bool): Whether to re-download even if files exist. Defaults to False
         repo_type (str): Type of repository - "model", "dataset", or "space". Defaults to "model"
         allow_patterns (Optional[Union[str, List[str]]]): Patterns to include (e.g., ["*.json", "*.bin"])
@@ -147,7 +147,7 @@ def download_from_hf_hub(
 def download_file_from_hf_hub(
     repo_id: str,
     filename: str,
-    cache_dir: str = "__OMNIGENOME_DATA__/models/",
+    cache_dir: str = "__OMNIGENBENCH_DATA__/models/",
     force_download: bool = False,
     repo_type: str = "model",
     token: Optional[str] = None,
@@ -252,7 +252,7 @@ def verify_download_integrity(
 
     Example:
         >>> is_valid = verify_download_integrity(
-        ...     "__OMNIGENOME_DATA__/models/yangheng--OmniGenome-186M",
+        ...     "__OMNIGENBENCH_DATA__/models/yangheng--OmniGenome-186M",
         ...     required_files=["config.json", "pytorch_model.bin"]
         ... )
     """

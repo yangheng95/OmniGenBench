@@ -159,6 +159,7 @@ model = OmniModelForMultiLabelSequenceClassification(
     config_or_model,
     tokenizer,
     num_labels=919,
+    dataset_class=OmniDatasetForMultiLabelClassification,
 )
 
 # %% [markdown]

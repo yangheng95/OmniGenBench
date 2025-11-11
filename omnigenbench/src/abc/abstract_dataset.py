@@ -212,8 +212,8 @@ class OmniDataset(torch.utils.data.Dataset):
                 - dataset_url (str): URL to download dataset if not found locally.
                   Supports .zip archives that will be automatically extracted.
                 - cache_dir (str): Directory for caching downloaded datasets. Defaults
-                  to "./__OMNIGENOME_DATA__/datasets/".
-                - data_source (str): Alternative parameter name for dataset_name_or_path
+                  to "./__OMNIGENBENCH_DATA__/datasets/".
+                - dataset_name_or_path (str): Alternative parameter name for dataset_name_or_path
                   for backward compatibility.
 
         Raises:
@@ -262,8 +262,8 @@ class OmniDataset(torch.utils.data.Dataset):
             ... )
         """
         super(OmniDataset, self).__init__()
-        if not dataset_name_or_path and kwargs.get("data_source", None):
-            dataset_name_or_path = kwargs.get("data_source", None)
+        if not dataset_name_or_path and kwargs.get("dataset_name_or_path", None):
+            dataset_name_or_path = kwargs.get("dataset_name_or_path", None)
         if not dataset_name_or_path:
             raise ValueError("Please provide dataset_name_or_path")
 
@@ -311,7 +311,7 @@ class OmniDataset(torch.utils.data.Dataset):
         if dataset_name_or_path is not None:
             # Check if dataset needs to be downloaded
             fprint(f"Loading data from {dataset_name_or_path}...")
-            self.load_data_source(dataset_name_or_path, **kwargs)
+            self.load_dataset_name_or_path(dataset_name_or_path, **kwargs)
             # Try to load dataset_info.json from the same directory
             self._load_dataset_info(dataset_name_or_path)
             self._preprocessing()
@@ -447,7 +447,13 @@ class OmniDataset(torch.utils.data.Dataset):
 
         if not is_local:
             # Download from HuggingFace if not a local path
-            cls._download_dataset_from_hub(dataset_name_or_path, cache_dir)
+            from ...src.utility.hub_utils import download_dataset
+            cache_dir = download_dataset(
+                dataset_name_or_path, 
+                cache_dir=cache_dir,
+                use_hf_api=True,
+                force_download=kwargs.get('force_download', False)
+            )
         else:
             fprint(
                 f"Loading dataset from local path: {dataset_name_or_path or cache_dir}"
@@ -469,21 +475,21 @@ class OmniDataset(torch.utils.data.Dataset):
                     # Use default cache directory
                     cache_dir = os.getcwd()
 
-            data_source = findfile.find_files(
+            dataset_name_or_path = findfile.find_files(
                 cache_dir,
                 or_key=keys_to_search[split],
                 exclude_key=[".ipynb", ".py", "md", "txt"],
             )
-            if not data_source:
+            if not dataset_name_or_path:
                 fprint(
                     f"Warning: No data files found for split '{split}' in {cache_dir}. Skipping this split."
                 )
                 continue
             else:
-                fprint(f"Load data files for split '{split}': {data_source}")
+                fprint(f"Load data files for split '{split}': {dataset_name_or_path}")
 
             datasets[split] = cls(
-                dataset_name_or_path=data_source,
+                dataset_name_or_path=dataset_name_or_path,
                 tokenizer=tokenizer,
                 max_length=max_length,
                 split=split,
@@ -1055,12 +1061,12 @@ class OmniDataset(torch.utils.data.Dataset):
 
         return self.dataset_info
 
-    def load_data_source(self, data_source, **kwargs):
+    def load_dataset_name_or_path(self, dataset_name_or_path, **kwargs):
         """
         Loads data from a file or list of files.
 
         Args:
-            data_source (str or list): Path to the data file or a list of paths.
+            dataset_name_or_path (str or list): Path to the data file or a list of paths.
             **kwargs: Additional keyword arguments, e.g., `max_examples`.
 
         Returns:
@@ -1069,42 +1075,45 @@ class OmniDataset(torch.utils.data.Dataset):
         examples = []
         max_examples = kwargs.get("max_examples", None)
         columns = kwargs.get("select_columns", None)
-        if not isinstance(data_source, list):
-            data_source = [data_source]
+        if not isinstance(dataset_name_or_path, list):
+            dataset_name_or_path = [dataset_name_or_path]
 
-        for data_source in data_source:
+        for dataset_name_or_path in dataset_name_or_path:
             _examples = []
 
-            if data_source.endswith(".csv"):
+            if dataset_name_or_path.endswith(".csv"):
                 import pandas as pd
 
-                df = pd.read_csv(data_source, low_memory=False)
+                df = pd.read_csv(dataset_name_or_path, low_memory=False)
                 for i in range(len(df)):
                     _examples.append(df.iloc[i].to_dict())
-            elif data_source.endswith(".json") or data_source.endswith(".jsonl"):
+            elif dataset_name_or_path.endswith(".json") or dataset_name_or_path.endswith(".jsonl"):
                 import json
 
                 try:
-                    with open(data_source, "r", encoding="utf8") as f:
+                    with open(dataset_name_or_path, "r", encoding="utf8") as f:
                         _examples = json.load(f)
                 except:
-                    with open(data_source, "r", encoding="utf8") as f:
+                    with open(dataset_name_or_path, "r", encoding="utf8") as f:
                         lines = f.readlines()  # Assume the data is a list of examples
                     for i in range(len(lines)):
-                        lines[i] = json.loads(lines[i])
+                        try:
+                            lines[i] = json.loads(lines[i])
+                        except:
+                            print(lines[i])
                     for line in lines:
                         _examples.append(line)
-            elif data_source.endswith(".parquet"):
+            elif dataset_name_or_path.endswith(".parquet"):
                 import pandas as pd
 
-                df = pd.read_parquet(data_source)
+                df = pd.read_parquet(dataset_name_or_path)
                 for i in range(len(df)):
                     _examples.append(df.iloc[i].to_dict())
-            elif data_source.endswith(".npy") or data_source.endswith(".npz"):
+            elif dataset_name_or_path.endswith(".npy") or dataset_name_or_path.endswith(".npz"):
                 import numpy as np
 
-                if data_source.endswith(".npy"):
-                    data = np.load(data_source, allow_pickle=True)
+                if dataset_name_or_path.endswith(".npy"):
+                    data = np.load(dataset_name_or_path, allow_pickle=True)
                     if isinstance(data, np.ndarray):
                         for item in data:
                             _examples.append(
@@ -1118,8 +1127,8 @@ class OmniDataset(torch.utils.data.Dataset):
                             "Unexpected data format in .npy file, expected an array of dictionaries. e.g.,"
                             " [{'sequence': 'ATCG', 'label': 1}, ...]"
                         )
-                elif data_source.endswith(".npz"):
-                    data = np.load(data_source, allow_pickle=True)
+                elif dataset_name_or_path.endswith(".npz"):
+                    data = np.load(dataset_name_or_path, allow_pickle=True)
                     for key in data.files:
                         item = data[key]
                         if isinstance(item, np.ndarray):
@@ -1135,7 +1144,7 @@ class OmniDataset(torch.utils.data.Dataset):
                                 "Unexpected data format in .npz file, expected an array of dictionaries. e.g.,"
                                 " [{'sequence': 'ATCG', 'label': 1}, ...]"
                             )
-            elif data_source.endswith(
+            elif dataset_name_or_path.endswith(
                 (".fasta", ".fa", ".fna", ".ffn", ".faa", ".frn")
             ):
                 try:
@@ -1145,7 +1154,7 @@ class OmniDataset(torch.utils.data.Dataset):
                         "Biopython is required for FASTA file parsing. "
                         "Please install it with: pip install biopython"
                     ) from e
-                for record in SeqIO.parse(data_source, "fasta"):
+                for record in SeqIO.parse(dataset_name_or_path, "fasta"):
                     _examples.append(
                         {
                             "id": record.id,
@@ -1153,7 +1162,7 @@ class OmniDataset(torch.utils.data.Dataset):
                             "description": record.description,
                         }
                     )
-            elif data_source.endswith((".fastq", ".fq")):
+            elif dataset_name_or_path.endswith((".fastq", ".fq")):
                 try:
                     from Bio import SeqIO
                 except ImportError as e:
@@ -1161,7 +1170,7 @@ class OmniDataset(torch.utils.data.Dataset):
                         "Biopython is required for FASTQ file parsing. "
                         "Please install it with: pip install biopython"
                     ) from e
-                for record in SeqIO.parse(data_source, "fastq"):
+                for record in SeqIO.parse(dataset_name_or_path, "fastq"):
                     _examples.append(
                         {
                             "id": record.id,
@@ -1171,10 +1180,10 @@ class OmniDataset(torch.utils.data.Dataset):
                             ),
                         }
                     )
-            elif data_source.endswith(".bed"):
+            elif dataset_name_or_path.endswith(".bed"):
                 import pandas as pd
 
-                df = pd.read_csv(data_source, sep="\t", comment="#")
+                df = pd.read_csv(dataset_name_or_path, sep="\t", comment="#")
                 for i in range(len(df)):
                     _examples.append(df.iloc[i].to_dict())
 
@@ -1193,7 +1202,7 @@ class OmniDataset(torch.utils.data.Dataset):
             del _examples
 
             fprint(
-                f"Reading from {data_source}, Loaded {len(examples)} examples so far..."
+                f"Reading from {dataset_name_or_path}, Loaded {len(examples)} examples so far..."
             )
 
         if self.shuffle is True:
@@ -1227,45 +1236,25 @@ class OmniDataset(torch.utils.data.Dataset):
         """
         Downloads and extracts datasets from OmniGenBench Hub powered by HuggingFace.
 
-        This method supports downloading datasets from the OmniGenBench Hub on HuggingFace.
+        .. deprecated:: 0.3.23
+            Use ``omnigenbench.src.utility.hub_utils.download_dataset`` instead. 
+            This method will be removed in version 0.4.0.
 
         Args:
             dataset_name (str): Name of the dataset to download.
             local_dir (str, optional): Directory to save the dataset. If None, saves to default location.
+
+        Returns:
+            str: Path to the downloaded dataset directory.
         """
-        if local_dir is None:
-            local_dir = os.path.join(
-                os.getcwd(), f"__OMNIGENOME_DATA__/datasets/{dataset_name}"
-            )
-        else:
-            local_dir = os.path.abspath(local_dir)
-
-        url_to_download = f"https://huggingface.co/datasets/yangheng/OmniGenBench_Hub/resolve/main/{dataset_name}.zip"
-        zip_path = os.path.join(local_dir, f"{dataset_name}.zip")
-
-        if not os.path.exists(local_dir):
-            if not os.path.exists(local_dir):
-                os.makedirs(local_dir, exist_ok=True)
-
-            fprint(f"Downloading dataset from {url_to_download}...")
-            response = requests.get(url_to_download, stream=True)
-            response.raise_for_status()
-
-            with open(zip_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            fprint(f"Downloaded {zip_path}")
-
-        # Unzip the dataset
-        if os.path.exists(zip_path):
-            with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                zip_ref.extractall(local_dir)
-            os.remove(zip_path)
-        else:
-            fprint(
-                f"Dataset already downloaded and extracted at {local_dir}."
-                f"If you want to re-download, please delete the existing directory."
-            )
+        warnings.warn(
+            "_download_dataset_from_hub() is deprecated. "
+            "Use omnigenbench.src.utility.hub_utils.download_dataset() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        from ...src.utility.hub_utils import download_dataset
+        return download_dataset(dataset_name, cache_dir=local_dir, use_hf_api=True)
 
     @staticmethod
     def _download_dataset_from_huggingface(dataset_name, local_dir=None):
@@ -1273,19 +1262,24 @@ class OmniDataset(torch.utils.data.Dataset):
         Downloads and extracts datasets from OmniGenBench Hub powered by HuggingFace.
 
         .. deprecated:: 0.3.0
-            Use `_download_dataset_from_hub` instead. This method will be removed in version 0.4.0.
+            Use ``omnigenbench.src.utility.hub_utils.download_dataset`` instead. 
+            This method will be removed in version 0.4.0.
 
         Args:
             dataset_name (str): Name of the dataset to download.
             local_dir (str, optional): Directory to save the dataset. If None, saves to default location.
+
+        Returns:
+            str: Path to the downloaded dataset directory.
         """
         warnings.warn(
             "_download_dataset_from_huggingface() is deprecated. "
-            "Use _download_dataset_from_hub() instead.",
+            "Use omnigenbench.src.utility.hub_utils.download_dataset() instead.",
             DeprecationWarning,
             stacklevel=2,
         )
-        return OmniDataset._download_dataset_from_hub(dataset_name, local_dir)
+        from ...src.utility.hub_utils import download_dataset
+        return download_dataset(dataset_name, cache_dir=local_dir, use_hf_api=True)
 
     def _preprocessing(self):
         """

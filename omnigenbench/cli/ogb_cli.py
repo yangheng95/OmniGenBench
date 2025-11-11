@@ -106,12 +106,14 @@ Examples:
 
     train_parser.add_argument(
         "--dataset",
+        "-d",
         type=str,
         required=True,
         help="Name or path of the dataset to train on",
     )
     train_parser.add_argument(
         "--model",
+        "-m",
         type=str,
         required=True,
         help="Name or path of the pre-trained model to fine-tune",
@@ -401,7 +403,7 @@ def run_autobench(args):
 
     # Convert args namespace to list format expected by bench_command
     cmd_args = [
-        "--config_or_model",
+        "--model",
         args.model,
         "--benchmark",
         args.benchmark,

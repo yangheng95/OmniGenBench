@@ -19,16 +19,46 @@ These tests cover:
 
 import pytest
 import json
+import os
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 
-from omnigenbench import AutoBench, AutoTrain
+from omnigenbench import AutoBench, AutoTrain, download_benchmark
+from findfile import find_files, find_dir, find_file
 
 
 @pytest.fixture
 def benchmark_names():
     """Available benchmark datasets"""
     return ["RGB", "BEACON", "GUE", "PGB", "GB"]
+
+
+@pytest.fixture(scope="session")
+def download_benchmarks():
+    """
+    Download all benchmarks before running tests.
+    This ensures benchmark data is available for testing.
+    """
+    benchmark_list = ["RGB", "BEACON", "GUE", "PGB", "GB"]
+    downloaded_paths = {}
+    
+    for benchmark in benchmark_list:
+        try:
+            path = download_benchmark(benchmark)
+            
+            # Verify the benchmark has metadata.py
+            metadata_path = find_file(path, "metadata.py")
+            if metadata_path:
+                downloaded_paths[benchmark] = path
+                print(f"[SUCCESS] Downloaded benchmark: {benchmark} to {path}")
+            else:
+                print(f"[WARNING] Benchmark {benchmark} found at {path} but missing metadata.py")
+                downloaded_paths[benchmark] = None
+        except Exception as e:
+            print(f"[ERROR] Failed to download benchmark {benchmark}: {e}")
+            downloaded_paths[benchmark] = None
+    
+    return downloaded_paths
 
 
 @pytest.fixture
@@ -55,7 +85,7 @@ class TestAutoBenchAPI:
     Based on examples/autobench_gfm_evaluation/ usage patterns.
     """
     
-    def test_autobench_initialization(self):
+    def test_autobench_initialization(self, download_benchmarks):
         """Test AutoBench can be initialized"""
         # Basic initialization
         bench = AutoBench(
@@ -67,16 +97,20 @@ class TestAutoBenchAPI:
         assert bench is not None
         assert hasattr(bench, "run")
     
-    def test_autobench_with_different_benchmarks(self, benchmark_names):
+    def test_autobench_with_different_benchmarks(self, benchmark_names, download_benchmarks):
         """Test AutoBench accepts different benchmark names"""
         for benchmark in benchmark_names:
+            # Skip if benchmark was not downloaded successfully
+            if download_benchmarks.get(benchmark) is None:
+                pytest.skip(f"Benchmark {benchmark} not available")
+                
             bench = AutoBench(
                 benchmark=benchmark,
                 config_or_model="yangheng/OmniGenome-186M",
             )
             assert bench is not None
     
-    def test_autobench_configuration_options(self):
+    def test_autobench_configuration_options(self, download_benchmarks):
         """Test AutoBench accepts various configuration options"""
         bench = AutoBench(
             benchmark="RGB",
@@ -90,7 +124,7 @@ class TestAutoBenchAPI:
     
     @pytest.mark.slow
     @pytest.mark.integration
-    def test_autobench_run_basic(self):
+    def test_autobench_run_basic(self, download_benchmarks):
         """
         Test AutoBench.run() with minimal configuration.
         This is a slow test that actually runs benchmarking.
@@ -117,7 +151,7 @@ class TestAutoBenchAPI:
             # Benchmark may fail due to missing data or resources
             pytest.skip(f"Benchmark execution failed: {e}")
     
-    def test_autobench_multi_seed_config(self):
+    def test_autobench_multi_seed_config(self, download_benchmarks):
         """Test AutoBench supports multi-seed evaluation"""
         bench = AutoBench(
             benchmark="RGB",
@@ -146,19 +180,19 @@ class TestAutoTrainAPI:
     def test_autotrain_initialization(self):
         """Test AutoTrain can be initialized"""
         trainer = AutoTrain(
-            dataset_name_or_path="translation_efficiency_prediction",
+            dataset="translation_efficiency_prediction",
             config_or_model="yangheng/PlantRNA-FM",
         )
         
         assert trainer is not None
-        assert hasattr(trainer, "train")
+        assert hasattr(trainer, "run")  # AutoTrain uses run(), not train()
     
     def test_autotrain_with_custom_config(self, tmp_path):
         """Test AutoTrain accepts custom training configuration"""
         output_dir = tmp_path / "trained_model"
         
         trainer = AutoTrain(
-            dataset_name_or_path="translation_efficiency_prediction",
+            dataset="translation_efficiency_prediction",
             config_or_model="yangheng/PlantRNA-FM",
             output_dir=str(output_dir),
             num_labels=2,
@@ -187,7 +221,7 @@ class TestAutoTrainAPI:
         
         for config in task_configs:
             trainer = AutoTrain(
-                dataset_name_or_path=config["dataset"],
+                dataset=config["dataset"],
                 config_or_model="yangheng/OmniGenome-52M",
                 num_labels=config["num_labels"],
             )
@@ -203,7 +237,7 @@ class TestAutoTrainAPI:
         output_dir = tmp_path / "trained_model"
         
         trainer = AutoTrain(
-            dataset_name_or_path="translation_efficiency_prediction",
+            dataset="translation_efficiency_prediction",
             config_or_model="yangheng/PlantRNA-FM",
             output_dir=str(output_dir),
             epochs=1,
@@ -293,12 +327,12 @@ class TestBenchmarkMetrics:
         
         metric = ClassificationMetric()
         
-        # Standard classification metrics
-        assert hasattr(metric, "accuracy")
-        assert hasattr(metric, "f1")
-        assert hasattr(metric, "precision")
-        assert hasattr(metric, "recall")
-        assert hasattr(metric, "roc_auc")
+        # Standard classification metrics (use sklearn names)
+        assert hasattr(metric, "accuracy_score")
+        assert hasattr(metric, "f1_score")
+        assert hasattr(metric, "precision_score")
+        assert hasattr(metric, "recall_score")
+        assert hasattr(metric, "roc_auc_score")
     
     def test_metric_computation_interface(self):
         """Test metric computation interface"""
@@ -311,8 +345,8 @@ class TestBenchmarkMetrics:
         predictions = np.array([0, 1, 0, 1])
         labels = np.array([0, 1, 1, 1])
         
-        # Metrics should be callable
-        assert callable(metric.accuracy)
+        # Metrics should be callable (use sklearn names)
+        assert callable(metric.accuracy_score)
         
         # Note: Actual computation tested in metric-specific tests
     
@@ -355,7 +389,7 @@ class TestBenchmarkDatasets:
         
         # Verify class exists and has from_hub method
         assert hasattr(OmniDatasetForSequenceClassification, "from_hub")
-        assert hasattr(OmniDatasetForSequenceClassification, "from_files")
+        # Note: Dataset uses from_hub for both HF Hub and local files
     
     def test_benchmark_split_structure(self):
         """Test benchmark datasets have standard splits"""
@@ -386,7 +420,7 @@ class TestAutoWorkflowIntegration:
         
         # Step 1: Train a custom model
         trainer = AutoTrain(
-            dataset_name_or_path="translation_efficiency_prediction",
+            dataset="translation_efficiency_prediction",
             config_or_model="yangheng/PlantRNA-FM",
             output_dir=str(output_dir),
             epochs=1,
