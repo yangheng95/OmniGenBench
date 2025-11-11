@@ -257,13 +257,16 @@ class TestCLIArgumentConsistency:
         bench_actions = {action.dest: action for action in bench_parser._actions}
         if 'overwrite' in bench_actions:
             # Should use store_true, not type=bool
-            assert bench_actions['overwrite'].action == 'store_true'
+            # For _StoreTrueAction, check the class name instead of .action attribute
+            action_type = type(bench_actions['overwrite']).__name__
+            assert action_type == '_StoreTrueAction', f"Expected _StoreTrueAction, got {action_type}"
         
         # Check autotrain
         train_parser = ogb_cli.create_autotrain_parser(subparsers)
         train_actions = {action.dest: action for action in train_parser._actions}
         if 'overwrite' in train_actions:
-            assert train_actions['overwrite'].action == 'store_true'
+            action_type = type(train_actions['overwrite']).__name__
+            assert action_type == '_StoreTrueAction', f"Expected _StoreTrueAction, got {action_type}"
 
 
 if __name__ == "__main__":
