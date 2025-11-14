@@ -87,14 +87,16 @@ class AutoTrain:
             >>> trainer = AutoTrain("/path/to/dataset", "yangheng/OmniGenome-186M")
 
             >>> # Initialize with a HuggingFace Hub dataset name (auto-downloads)
-            >>> trainer = AutoTrain("translation_efficiency_prediction", 
+            >>> trainer = AutoTrain("translation_efficiency_prediction",
             ...                     "yangheng/OmniGenome-186M")
 
             >>> # Initialize with custom settings
             >>> trainer = AutoTrain("dataset_name", "model_name",
             ...                     autocast="bf16", trainer="accelerate")
         """
-        self.dataset_name_or_path = dataset.rstrip("/") if isinstance(dataset, str) else dataset
+        self.dataset_name_or_path = (
+            dataset.rstrip("/") if isinstance(dataset, str) else dataset
+        )
         self.autocast = kwargs.pop("autocast", "fp16")
         self.overwrite = kwargs.pop("overwrite", False)
         self.trainer = kwargs.pop("trainer", "accelerate")
@@ -102,22 +104,21 @@ class AutoTrain:
 
         # Check if dataset is a hub name or local path
         self.is_hub_dataset = not os.path.exists(self.dataset_name_or_path)
-        
+
         if self.is_hub_dataset:
             fprint(f"Detected HuggingFace Hub dataset: {self.dataset_name_or_path}")
             fprint("Downloading dataset from hub...")
-            
+
             # Download dataset from hub
             if self.cache_dir is None:
                 self.cache_dir = os.path.join(
-                    os.getcwd(), 
-                    f"__OMNIGENBENCH_DATA__/datasets/{self.dataset_name_or_path}"
+                    os.getcwd(),
+                    f"__OMNIGENBENCH_DATA__/datasets/{self.dataset_name_or_path}",
                 )
-            
+
             # Use OmniDataset's download method
             OmniDataset._download_dataset_from_hub(
-                self.dataset_name_or_path, 
-                self.cache_dir
+                self.dataset_name_or_path, self.cache_dir
             )
             self.dataset = self.cache_dir
             fprint(f"Dataset downloaded to: {self.dataset}")
@@ -136,7 +137,7 @@ class AutoTrain:
             self.tokenizer = tokenizer.rstrip("/")
         os.makedirs(autotrain_evaluations, exist_ok=True)
         time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-        
+
         # Use dataset name for mv_name (not full path)
         dataset_name = os.path.basename(self.dataset_name_or_path)
         mv_name = f"{dataset_name}-{self.model_name}"
@@ -183,7 +184,7 @@ class AutoTrain:
         Args:
             **kwargs: Additional keyword arguments that will override the default
                      parameters in the dataset configuration.
-                     
+
                      Special kwargs:
                      - config (AutoConfig): Provide a pre-loaded config instead of
                        auto-loading from the dataset directory.
@@ -192,10 +193,10 @@ class AutoTrain:
             >>> # Run training with default settings (auto-loads config)
             >>> trainer = AutoTrain("translation_efficiency_prediction", "yangheng/OmniGenome-186M")
             >>> trainer.run()
-            
+
             >>> # Run with custom parameters
             >>> trainer.run(learning_rate=1e-4, batch_size=16)
-            
+
             >>> # Run with custom config
             >>> custom_config = AutoConfig.from_hub("my_dataset")
             >>> trainer.run(config=custom_config)
@@ -204,7 +205,7 @@ class AutoTrain:
         clean_temp_checkpoint(1)  # clean temp checkpoint older than 1 day
 
         _kwargs = kwargs.copy()
-        
+
         # Check if config is provided directly
         if "config" in _kwargs:
             train_config = _kwargs.pop("config")
@@ -215,41 +216,43 @@ class AutoTrain:
             # Try to load config from dataset directory
             try:
                 fprint(f"Loading config from dataset directory: {self.dataset}")
-                
+
                 # Search for config.py file
                 train_config_path = findfile.find_file(
                     self.dataset,
                     ["config", ".py"],
                 )
-                
+
                 if not train_config_path:
                     raise FileNotFoundError(
                         f"Could not find config.py in {self.dataset}"
                     )
-                
+
                 fprint(f"Found config file: {train_config_path}")
-                
+
                 # Load the config module
                 config = load_module_from_path("config", train_config_path)
                 train_config = None
-                
+
                 # Find AutoConfig instance in the module
                 for attr_name in dir(config):
                     attr = getattr(config, attr_name)
                     if isinstance(attr, AutoConfig):
                         train_config = attr
                         break
-                
+
                 if train_config is None:
                     raise ValueError(
                         f"Could not find AutoConfig instance in {train_config_path}"
                     )
-                    
+
                 fprint(f"Loaded config for {self.dataset} from {train_config_path}")
-                
+
             except Exception as e:
                 fprint(f"Warning: Failed to load config from dataset: {e}")
-                fprint("You may need to provide a config manually or ensure the dataset contains a valid config.py file")
+                fprint(
+                    "You may need to provide a config manually or ensure the dataset contains a valid config.py file"
+                )
                 raise
 
         fprint(train_config.args)

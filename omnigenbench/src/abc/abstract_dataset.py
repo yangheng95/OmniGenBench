@@ -448,11 +448,12 @@ class OmniDataset(torch.utils.data.Dataset):
         if not is_local:
             # Download from HuggingFace if not a local path
             from ...src.utility.hub_utils import download_dataset
+
             cache_dir = download_dataset(
-                dataset_name_or_path, 
+                dataset_name_or_path,
                 cache_dir=cache_dir,
                 use_hf_api=True,
-                force_download=kwargs.get('force_download', False)
+                force_download=kwargs.get("force_download", False),
             )
         else:
             fprint(
@@ -1087,7 +1088,9 @@ class OmniDataset(torch.utils.data.Dataset):
                 df = pd.read_csv(dataset_name_or_path, low_memory=False)
                 for i in range(len(df)):
                     _examples.append(df.iloc[i].to_dict())
-            elif dataset_name_or_path.endswith(".json") or dataset_name_or_path.endswith(".jsonl"):
+            elif dataset_name_or_path.endswith(
+                ".json"
+            ) or dataset_name_or_path.endswith(".jsonl"):
                 import json
 
                 try:
@@ -1109,7 +1112,9 @@ class OmniDataset(torch.utils.data.Dataset):
                 df = pd.read_parquet(dataset_name_or_path)
                 for i in range(len(df)):
                     _examples.append(df.iloc[i].to_dict())
-            elif dataset_name_or_path.endswith(".npy") or dataset_name_or_path.endswith(".npz"):
+            elif dataset_name_or_path.endswith(".npy") or dataset_name_or_path.endswith(
+                ".npz"
+            ):
                 import numpy as np
 
                 if dataset_name_or_path.endswith(".npy"):
@@ -1237,7 +1242,7 @@ class OmniDataset(torch.utils.data.Dataset):
         Downloads and extracts datasets from OmniGenBench Hub powered by HuggingFace.
 
         .. deprecated:: 0.3.23
-            Use ``omnigenbench.src.utility.hub_utils.download_dataset`` instead. 
+            Use ``omnigenbench.src.utility.hub_utils.download_dataset`` instead.
             This method will be removed in version 0.4.0.
 
         Args:
@@ -1254,6 +1259,7 @@ class OmniDataset(torch.utils.data.Dataset):
             stacklevel=2,
         )
         from ...src.utility.hub_utils import download_dataset
+
         return download_dataset(dataset_name, cache_dir=local_dir, use_hf_api=True)
 
     @staticmethod
@@ -1262,7 +1268,7 @@ class OmniDataset(torch.utils.data.Dataset):
         Downloads and extracts datasets from OmniGenBench Hub powered by HuggingFace.
 
         .. deprecated:: 0.3.0
-            Use ``omnigenbench.src.utility.hub_utils.download_dataset`` instead. 
+            Use ``omnigenbench.src.utility.hub_utils.download_dataset`` instead.
             This method will be removed in version 0.4.0.
 
         Args:
@@ -1279,6 +1285,7 @@ class OmniDataset(torch.utils.data.Dataset):
             stacklevel=2,
         )
         from ...src.utility.hub_utils import download_dataset
+
         return download_dataset(dataset_name, cache_dir=local_dir, use_hf_api=True)
 
     def _preprocessing(self):

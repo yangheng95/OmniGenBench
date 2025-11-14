@@ -18,9 +18,9 @@ import ViennaRNA as RNA
 import findfile
 
 # New unified HuggingFace Hub repository for all OmniGenBench resources
-default_omnigenbench_hub_repo = "https://huggingface.co/datasets/yangheng/OmniGenBench_Hub/"
-
-
+default_omnigenbench_hub_repo = (
+    "https://huggingface.co/datasets/yangheng/OmniGenBench_Hub/"
+)
 
 
 def seed_everything(seed=42):

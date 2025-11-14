@@ -320,6 +320,46 @@ def clone_hf_model(
         )
 
 
+def _synchronize_config_with_checkpoint(config, state_dict):
+    """
+    Align config fields with the actual checkpoint tensor shapes.
+
+    Some training scripts mutate the transformer architecture (e.g., GLU width)
+    without updating ``config.json`` before saving. When we later reconstruct
+    the model purely from the config we end up with inconsistent layer shapes
+    and the checkpoint refuses to load. This helper inspects representative
+    weight matrices and overrides the config so the instantiated base model
+    matches the saved tensors.
+    """
+
+    try:
+        # Feed-forward output projection encodes the effective intermediate size.
+        ff_key = "model.encoder.layer.0.output.dense.weight"
+        if hasattr(config, "intermediate_size") and ff_key in state_dict:
+            checkpoint_size = state_dict[ff_key].shape[1]
+            if checkpoint_size != config.intermediate_size:
+                fprint(
+                    "Detected mismatch between config.intermediate_size "
+                    f"({config.intermediate_size}) and checkpoint ({checkpoint_size}). "
+                    "Overriding config to match checkpoint."
+                )
+                config.intermediate_size = checkpoint_size
+
+        # Embedding matrix encodes the actual vocab size.
+        embed_key = "model.embeddings.word_embeddings.weight"
+        if hasattr(config, "vocab_size") and embed_key in state_dict:
+            checkpoint_vocab = state_dict[embed_key].shape[0]
+            if checkpoint_vocab != config.vocab_size:
+                fprint(
+                    "Detected mismatch between config.vocab_size "
+                    f"({config.vocab_size}) and checkpoint ({checkpoint_vocab}). "
+                    "Overriding config to match checkpoint."
+                )
+                config.vocab_size = checkpoint_vocab
+    except Exception as exc:  # pragma: no cover - telemetry only
+        fprint(f"Warning: Failed to reconcile config with checkpoint: {exc}")
+
+
 class ModelHub:
     """
     Centralized hub for loading and managing pre-trained genomic foundation models.
@@ -626,9 +666,78 @@ class ModelHub:
 
             # If we successfully loaded the model class, instantiate it
             if model_cls is not None:
-                base_model = AutoModel.from_config(
-                    config, trust_remote_code=True, **kwargs
-                )
+                state_dict = None
+                state_dict_path = os.path.join(path, "pytorch_model.bin")
+                safetensors_path = os.path.join(path, "model.safetensors")
+
+                try:
+                    if os.path.exists(state_dict_path):
+                        fprint(f"Reading checkpoint tensors from: {state_dict_path}")
+                        state_dict = torch.load(state_dict_path, map_location="cpu")
+                    elif os.path.exists(safetensors_path):
+                        fprint(
+                            f"Reading checkpoint tensors from safetensors: {safetensors_path}"
+                        )
+                        from safetensors.torch import load_file
+
+                        state_dict = load_file(safetensors_path)
+                    else:
+                        fprint(
+                            "Warning: No pytorch_model.bin or model.safetensors found"
+                        )
+                except Exception as exc:
+                    fprint(f"Warning: Could not read checkpoint tensors: {exc}")
+
+                if state_dict is not None:
+                    _synchronize_config_with_checkpoint(config, state_dict)
+
+                architecture_cls = None
+                if getattr(config, "architectures", None):
+                    architecture_cls = config.architectures[0]
+
+                base_model = None
+                module_candidates = []
+                auto_map = getattr(config, "auto_map", {}) or {}
+                for target in auto_map.values():
+                    if isinstance(target, str) and "." in target:
+                        module_candidates.append(target.split(".")[0])
+
+                # Preserve order but drop duplicates
+                seen = set()
+                module_candidates = [
+                    m for m in module_candidates if not (m in seen or seen.add(m))
+                ]
+
+                for module_name in module_candidates:
+                    candidate_file = os.path.join(path, f"{module_name}.py")
+                    if not os.path.exists(candidate_file):
+                        continue
+                    if architecture_cls is None:
+                        continue
+                    try:
+                        spec = importlib.util.spec_from_file_location(
+                            module_name, candidate_file
+                        )
+                        module = importlib.util.module_from_spec(spec)
+                        sys.modules[module_name] = module
+                        spec.loader.exec_module(module)
+                        if hasattr(module, architecture_cls):
+                            base_model_cls = getattr(module, architecture_cls)
+                            base_model = base_model_cls(config)
+                            fprint(
+                                f"Instantiated base architecture {architecture_cls} "
+                                f"from local module {module_name}.py"
+                            )
+                            break
+                    except Exception as exc:
+                        fprint(
+                            f"Warning: Failed to instantiate {architecture_cls} from {module_name}.py: {exc}"
+                        )
+
+                if base_model is None:
+                    base_model = AutoModel.from_config(
+                        config, trust_remote_code=True, **kwargs
+                    )
 
                 # Prepare initialization parameters
                 init_kwargs = {
@@ -643,38 +752,19 @@ class ModelHub:
                 # Merge with user-provided kwargs
                 init_kwargs.update(kwargs)
 
+                # Initialize the OmniModel subclass directly from the in-memory base model
+                # to avoid re-loading checkpoints with potentially incompatible HF versions.
                 model = model_cls(
                     base_model,
                     tokenizer,
                     **init_kwargs,
                 )
 
-                # Load state dict from local files
-                state_dict_path = os.path.join(path, "pytorch_model.bin")
-                safetensors_path = os.path.join(path, "model.safetensors")
-
-                try:
-                    if os.path.exists(state_dict_path):
-                        fprint(f"Loading state dict from: {state_dict_path}")
-                        with open(state_dict_path, "rb") as f:
-                            model.load_state_dict(
-                                torch.load(f, map_location=kwargs.get("device", "cpu")),
-                                strict=False,
-                            )
-                    elif os.path.exists(safetensors_path):
-                        fprint(
-                            f"Loading state dict from safetensors: {safetensors_path}"
-                        )
-                        from safetensors.torch import load_file
-
-                        state_dict = load_file(safetensors_path)
+                if state_dict is not None:
+                    try:
                         model.load_state_dict(state_dict, strict=False)
-                    else:
-                        fprint(
-                            "Warning: No pytorch_model.bin or model.safetensors found"
-                        )
-                except Exception as e:
-                    fprint(f"Warning: Could not load state dict: {e}")
+                    except Exception as exc:
+                        fprint(f"Warning: Could not load state dict: {exc}")
             else:
                 # Fallback to standard Transformers model
                 fprint(
@@ -703,6 +793,12 @@ class ModelHub:
             # Wrap with GenericOmniModelWrapper to provide inference interface
             model = GenericOmniModelWrapper(base_model, tokenizer)
             model.tokenizer = tokenizer
+
+        if isinstance(dtype, str):
+            torch_dtype = getattr(torch, dtype, None)
+            if torch_dtype is None:
+                raise ValueError(f"Unsupported dtype string '{dtype}'.")
+            dtype = torch_dtype
 
         model.to(dtype)
         if device is None:

@@ -125,7 +125,9 @@ class AutoBench:
             >>> bench = AutoBench("RGB", "model_name",
             ...                   autocast="bf16", trainer="accelerate")
         """
-        self.benchmark_name_or_path = benchmark.rstrip("/") if isinstance(benchmark, str) else benchmark
+        self.benchmark_name_or_path = (
+            benchmark.rstrip("/") if isinstance(benchmark, str) else benchmark
+        )
         self.autocast = kwargs.pop("autocast", "fp16")
         self.overwrite = kwargs.pop("overwrite", False)
         self.trainer = kwargs.pop("trainer", "native")
@@ -133,11 +135,11 @@ class AutoBench:
 
         # Check if benchmark is a hub name or local path
         self.is_hub_benchmark = not os.path.exists(self.benchmark_name_or_path)
-        
+
         if self.is_hub_benchmark:
             fprint(f"Detected HuggingFace Hub benchmark: {self.benchmark_name_or_path}")
             fprint("Downloading benchmark from hub...")
-            
+
             # Download benchmark from hub using the unified download logic
             self.benchmark = download_benchmark(
                 self.benchmark_name_or_path,
@@ -145,7 +147,9 @@ class AutoBench:
                 use_hf_api=True,  # Use robust HF Hub API
                 force_download=self.overwrite,
             )
-            self.benchmark = os.path.dirname(findfile.find_file(self.benchmark, "metadata.py"))
+            self.benchmark = os.path.dirname(
+                findfile.find_file(self.benchmark, "metadata.py")
+            )
             fprint(f"Benchmark downloaded to: {self.benchmark}")
         else:
             self.benchmark = self.benchmark_name_or_path
@@ -160,10 +164,10 @@ class AutoBench:
             self.model_name = config_or_model.__class__.__name__
         if isinstance(tokenizer, str):
             self.tokenizer = tokenizer.rstrip("/")
-            
+
         os.makedirs("./autobench_evaluations", exist_ok=True)
         time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-        
+
         # Use benchmark name for mv_name (not full path)
         benchmark_name = os.path.basename(self.benchmark_name_or_path)
         mv_name = f"{benchmark_name}-{self.model_name}"

@@ -153,7 +153,9 @@ def query_pipelines_info(
                 with open("./pipelines_info.json", "r", encoding="utf8") as f:
                     pipelines_info = json.load(f)
             except FileNotFoundError:
-                raise FileNotFoundError("pipelines_info.json not found in local cache and download failed.")
+                raise FileNotFoundError(
+                    "pipelines_info.json not found in local cache and download failed."
+                )
 
     if isinstance(keyword, str):
         filtered_pipelines_info = {}
@@ -210,7 +212,9 @@ def query_benchmarks_info(
                 with open("./benchmarks_info.json", "r", encoding="utf8") as f:
                     benchmarks_info = json.load(f)
             except FileNotFoundError:
-                raise FileNotFoundError("benchmarks_info.json not found in local cache and download failed.")
+                raise FileNotFoundError(
+                    "benchmarks_info.json not found in local cache and download failed."
+                )
 
     if isinstance(keyword, str):
         filtered_benchmarks_info = {}
@@ -294,16 +298,16 @@ def download_model(
             # Download from OmniGenBench Hub
             hub_repo = default_omnigenbench_hub_repo + "resolve/main/"
             model_url = f'{hub_repo}models/{model_info["filename"]}'
-            
+
             fprint(f"Downloading model from OmniGenBench Hub: {model_url}")
             response = requests.get(model_url, stream=True)
             response.raise_for_status()
             cache_path = os.path.join(cache_dir, f"{model_info['filename']}")
-            
+
             # Get content length with fallback
             total_size = int(response.headers.get("content-length", 0))
             total_mb = total_size // 1024 // 1024 if total_size > 0 else None
-            
+
             with open(cache_path, "wb") as f:
                 for chunk in tqdm.tqdm(
                     response.iter_content(chunk_size=1024 * 1024),
@@ -387,16 +391,16 @@ def download_pipeline(
             # Download from OmniGenBench Hub
             hub_repo = default_omnigenbench_hub_repo + "resolve/main/"
             pipeline_url = f'{hub_repo}pipelines/{pipeline_info["filename"]}'
-            
+
             fprint(f"Downloading pipeline from OmniGenBench Hub: {pipeline_url}")
             response = requests.get(pipeline_url, stream=True)
             response.raise_for_status()
             cache_path = os.path.join(cache_dir, f"{pipeline_info['filename']}")
-            
+
             # Get content length with fallback
             total_size = int(response.headers.get("content-length", 0))
             total_mb = total_size // 1024 // 1024 if total_size > 0 else None
-            
+
             with open(cache_path, "wb") as f:
                 for chunk in tqdm.tqdm(
                     response.iter_content(chunk_size=1024 * 1024),
@@ -485,13 +489,10 @@ def download_benchmark(
         - Fallback method when HF Hub is unavailable
         - Downloads as .zip and extracts automatically
     """
-    
+
     # Set up cache directory
     if cache_dir is None:
-        cache_dir = os.path.join(
-            os.getcwd(),
-            f"__OMNIGENBENCH_DATA__/benchmarks"
-        )
+        cache_dir = os.path.join(os.getcwd(), f"__OMNIGENBENCH_DATA__/benchmarks")
 
     # Check if benchmark exists locally first
     # First try absolute path exists check (more reliable for paths outside cwd)
@@ -503,7 +504,7 @@ def download_benchmark(
             # force_download only applies to cached hub downloads, not local paths
             fprint("Benchmark:", benchmark_name_or_path, "found locally.")
             return os.path.abspath(benchmark_name_or_path)
-    
+
     # Also try findfile's find_cwd_dir for paths in current working directory
     p = findfile.find_dir(cache_dir, benchmark_name_or_path)
     if p:
@@ -523,7 +524,7 @@ def download_benchmark(
             benchmark_name_or_path,
             "cannot be found locally. Searching online hub to download...",
         )
-    
+
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir, exist_ok=True)
 
@@ -553,7 +554,9 @@ def download_benchmark(
                 json.dump(benchmarks_info, f)
         except Exception as e:
             fprint(
-                "Failed to download benchmarks_info.json from OmniGenBench Hub: {}".format(e)
+                "Failed to download benchmarks_info.json from OmniGenBench Hub: {}".format(
+                    e
+                )
             )
             try:
                 with open("./benchmarks_info.json", "r", encoding="utf8") as f:
@@ -575,7 +578,7 @@ def download_benchmark(
             # Download from OmniGenBench Hub
             hub_repo = default_omnigenbench_hub_repo + "resolve/main/"
             benchmark_url = f'{hub_repo}benchmarks/{benchmarks_info_item["filename"]}'
-            
+
             fprint(f"Downloading benchmark from OmniGenBench Hub: {benchmark_url}")
             response = requests.get(benchmark_url, stream=True)
             response.raise_for_status()  # Check for HTTP errors
@@ -585,7 +588,7 @@ def download_benchmark(
                 # Get content length with fallback
                 total_size = int(response.headers.get("content-length", 0))
                 total_mb = total_size // 1024 // 1024 if total_size > 0 else None
-                
+
                 with open(cache_path, "wb") as f:
                     for chunk in tqdm.tqdm(
                         response.iter_content(chunk_size=1024 * 1024),
@@ -677,19 +680,16 @@ def download_dataset(
         - Fallback method when HF Hub is unavailable
         - Downloads as .zip and extracts automatically
     """
-    
+
     # Set up cache directory
     if cache_dir is None:
-        cache_dir = os.path.join(
-            os.getcwd(),
-            f"__OMNIGENBENCH_DATA__/datasets"
-        )
+        cache_dir = os.path.join(os.getcwd(), f"__OMNIGENBENCH_DATA__/datasets")
 
     # Check if dataset exists locally first
     if os.path.exists(dataset_name_or_path):
         fprint(f"Dataset found locally: {dataset_name_or_path}")
         return dataset_name_or_path
-    
+
     # Try findfile's find_cwd_dir for paths in current working directory
     p = findfile.find_dir(cache_dir, dataset_name_or_path)
     if p and not force_download:
@@ -702,34 +702,35 @@ def download_dataset(
             dataset_name_or_path,
             "cannot be found locally. Searching online hub to download...",
         )
-    
+
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir, exist_ok=True)
 
     hub_repo = (repo if repo else default_omnigenbench_hub_repo) + "resolve/main/"
-    
+
     # Extract dataset name
     dataset_name = dataset_name_or_path.split("/")[-1]
     if dataset_name.startswith("OmniGenBench_"):
         dataset_name = dataset_name.replace("OmniGenBench_", "")
-    
+
     # Build download URL
     url_to_download = f"{hub_repo}datasets/{dataset_name}.zip"
     local_dir = os.path.join(cache_dir, dataset_name)
     zip_path = os.path.join(cache_dir, f"{dataset_name}.zip")
-    
+
     if not os.path.exists(local_dir) or force_download:
         try:
             fprint(f"Downloading dataset from {url_to_download}...")
             response = requests.get(url_to_download, stream=True)
             response.raise_for_status()
-            
+
             # Get content length with fallback
             total_size = int(response.headers.get("content-length", 0))
-            
+
             with open(zip_path, "wb") as f:
                 if total_size > 0:
                     from tqdm import tqdm
+
                     with tqdm(
                         total=total_size,
                         unit="B",
@@ -744,22 +745,23 @@ def download_dataset(
                     for chunk in response.iter_content(chunk_size=8192):
                         if chunk:
                             f.write(chunk)
-            
+
             fprint(f"Downloaded {zip_path}")
-            
+
             # Unzip the dataset
             import zipfile
+
             fprint(f"Extracting dataset to {local_dir}...")
             with zipfile.ZipFile(zip_path, "r") as zip_ref:
                 zip_ref.extractall(local_dir)
             os.remove(zip_path)
             fprint(f"Dataset extracted to: {local_dir}")
-            
+
         except Exception as e:
             raise ConnectionError(f"Failed to download dataset: {e}")
     else:
         fprint(f"Dataset already exists at: {local_dir}")
-    
+
     return local_dir
 
 

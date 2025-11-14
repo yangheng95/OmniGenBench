@@ -256,33 +256,37 @@ class AutoConfig:
         """
         import findfile
         from ...src.abc.abstract_dataset import OmniDataset
-        
+
         # Determine if this is a hub dataset or local path
         is_local = os.path.exists(dataset_name_or_path)
-        
+
         if not is_local:
             # Download from hub
-            fprint(f"Downloading dataset config from HuggingFace Hub: {dataset_name_or_path}")
-            
+            fprint(
+                f"Downloading dataset config from HuggingFace Hub: {dataset_name_or_path}"
+            )
+
             if cache_dir is None:
                 cache_dir = os.path.join(
                     os.getcwd(),
-                    f"__OMNIGENBENCH_DATA__/datasets/{dataset_name_or_path}"
+                    f"__OMNIGENBENCH_DATA__/datasets/{dataset_name_or_path}",
                 )
-            
+
             # Download dataset (which includes config.py)
             OmniDataset._download_dataset_from_hub(dataset_name_or_path, cache_dir)
             config_search_dir = cache_dir
         else:
             config_search_dir = dataset_name_or_path
             fprint(f"Loading config from local directory: {config_search_dir}")
-        
+
         # Search for config.py in the directory
         import glob
-        
+
         # Try to find config.py using absolute path search
-        possible_paths = glob.glob(os.path.join(config_search_dir, "**", "config.py"), recursive=True)
-        
+        possible_paths = glob.glob(
+            os.path.join(config_search_dir, "**", "config.py"), recursive=True
+        )
+
         config_path = None
         if possible_paths:
             # Prefer config.py in the root directory
@@ -293,18 +297,18 @@ class AutoConfig:
             # Otherwise use the first one found
             if not config_path:
                 config_path = possible_paths[0]
-        
+
         if not config_path:
             raise ValueError(
                 f"Could not find config.py in {config_search_dir}. "
                 f"Make sure the dataset contains a valid config.py file."
             )
-        
+
         fprint(f"Loading config from: {config_path}")
-        
+
         # Load the config module
         config_module = load_module_from_path("config", config_path)
-        
+
         # Find AutoConfig instance in the module
         train_config = None
         for attr_name in dir(config_module):
@@ -312,26 +316,28 @@ class AutoConfig:
             if isinstance(attr, AutoConfig):
                 train_config = attr
                 break
-        
+
         if train_config is None:
             # If no AutoConfig instance found, try to find a config dict
             for attr_name in dir(config_module):
                 attr = getattr(config_module, attr_name)
                 if isinstance(attr, dict) and "task_type" in attr:
-                    fprint(f"Found config dict '{attr_name}', creating AutoConfig instance")
+                    fprint(
+                        f"Found config dict '{attr_name}', creating AutoConfig instance"
+                    )
                     train_config = cls(attr)
                     break
-        
+
         if train_config is None:
             raise ValueError(
                 f"Could not find AutoConfig instance or config dict in {config_path}"
             )
-        
+
         # Override with any provided kwargs
         if kwargs:
             fprint(f"Overriding config with custom parameters: {kwargs}")
             train_config.update(kwargs)
-        
+
         fprint("Successfully loaded config from hub")
         return train_config
 
