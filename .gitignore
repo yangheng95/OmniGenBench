@@ -5,8 +5,10 @@ cache/
 __pycache__/
 genomic_foundation_models/
 __OMNIGENOME_DATA__/
+__OMNIGENBENCH_DATA__/
 transformers/
 dev/
+benchmarks_info.json
 *.ffi
 ffi.*
 *.pyc
@@ -673,11 +675,6 @@ cython_debug/
 
 ### VisualStudioCode template
 .vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
 
 # Local History for Visual Studio Code
 .history/
