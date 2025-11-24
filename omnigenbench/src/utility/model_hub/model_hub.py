@@ -11,7 +11,9 @@ import os
 import subprocess
 import shutil
 import sys
+import importlib
 import importlib.util
+import pkgutil
 from pathlib import Path
 
 import autocuda
@@ -484,6 +486,200 @@ class ModelHub:
         return model, model.tokenizer
 
     @staticmethod
+    def _ensure_local_model_path(
+        config_or_model, local_only, cache_dir, force_download, use_hf_api, **kwargs
+    ):
+        """
+        Resolve the provided identifier to a local directory, downloading from
+        Hugging Face first and falling back to the OmniGenome hub.
+        """
+        if os.path.exists(config_or_model):
+            fprint(f"Using existing local model path: {config_or_model}")
+            return config_or_model
+
+        hf_error = None
+        if "/" in config_or_model or not local_only:
+            try:
+                path = download_hf_model(
+                    config_or_model,
+                    cache_dir=cache_dir,
+                    force_download=force_download,
+                    use_hf_api=use_hf_api,
+                )
+                fprint(f"Downloaded model from Hugging Face Hub to: {path}")
+                return path
+            except Exception as exc:  # pragma: no cover - network failure path
+                hf_error = exc
+                fprint(
+                    f"Failed to download from HF Hub ({exc}). "
+                    "Will try OmniGenome hub if available."
+                )
+
+        if local_only:
+            raise FileNotFoundError(
+                f"Model '{config_or_model}' not found locally and local_only=True."
+            )
+
+        try:
+            path = download_model(config_or_model, local_only=local_only, **kwargs)
+            fprint(f"Downloaded model from OmniGenome hub to: {path}")
+            return path
+        except Exception as og_error:
+            raise FileNotFoundError(
+                f"Could not load model '{config_or_model}' from HF Hub or OmniGenome hub. "
+                f"HF error: {hf_error}. OG error: {og_error}"
+            )
+
+    @staticmethod
+    def _load_metadata(path):
+        metadata_path = os.path.join(path, "metadata.json")
+        if not os.path.exists(metadata_path):
+            fprint("No metadata.json found, treating as standard Transformers model")
+            return None
+        try:
+            with open(metadata_path, "r", encoding="utf8") as f:
+                metadata = json.load(f)
+            fprint(f"Loaded metadata from: {metadata_path}")
+            return metadata
+        except Exception as exc:
+            fprint(f"Could not load metadata.json: {exc}")
+            return None
+
+    @staticmethod
+    def _find_class_in_package(package_name, class_name):
+        """Search for a class inside a package (OmniGenBench first)."""
+        try:
+            package = importlib.import_module(package_name)
+        except ImportError:
+            return None
+
+        for _, module_name, _ in pkgutil.walk_packages(
+            package.__path__, package.__name__ + "."
+        ):
+            try:
+                module = importlib.import_module(module_name)
+                if hasattr(module, class_name):
+                    return getattr(module, class_name)
+            except Exception:
+                continue
+        return None
+
+    @staticmethod
+    def _import_custom_model(model_dir, custom_file, model_cls_name):
+        custom_model_path = os.path.join(model_dir, custom_file)
+        if not os.path.exists(custom_model_path):
+            return None
+        try:
+            spec = importlib.util.spec_from_file_location(
+                "custom_model", custom_model_path
+            )
+            custom_module = importlib.util.module_from_spec(spec)
+            sys.modules["custom_model"] = custom_module
+            spec.loader.exec_module(custom_module)  # type: ignore
+            if hasattr(custom_module, model_cls_name):
+                return getattr(custom_module, model_cls_name)
+        except Exception as exc:
+            fprint(f"Could not load from custom_model_file: {exc}")
+        return None
+
+    @staticmethod
+    def _resolve_model_class(metadata, model_dir):
+        """Resolve the model class, prioritizing OmniGenBench, then custom files."""
+        if not metadata or "model_cls" not in metadata:
+            return None, None
+
+        model_cls_name = metadata["model_cls"]
+        candidate_modules = []
+        model_module = metadata.get("model_module")
+        library_name = metadata.get("library_name")
+
+        if model_module:
+            candidate_modules.append(model_module)
+
+        if library_name:
+            lib_lower = library_name.lower()
+            candidate_modules.extend(
+                [
+                    lib_lower,
+                    f"{lib_lower}.model",
+                    f"{lib_lower}.src.model",
+                ]
+            )
+
+        seen = set()
+        candidate_modules = [
+            module
+            for module in candidate_modules
+            if module and not (module in seen or seen.add(module))
+        ]
+
+        for module_name in candidate_modules:
+            try:
+                module = importlib.import_module(module_name)
+                if hasattr(module, model_cls_name):
+                    return getattr(module, model_cls_name), "omnigenbench"
+            except Exception as exc:
+                fprint(f"Could not load model class from {module_name}: {exc}")
+
+        for pkg in ("omnigenbench.src.model", "omnigenome.src.model"):
+            resolved = ModelHub._find_class_in_package(pkg, model_cls_name)
+            if resolved:
+                return resolved, "omnigenbench"
+
+        custom_model_file = metadata.get("custom_model_file")
+        if custom_model_file:
+            resolved = ModelHub._import_custom_model(
+                model_dir, custom_model_file, model_cls_name
+            )
+            if resolved:
+                return resolved, "custom"
+
+        return None, None
+
+    @staticmethod
+    def _instantiate_omni_model(model_cls, model_path, tokenizer, metadata, **kwargs):
+        """Instantiate an Omni model directly from its class."""
+        init_kwargs = {}
+        if metadata:
+            if "label2id" in metadata:
+                init_kwargs["label2id"] = metadata["label2id"]
+            if "num_labels" in metadata:
+                init_kwargs["num_labels"] = metadata["num_labels"]
+            if "problem_type" in metadata:
+                init_kwargs["problem_type"] = metadata["problem_type"]
+
+        if "label2id" not in init_kwargs or "num_labels" not in init_kwargs:
+            try:
+                config = AutoConfig.from_pretrained(
+                    model_path, trust_remote_code=True, local_files_only=True
+                )
+                init_kwargs.setdefault("label2id", getattr(config, "label2id", {}))
+                init_kwargs.setdefault("num_labels", getattr(config, "num_labels", None))
+            except Exception:
+                pass
+
+        if init_kwargs.get("num_labels") is None and isinstance(
+            init_kwargs.get("label2id"), dict
+        ):
+            num_labels = len(init_kwargs["label2id"])
+            init_kwargs["num_labels"] = num_labels if num_labels > 0 else 2
+
+        init_kwargs.update(kwargs)
+        init_kwargs.setdefault("trust_remote_code", True)
+        init_kwargs.setdefault("local_files_only", True)
+
+        model = model_cls(model_path, tokenizer, **init_kwargs)
+        if metadata:
+            try:
+                model.metadata = metadata
+                if hasattr(model, "config"):
+                    model.config.metadata = metadata
+            except Exception as exc:
+                fprint(f"Warning: failed to attach metadata to model: {exc}")
+        model.tokenizer = tokenizer
+        return model
+
+    @staticmethod
     def load(
         config_or_model,
         local_only=False,
@@ -492,12 +688,11 @@ class ModelHub:
         **kwargs,
     ):
         """
-        Load a model by cloning from Hugging Face Hub or using local path.
-
-        This method handles model loading by first cloning models from Hugging Face Hub
-        to local directories, then loading from the local file system. It supports both
-        OmniGenome models with metadata and standard Transformers models. All model
-        loading is performed using local files only.
+        Load a model with the following priority:
+        1) If the identifier is on Hugging Face, download it first.
+        2) Prefer instantiating Omni models (OmniGenBench-defined) with metadata restored.
+        3) If a custom model file is provided, instantiate from that file.
+        4) Fall back to a generic Transformers model wrapper.
 
         Args:
             config_or_model (str): Name or path of the model to load.
@@ -530,269 +725,79 @@ class ModelHub:
         if not isinstance(config_or_model, str):
             raise ValueError("config_or_model must be a string.")
 
-        # Determine the model path - always ensure we have a local path
-        if os.path.exists(config_or_model):
-            # Local path exists
-            path = config_or_model
-            fprint(f"Using existing local model path: {path}")
-        else:
-            # Check if it looks like a Hugging Face model identifier (contains "/" or is a known model name)
-            if "/" in config_or_model or config_or_model in [
-                "bert-base-uncased",
-                "gpt2",
-                "roberta-base",
-                "distilbert-base-uncased",
-            ]:
-                # Download from Hugging Face Hub to local directory
-                # Prioritize HF Hub API (no git-lfs) over git clone
-                try:
-                    cache_dir = kwargs.pop("cache_dir", "__OMNIGENBENCH_DATA__/models/")
-                    force_download = kwargs.pop("force_download", False)
-                    use_hf_api = kwargs.pop("use_hf_api", True)  # Default to HF API
+        cache_dir = kwargs.pop("cache_dir", "__OMNIGENBENCH_DATA__/models/")
+        force_download = kwargs.pop("force_download", False)
+        use_hf_api = kwargs.pop("use_hf_api", True)
 
-                    path = download_hf_model(
-                        config_or_model,
-                        cache_dir,
-                        force_download,
-                        use_hf_api=use_hf_api,
-                    )
-                    fprint(f"Downloaded model from Hugging Face Hub to: {path}")
-                except Exception as hf_error:
-                    # Fallback to OmniGenome hub download
-                    fprint(
-                        f"Failed to download from HF Hub ({hf_error}), trying OmniGenome hub..."
-                    )
-                    try:
-                        path = download_model(
-                            config_or_model, local_only=local_only, **kwargs
-                        )
-                    except Exception as og_error:
-                        raise FileNotFoundError(
-                            f"Could not load model '{config_or_model}' from either "
-                            f"Hugging Face Hub or OmniGenome hub. "
-                            f"HF error: {hf_error}. OG error: {og_error}"
-                        )
-            else:
-                # Try OmniGenome hub first for non-HF identifiers
-                try:
-                    path = download_model(
-                        config_or_model, local_only=local_only, **kwargs
-                    )
-                    fprint(f"Downloaded model from OmniGenome hub to: {path}")
-                except Exception as og_error:
-                    raise FileNotFoundError(
-                        f"Could not find model '{config_or_model}' in OmniGenome hub. "
-                        f"Error: {og_error}"
-                    )
+        # Always ensure the model is local (HF first, then OmniGenome).
+        path = ModelHub._ensure_local_model_path(
+            config_or_model,
+            local_only=local_only,
+            cache_dir=cache_dir,
+            force_download=force_download,
+            use_hf_api=use_hf_api,
+            **kwargs,
+        )
 
-        # Load configuration
-        config = AutoConfig.from_pretrained(path, trust_remote_code=True, **kwargs)
-
-        # Try to load metadata (for OmniGenome models) - always from local path now
-        metadata = None
-        metadata_path = os.path.join(path, "metadata.json")
-        try:
-            if os.path.exists(metadata_path):
-                with open(metadata_path, "r", encoding="utf8") as f:
-                    metadata = json.load(f)
-                fprint(f"Loaded metadata from: {metadata_path}")
-            else:
-                fprint(
-                    "No metadata.json found, treating as standard Transformers model"
-                )
-        except Exception as e:
-            fprint(
-                f"Could not load metadata.json: {e}, treating as standard Transformers model"
-            )
-
-        # Load tokenizer
+        metadata = ModelHub._load_metadata(path)
         tokenizer = OmniTokenizer.from_pretrained(path, **kwargs)
 
-        # Set metadata in config if available
+        model = None
+        model_cls = None
+        model_source = None
+
         if metadata:
-            config.metadata = metadata
-
-        # Load model based on whether we have metadata - all from local files now
-        if metadata and "model_cls" in metadata:
-            # Try to load custom model class
-            model_cls = None
-
-            # Method 1: Try to load from built-in omnigenbench/omnigenome modules
-            if "library_name" in metadata:
-                try:
-                    import importlib
-
-                    model_lib = importlib.import_module(
-                        metadata["library_name"].lower()
-                    ).model
-                    model_cls = getattr(model_lib, metadata["model_cls"])
-                    fprint(
-                        f"Loaded model class {metadata['model_cls']} from {metadata['library_name']}"
-                    )
-                except (ImportError, AttributeError) as e:
-                    fprint(f"Could not load from library_name: {e}")
-
-            # Method 2: Try to load from model_module if specified
-            if model_cls is None and "model_module" in metadata:
-                try:
-                    import importlib
-
-                    model_module = importlib.import_module(metadata["model_module"])
-                    model_cls = getattr(model_module, metadata["model_cls"])
-                    fprint(
-                        f"Loaded model class {metadata['model_cls']} from module {metadata['model_module']}"
-                    )
-                except (ImportError, AttributeError) as e:
-                    fprint(f"Could not load from model_module: {e}")
-
-            # Method 3: Try to load from custom_model.py file
-            if model_cls is None and "custom_model_file" in metadata:
-                custom_model_path = os.path.join(path, metadata["custom_model_file"])
-                if os.path.exists(custom_model_path):
-                    try:
-                        # Dynamically import the custom model file
-                        spec = importlib.util.spec_from_file_location(
-                            "custom_model", custom_model_path
-                        )
-                        custom_module = importlib.util.module_from_spec(spec)
-                        sys.modules["custom_model"] = custom_module
-                        spec.loader.exec_module(custom_module)
-                        model_cls = getattr(custom_module, metadata["model_cls"])
-                        fprint(
-                            f"Loaded custom model class {metadata['model_cls']} from {custom_model_path}"
-                        )
-                    except Exception as e:
-                        fprint(f"Could not load from custom_model_file: {e}")
-
-            # If we successfully loaded the model class, instantiate it
+            model_cls, model_source = ModelHub._resolve_model_class(metadata, path)
             if model_cls is not None:
-                state_dict = None
-                state_dict_path = os.path.join(path, "pytorch_model.bin")
-                safetensors_path = os.path.join(path, "model.safetensors")
-
                 try:
-                    if os.path.exists(state_dict_path):
-                        fprint(f"Reading checkpoint tensors from: {state_dict_path}")
-                        state_dict = torch.load(state_dict_path, map_location="cpu")
-                    elif os.path.exists(safetensors_path):
-                        fprint(
-                            f"Reading checkpoint tensors from safetensors: {safetensors_path}"
-                        )
-                        from safetensors.torch import load_file
-
-                        state_dict = load_file(safetensors_path)
-                    else:
-                        fprint(
-                            "Warning: No pytorch_model.bin or model.safetensors found"
-                        )
-                except Exception as exc:
-                    fprint(f"Warning: Could not read checkpoint tensors: {exc}")
-
-                if state_dict is not None:
-                    _synchronize_config_with_checkpoint(config, state_dict)
-
-                architecture_cls = None
-                if getattr(config, "architectures", None):
-                    architecture_cls = config.architectures[0]
-
-                base_model = None
-                module_candidates = []
-                auto_map = getattr(config, "auto_map", {}) or {}
-                for target in auto_map.values():
-                    if isinstance(target, str) and "." in target:
-                        module_candidates.append(target.split(".")[0])
-
-                # Preserve order but drop duplicates
-                seen = set()
-                module_candidates = [
-                    m for m in module_candidates if not (m in seen or seen.add(m))
-                ]
-
-                for module_name in module_candidates:
-                    candidate_file = os.path.join(path, f"{module_name}.py")
-                    if not os.path.exists(candidate_file):
-                        continue
-                    if architecture_cls is None:
-                        continue
-                    try:
-                        spec = importlib.util.spec_from_file_location(
-                            module_name, candidate_file
-                        )
-                        module = importlib.util.module_from_spec(spec)
-                        sys.modules[module_name] = module
-                        spec.loader.exec_module(module)
-                        if hasattr(module, architecture_cls):
-                            base_model_cls = getattr(module, architecture_cls)
-                            base_model = base_model_cls(config)
-                            fprint(
-                                f"Instantiated base architecture {architecture_cls} "
-                                f"from local module {module_name}.py"
-                            )
-                            break
-                    except Exception as exc:
-                        fprint(
-                            f"Warning: Failed to instantiate {architecture_cls} from {module_name}.py: {exc}"
-                        )
-
-                if base_model is None:
-                    base_model = AutoModel.from_config(
-                        config, trust_remote_code=True, **kwargs
+                    model = ModelHub._instantiate_omni_model(
+                        model_cls,
+                        model_path=path,
+                        tokenizer=tokenizer,
+                        metadata=metadata,
+                        **kwargs,
                     )
+                    fprint(
+                        f"Instantiated {metadata['model_cls']} "
+                        f"from {'OmniGenBench' if model_source == 'omnigenbench' else 'custom file'}"
+                    )
+                except Exception as exc:
+                    fprint(f"Failed to instantiate Omni model: {exc}")
+                    model = None
 
-                # Prepare initialization parameters
-                init_kwargs = {
-                    "label2id": getattr(config, "label2id", {}),
-                    "num_labels": getattr(config, "num_labels", 2),
-                }
+        if model is None and metadata and metadata.get("custom_model_file"):
+            custom_cls = ModelHub._import_custom_model(
+                path, metadata["custom_model_file"], metadata["model_cls"]
+            )
+            if custom_cls:
+                try:
+                    model = ModelHub._instantiate_omni_model(
+                        custom_cls,
+                        model_path=path,
+                        tokenizer=tokenizer,
+                        metadata=metadata,
+                        **kwargs,
+                    )
+                    fprint(f"Instantiated custom model class {metadata['model_cls']}")
+                except Exception as exc:
+                    fprint(f"Failed to instantiate custom model: {exc}")
+                    model = None
 
-                # Add custom attributes from metadata
-                if "custom_attrs" in metadata:
-                    init_kwargs.update(metadata["custom_attrs"])
-
-                # Merge with user-provided kwargs
-                init_kwargs.update(kwargs)
-
-                # Initialize the OmniModel subclass directly from the in-memory base model
-                # to avoid re-loading checkpoints with potentially incompatible HF versions.
-                model = model_cls(
-                    base_model,
-                    tokenizer,
-                    **init_kwargs,
-                )
-
-                if state_dict is not None:
-                    try:
-                        model.load_state_dict(state_dict, strict=False)
-                    except Exception as exc:
-                        fprint(f"Warning: Could not load state dict: {exc}")
-            else:
-                # Fallback to standard Transformers model
-                fprint(
-                    f"Could not load custom model class {metadata['model_cls']}, falling back to standard model"
-                )
-                base_model = AutoModel.from_pretrained(
-                    path,
-                    config=config,
-                    trust_remote_code=True,
-                    local_files_only=True,
-                    **kwargs,
-                )
-                # Wrap with GenericOmniModelWrapper to provide inference interface
-                model = GenericOmniModelWrapper(base_model, tokenizer)
-                model.tokenizer = tokenizer
-        else:
-            # Standard Transformers model - load from local path
+        if model is None:
             fprint("Loading as standard Transformers model from local path")
             base_model = AutoModel.from_pretrained(
                 path,
-                config=config,
                 trust_remote_code=True,
-                local_files_only=True,  # Force local files only
+                local_files_only=True,
                 **kwargs,
             )
-            # Wrap with GenericOmniModelWrapper to provide inference interface
             model = GenericOmniModelWrapper(base_model, tokenizer)
             model.tokenizer = tokenizer
+            if metadata:
+                try:
+                    base_model.config.metadata = metadata
+                except Exception:
+                    pass
 
         if isinstance(dtype, str):
             torch_dtype = getattr(torch, dtype, None)

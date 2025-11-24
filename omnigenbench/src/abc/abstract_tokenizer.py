@@ -6,6 +6,7 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2025. All Rights Reserved.
+import json
 import os
 import warnings
 
@@ -196,11 +197,16 @@ class OmniTokenizer:
                 AutoTokenizer.from_pretrained(config_or_model, **kwargs), **kwargs
             )
         else:
-            if "multimolecule" in config_or_model:
-                from multimolecule import RnaTokenizer
-
-                tokenizer = RnaTokenizer.from_pretrained(config_or_model, **kwargs)
-            else:
+            try:
+                tokenizer_class = json.load(open(
+                    f"{config_or_model.rstrip('/')}/tokenizer_config.json", "r"
+                )).get("tokenizer_class", "")
+                if tokenizer_class in ['RnaTokenizer', 'DnaTokenizer']:
+                    from multimolecule import AutoTokenizer as MultiMoleculeAutoTokenizer
+                    tokenizer = MultiMoleculeAutoTokenizer.from_pretrained(config_or_model, **kwargs)
+                else:
+                    tokenizer = AutoTokenizer.from_pretrained(config_or_model, **kwargs)
+            except Exception:
                 tokenizer = AutoTokenizer.from_pretrained(config_or_model, **kwargs)
 
         return tokenizer
