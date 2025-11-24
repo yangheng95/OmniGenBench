@@ -486,11 +486,12 @@ class OmniDatasetForMultiLabelClassification(OmniDataset):
             ...     label_indices=[0, 5, 10]
             ... )
         """
+        self.label_indices = label_indices
+
         super(OmniDatasetForMultiLabelClassification, self).__init__(
             dataset_name_or_path, tokenizer, max_length, **kwargs
         )
 
-        self.label_indices = label_indices
 
         self.metadata.update(
             {
