@@ -1358,9 +1358,9 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
             ):
                 inputs = sequence_or_inputs
             # If it's a dict without 'input_ids', it might be raw data for dataset.prepare_input
-            elif isinstance(sequence_or_inputs, dict) and hasattr(
-                self, "dataset_class"
-            ):
+            elif (isinstance(sequence_or_inputs, dict)
+                  and hasattr( self, "dataset_class")
+                  and self.dataset_class is not None):
                 # Use dataset's prepare_input method
                 try:
                     # Create a temporary dataset instance for using prepare_input
@@ -1406,7 +1406,7 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
         # Handle string or list of strings
         elif isinstance(sequence_or_inputs, (str, list)):
             # If dataset_class is available, try to use its prepare_input method
-            if hasattr(self, "dataset_class"):
+            if hasattr(self, "dataset_class") and self.dataset_class is not None:
                 try:
                     # Prepare instance(s) for dataset.prepare_input
                     if isinstance(sequence_or_inputs, str):

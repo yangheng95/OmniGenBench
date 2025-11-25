@@ -666,7 +666,7 @@ class ModelHub:
 
         init_kwargs.update(kwargs)
         init_kwargs.setdefault("trust_remote_code", True)
-        init_kwargs.setdefault("local_files_only", True)
+        # init_kwargs.setdefault("local_files_only", True)
 
         model = model_cls(model_path, tokenizer, **init_kwargs)
         if metadata:
@@ -811,9 +811,7 @@ class ModelHub:
             fprint(
                 f"No device is specified, the model will be loaded to the default device: {device}"
             )
-            model.to(device)
-        else:
-            model.to(device)
+        model.to(device)
         model.eval()
         return model
 
