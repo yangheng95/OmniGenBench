@@ -743,20 +743,52 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
             - Only saves source code for models NOT in omnigenbench/omnigenome packages
             - Failures are logged but don't interrupt the save process
         """
+        def _copy_module_file(src_file, dst_name):
+            dst_file = os.path.join(path, dst_name)
+            os.makedirs(os.path.dirname(dst_file), exist_ok=True)
+            shutil.copyfile(src_file, dst_file)
+            metadata["custom_model_file"] = dst_name
+            fprint(f"Saved model source to: {dst_file}")
+
         try:
             model_class = self.__class__
             model_source_file = inspect.getfile(model_class)
-            # Check if it's a user-defined model (not from omnigenbench/omnigenome packages)
             if (
                 "omnigenbench" not in model_source_file
                 and "omnigenome" not in model_source_file
             ):
-                custom_model_path = os.path.join(path, "custom_model.py")
-                shutil.copyfile(model_source_file, custom_model_path)
-                metadata["custom_model_file"] = "custom_model.py"
-                fprint(f"Saved custom model class source to: {custom_model_path}")
+                _copy_module_file(model_source_file, "custom_model.py")
+                return
         except (TypeError, OSError) as e:
             fprint(f"Could not save custom model source file: {e}")
+
+        # If the Omni wrapper class is from the framework but the base model is remote code
+        try:
+            base_model = getattr(self, "model", None)
+            if base_model is None:
+                return
+            base_cls = base_model.__class__
+            base_src = inspect.getfile(base_cls)
+            if base_src and "omnigenbench" not in base_src and "omnigenome" not in base_src:
+                base_dir = os.path.dirname(base_src)
+                base_name = os.path.basename(base_src)
+                # If the remote module sits inside a package (has __init__.py), copy the package tree
+                if os.path.exists(os.path.join(base_dir, "__init__.py")):
+                    dst_pkg = os.path.join(path)
+                    if not os.path.exists(dst_pkg):
+                        shutil.copytree(base_dir, dst_pkg, dirs_exist_ok=True)
+                        fprint(f"Saved remote code package to: {dst_pkg}")
+                    # Ensure the specific model file is copied
+                    dst_model_file = os.path.join(dst_pkg, base_name)
+                    if not os.path.exists(dst_model_file):
+                        shutil.copyfile(base_src, dst_model_file)
+                        fprint(f"Saved model source to: {dst_model_file}")
+                    rel_file = os.path.join(os.path.basename(base_dir), base_name)
+                    metadata["custom_model_file"] = rel_file
+                else:
+                    _copy_module_file(base_src, base_name)
+        except (TypeError, OSError, AttributeError) as e:
+            fprint(f"Could not save base model source file: {e}")
 
     def _save_custom_dataset_class(self, path, metadata):
         """
@@ -1065,7 +1097,7 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
             but the current value is 5.
 
         Note:
-            - trust_remote_code is set to True by default for custom models
+            - trust_remote_code is set to True by default to support custom model files
             - Configuration differences don't prevent loading but are logged
             - Useful for detecting model version mismatches
         """

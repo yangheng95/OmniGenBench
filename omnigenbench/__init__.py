@@ -74,7 +74,7 @@ https://omnigenbenchdoc.readthedocs.io/
 """
 
 __name__ = "omnigenbench"
-__version__ = "0.4.7alpha"
+__version__ = "0.4.8alpha"
 __author__ = "YANG, HENG"
 __email__ = "yangheng2021@gmail.com"
 __license__ = "Apache-2.0"

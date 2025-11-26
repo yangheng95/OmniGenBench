@@ -570,11 +570,13 @@ class ModelHub:
         if not os.path.exists(custom_model_path):
             return None
         try:
-            spec = importlib.util.spec_from_file_location(
-                "custom_model", custom_model_path
-            )
+            module_name = Path(custom_file).with_suffix("").as_posix().replace("/", ".")
+            if not module_name:
+                module_name = "custom_model"
+            sys.path.insert(0, model_dir)
+            spec = importlib.util.spec_from_file_location(module_name, custom_model_path)
             custom_module = importlib.util.module_from_spec(spec)
-            sys.modules["custom_model"] = custom_module
+            sys.modules[module_name] = custom_module
             spec.loader.exec_module(custom_module)  # type: ignore
             if hasattr(custom_module, model_cls_name):
                 return getattr(custom_module, model_cls_name)
