@@ -654,8 +654,8 @@ class ModelHub:
                     model_path, trust_remote_code=True, local_files_only=True
                 )
                 init_kwargs.setdefault("label2id", getattr(config, "label2id", {}))
-                init_kwargs.setdefault("num_labels", getattr(config, "num_labels", None))
-            except Exception:
+                init_kwargs.setdefault("num_labels", len(init_kwargs.get("label2id")))
+            except Exception as e:
                 pass
 
         if init_kwargs.get("num_labels") is None and isinstance(
@@ -749,7 +749,6 @@ class ModelHub:
         if metadata:
             model_cls, model_source = ModelHub._resolve_model_class(metadata, path)
             if model_cls is not None:
-                try:
                     model = ModelHub._instantiate_omni_model(
                         model_cls,
                         model_path=path,
@@ -761,9 +760,6 @@ class ModelHub:
                         f"Instantiated {metadata['model_cls']} "
                         f"from {'OmniGenBench' if model_source == 'omnigenbench' else 'custom file'}"
                     )
-                except Exception as exc:
-                    fprint(f"Failed to instantiate Omni model: {exc}")
-                    model = None
 
         if model is None and metadata and metadata.get("custom_model_file"):
             custom_cls = ModelHub._import_custom_model(

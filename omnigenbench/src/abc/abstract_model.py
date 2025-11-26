@@ -216,15 +216,15 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
 
         label2id = kwargs.pop("label2id", None)
         trust_remote_code = kwargs.pop("trust_remote_code", True)
-        num_labels = kwargs.pop("num_labels", None)
+        num_labels = kwargs.pop("num_labels", len(label2id) if label2id else None)
         ignore_mismatched_sizes = kwargs.pop("ignore_mismatched_sizes", False)
         dataset_class = kwargs.pop("dataset_class", None)
 
-        if label2id is not None and num_labels is None:
+        if label2id and not num_labels:
             num_labels = len(label2id)
-        elif num_labels is not None and label2id is None:
+        elif num_labels and not label2id:
             label2id = {str(i): i for i in range(num_labels)}
-        elif label2id is None and num_labels is None:
+        elif not label2id and not num_labels:
             raise ValueError(
                 "Either label2id or num_labels must be provided to initialize the model."
             )
@@ -281,10 +281,14 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
                     if "AutoModel" in config.architectures
                     else config.architectures[-1]
                 )
-                if "multimolecule" in config_or_model.__repr__().lower():
+                if hasattr(import_module(f"multimolecule"), model_cls_name):
                     model_cls = getattr(import_module(f"multimolecule"), model_cls_name)
-                else:
+                elif hasattr(import_module(f"transformers"), model_cls_name):
                     model_cls = getattr(import_module(f"transformers"), model_cls_name)
+                else:
+                    raise ValueError(
+                        f"Model class '{model_cls_name}' not found in transformers or multimolecule libraries."
+                    )
                 model = model_cls.from_pretrained(
                     config_or_model,
                     config=config,
