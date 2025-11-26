@@ -975,8 +975,9 @@ class OmniModel(EmbeddingMixin, torch.nn.Module):
         _dtype = self.model.dtype
         self.model.to(dtype).to("cpu")
 
-        # Save tokenizer config
+        # Save model and tokenizer config
         self.tokenizer.save_pretrained(path)
+        self.model.save_pretrained(path)
 
         # Step 1: Save base files
         self._save_base_files(path)

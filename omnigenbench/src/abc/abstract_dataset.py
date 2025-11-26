@@ -690,10 +690,12 @@ class OmniDataset(torch.utils.data.Dataset):
 
         for data_item in self.data:
             for key, value in data_item.items():
-
+                dtype = value.dtype
+                if key in skipped_keys:
+                    data_item[key] = data_item[key].to(dtype)
+                    continue
                 if not isinstance(value, torch.Tensor):
                     value = torch.as_tensor(value)
-                dtype = value.dtype
                 if "label" in key and (
                     value.dtype == torch.int16 or value.dtype == torch.int32
                 ):
@@ -1112,9 +1114,8 @@ class OmniDataset(torch.utils.data.Dataset):
                 df = pd.read_parquet(dataset_name_or_path)
                 for i in range(len(df)):
                     _examples.append(df.iloc[i].to_dict())
-            elif dataset_name_or_path.endswith(".npy") or dataset_name_or_path.endswith(
-                ".npz"
-            ):
+            elif (dataset_name_or_path.endswith(".npy")
+                  or dataset_name_or_path.endswith(".npz")):
                 import numpy as np
 
                 if dataset_name_or_path.endswith(".npy"):
